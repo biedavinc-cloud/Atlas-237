@@ -23,6 +23,26 @@ const PADDLE_PRICE_IDS: Record<string, string | undefined> = {
   enterprise: (import.meta.env.VITE_PADDLE_PRICE_ENTERPRISE as string | undefined) || 'pri_01m1m810d2pv6njj4dat4enr5d',
 };
 
+/**
+ * Annual Price IDs — NOT set yet. Paddle Billing checkouts reference
+ * pre-created Price objects (not a raw amount), so a real annual option
+ * needs 4 more prices created in the Paddle dashboard (Catalog → Prices,
+ * one per plan, billed yearly) before this can go live. Until then,
+ * isPaddleAnnualConfigured() returns false and the annual toggle simply
+ * doesn't offer Paddle as an option — same "never claim available
+ * without real config" rule as everywhere else in this PSP registry.
+ */
+const PADDLE_PRICE_IDS_ANNUAL: Record<string, string | undefined> = {
+  starter: import.meta.env.VITE_PADDLE_PRICE_STARTER_ANNUAL as string | undefined,
+  growth: import.meta.env.VITE_PADDLE_PRICE_GROWTH_ANNUAL as string | undefined,
+  pro: import.meta.env.VITE_PADDLE_PRICE_PRO_ANNUAL as string | undefined,
+  enterprise: import.meta.env.VITE_PADDLE_PRICE_ENTERPRISE_ANNUAL as string | undefined,
+};
+
+export function isPaddleAnnualConfigured() {
+  return Object.values(PADDLE_PRICE_IDS_ANNUAL).every(Boolean);
+}
+
 export function isPaddleConfigured() {
   return Boolean(PADDLE_CLIENT_TOKEN) && Object.values(PADDLE_PRICE_IDS).every(Boolean);
 }
@@ -62,11 +82,12 @@ export function initiatePaddleCheckout(params: {
   plan: string;
   email: string;
   orgId: string;
+  billingCycle?: 'monthly' | 'annual';
   onSuccess: (transactionId: string) => void;
   onClose: () => void;
 }) {
-  const { plan, email, orgId, onSuccess, onClose } = params;
-  const priceId = PADDLE_PRICE_IDS[plan];
+  const { plan, email, orgId, billingCycle = 'monthly', onSuccess, onClose } = params;
+  const priceId = billingCycle === 'annual' ? PADDLE_PRICE_IDS_ANNUAL[plan] : PADDLE_PRICE_IDS[plan];
   if (!priceId || !PADDLE_CLIENT_TOKEN) return;
 
   loadPaddleScript().then(() => {
@@ -88,7 +109,7 @@ export function initiatePaddleCheckout(params: {
     }
     window.Paddle.Checkout.open({
       items: [{ priceId, quantity: 1 }],
-      customData: { org_id: orgId, plan },
+      customData: { org_id: orgId, plan, billing_cycle: billingCycle },
       customer: { email },
       // Paddle's account-wide "Default payment link" setting can't work
       // when one Paddle account serves multiple products (this account
@@ -111,7 +132,7 @@ export function initiatePaddleCheckout(params: {
  * server-side with Paddle's own API before writing anything, same pattern
  * as Flutterwave/Paystack/PayUnit.
  */
-export async function confirmPaddlePayment(params: { orgId: string; plan: string; transactionId: string }): Promise<{ success: boolean; error?: string }> {
+export async function confirmPaddlePayment(params: { orgId: string; plan: string; transactionId: string; billingCycle?: 'monthly' | 'annual' }): Promise<{ success: boolean; error?: string }> {
   try {
     const { data: sessionData } = await supabase.auth.getSession();
     const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paddle-verify`, {
@@ -120,7 +141,7 @@ export async function confirmPaddlePayment(params: { orgId: string; plan: string
         'Content-Type': 'application/json',
         Authorization: `Bearer ${sessionData.session?.access_token}`,
       },
-      body: JSON.stringify({ org_id: params.orgId, plan: params.plan, transaction_id: params.transactionId }),
+      body: JSON.stringify({ org_id: params.orgId, plan: params.plan, transaction_id: params.transactionId, billing_cycle: params.billingCycle || 'monthly' }),
     });
     const result = await res.json();
     return result.ok ? { success: true } : { success: false, error: result.msg || 'Verification failed' };

@@ -12,11 +12,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const PLAN_PRICES_USD: Record<string, number> = {
-  starter: 19,
-  growth: 49,
-  pro: 119,
-  enterprise: 219,
+const PLAN_PRICES_USD: Record<string, { monthly: number; annual: number }> = {
+  starter: { monthly: 19, annual: 190 },
+  growth: { monthly: 49, annual: 490 },
+  pro: { monthly: 119, annual: 1190 },
+  enterprise: { monthly: 219, annual: 2190 },
 };
 
 Deno.serve(async (req: Request) => {
@@ -45,18 +45,20 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { org_id, plan, reference } = await req.json();
+    const { org_id, plan, reference, billing_cycle } = await req.json();
     if (!org_id || !plan || !reference) {
       return new Response(JSON.stringify({ ok: false, msg: "Missing org_id, plan, or reference" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const expectedUsd = PLAN_PRICES_USD[plan];
-    if (!expectedUsd) {
+    const cycle = billing_cycle === "annual" ? "annual" : "monthly";
+    const prices = PLAN_PRICES_USD[plan];
+    if (!prices) {
       return new Response(JSON.stringify({ ok: false, msg: "Unknown plan" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const expectedUsd = prices[cycle];
 
     const { data: profile } = await authClient.from("profiles").select("org_id").eq("id", userData.user.id).maybeSingle();
     if (!profile || profile.org_id !== org_id) {
@@ -99,7 +101,8 @@ Deno.serve(async (req: Request) => {
 
     const now = new Date();
     const periodEnd = new Date(now);
-    periodEnd.setMonth(periodEnd.getMonth() + 1);
+    if (cycle === "annual") periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    else periodEnd.setMonth(periodEnd.getMonth() + 1);
 
     const { error: subError } = await adminClient.from("subscriptions").upsert({
       org_id,
@@ -107,7 +110,7 @@ Deno.serve(async (req: Request) => {
       status: "active",
       price_cents: expectedUsd * 100,
       currency: "USD",
-      billing_cycle: "monthly",
+      billing_cycle: cycle,
       paystack_reference: reference,
       current_period_start: now.toISOString(),
       current_period_end: periodEnd.toISOString(),

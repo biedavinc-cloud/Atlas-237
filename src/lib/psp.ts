@@ -67,7 +67,7 @@ export async function getAvailablePsps(): Promise<PspOption[]> {
 
 export async function payWithPsp(
   pspKey: string,
-  params: { plan: string; orgId: string; email: string; paymentCountry?: string },
+  params: { plan: string; orgId: string; email: string; paymentCountry?: string; billingCycle?: 'monthly' | 'annual' },
 ): Promise<{ ok: boolean; msg?: string; redirected?: boolean }> {
   if (pspKey === 'flutterwave') {
     return new Promise((resolve) => {
@@ -75,8 +75,9 @@ export async function payWithPsp(
         plan: params.plan,
         email: params.email,
         orgId: params.orgId,
+        billingCycle: params.billingCycle,
         onSuccess: async (txRef, paymentId) => {
-          const res = await recordSubscription({ orgId: params.orgId, plan: params.plan, txRef, paymentId });
+          const res = await recordSubscription({ orgId: params.orgId, plan: params.plan, txRef, paymentId, billingCycle: params.billingCycle });
           resolve(res.success ? { ok: true } : { ok: false, msg: res.error });
         },
         onClose: () => resolve({ ok: false, msg: 'cancelled' }),
@@ -84,7 +85,7 @@ export async function payWithPsp(
     });
   }
   if (pspKey === 'payunit') {
-    const result = await initiatePayunitCheckout({ plan: params.plan, orgId: params.orgId, paymentCountry: params.paymentCountry });
+    const result = await initiatePayunitCheckout({ plan: params.plan, orgId: params.orgId, paymentCountry: params.paymentCountry, billingCycle: params.billingCycle });
     if (!result.ok || !result.transactionUrl) {
       return { ok: false, msg: result.msg };
     }
@@ -98,8 +99,9 @@ export async function payWithPsp(
         plan: params.plan,
         email: params.email,
         orgId: params.orgId,
+        billingCycle: params.billingCycle,
         onSuccess: async (reference) => {
-          const res = await confirmPaystackPayment({ orgId: params.orgId, plan: params.plan, reference });
+          const res = await confirmPaystackPayment({ orgId: params.orgId, plan: params.plan, reference, billingCycle: params.billingCycle });
           resolve(res.success ? { ok: true } : { ok: false, msg: res.error });
         },
         onClose: () => resolve({ ok: false, msg: 'cancelled' }),
@@ -112,8 +114,9 @@ export async function payWithPsp(
         plan: params.plan,
         email: params.email,
         orgId: params.orgId,
+        billingCycle: params.billingCycle,
         onSuccess: async (transactionId) => {
-          const res = await confirmPaddlePayment({ orgId: params.orgId, plan: params.plan, transactionId });
+          const res = await confirmPaddlePayment({ orgId: params.orgId, plan: params.plan, transactionId, billingCycle: params.billingCycle });
           resolve(res.success ? { ok: true } : { ok: false, msg: res.error });
         },
         onClose: () => resolve({ ok: false, msg: 'cancelled' }),

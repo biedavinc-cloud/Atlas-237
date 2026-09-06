@@ -856,3 +856,40 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   real client-side external endpoint) is a good hardening candidate once
   all current + planned PSPs/integrations are stable — not urgent, and
   risky to change without thorough testing of every payment flow.
+
+## Annual billing (Sep 2026) — real feature, was missing entirely
+- Before this: no code path anywhere supported paying yearly — every PSP
+  (Flutterwave/Paystack/PayUnit/Paddle) and the whole subscriptions schema
+  only ever charged and extended by 1 month at a time. A customer could
+  not select "pay 1 year" anywhere.
+- Pricing: annual = monthly × 10 (2 months free), the standard SaaS
+  convention. Defined once in `src/lib/plans.ts` PLAN_PRICES
+  (`{monthly, annual}`), and mirrored in the 4 other price-definition
+  sites that must stay in sync (see the PSP registry note above) —
+  `flutterwave.ts`, `paystack.ts`, `payunit-initialize`,
+  `flutterwave-verify`/`paystack-verify`/`payunit-verify`/`paddle-verify`.
+- `BillingPage` (SystemPages.tsx) has a real Monthly/Annual toggle above
+  the plan cards; picking Annual updates every plan's displayed price and
+  is passed through `payWithPsp(..., { billingCycle })` to whichever PSP
+  is selected.
+- Every verify edge function now: reads `billing_cycle` from the request,
+  validates the actually-paid amount against the RIGHT tier (monthly or
+  annual price) — never trusts a client-claimed cycle without checking the
+  real charged amount — and extends `current_period_end` by a real
+  calendar year (`setFullYear(+1)`) instead of a month when the cycle is
+  annual. `billing_cycle` itself is now stored correctly on the
+  subscription row (was previously hardcoded to `"monthly"` in all four
+  verify functions, even before annual existed — a latent bug fixed as
+  part of this change).
+- Paddle annual is NOT live yet: Paddle Billing checkouts reference
+  pre-created Price objects, and no annual Price IDs exist for this
+  account yet. `src/lib/paddle.ts` has `PADDLE_PRICE_IDS_ANNUAL` (env-var
+  only, no hardcoded fallback) and `isPaddleAnnualConfigured()` ready to
+  go — create 4 more prices in the Paddle dashboard (Catalog → Prices,
+  billed yearly, one per plan) and set
+  `VITE_PADDLE_PRICE_{PLAN}_ANNUAL` for each once they exist. Until then,
+  selecting Annual + Paddle will fail the same way monthly Paddle did
+  before its Price IDs were set — this is expected, not a regression.
+- All 5 affected edge functions (flutterwave-verify, paystack-verify,
+  paddle-verify, payunit-initialize, payunit-verify) redeployed live via
+  the Supabase MCP connector.

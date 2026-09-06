@@ -48,8 +48,9 @@ export async function initiatePayunitCheckout(params: {
   plan: string;
   orgId: string;
   paymentCountry?: string;
+  billingCycle?: 'monthly' | 'annual';
 }): Promise<{ ok: boolean; transactionUrl?: string; msg?: string }> {
-  const { plan, orgId, paymentCountry } = params;
+  const { plan, orgId, paymentCountry, billingCycle = 'monthly' } = params;
   if (!KNOWN_PLANS.has(plan)) {
     return { ok: false, msg: 'unknown_plan' };
   }
@@ -66,6 +67,7 @@ export async function initiatePayunitCheckout(params: {
         plan,
         org_id: orgId,
         payment_country: paymentCountry,
+        billing_cycle: billingCycle,
         return_url: `${window.location.origin}/app/billing?payunit_status=return`,
       }),
     });

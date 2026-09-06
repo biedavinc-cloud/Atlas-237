@@ -13,11 +13,11 @@ const PAYUNIT_BASE_URL = "https://gateway.payunit.net";
 // currency, matching its CFA-zone mobile money operators), so the USD
 // price is converted to XAF at the real current exchange rate — fetched
 // live from a free, keyless FX API — rather than a fixed/guessed peg.
-const PLAN_PRICES_USD: Record<string, number> = {
-  starter: 19,
-  growth: 49,
-  pro: 119,
-  enterprise: 219,
+const PLAN_PRICES_USD: Record<string, { monthly: number; annual: number }> = {
+  starter: { monthly: 19, annual: 190 },
+  growth: { monthly: 49, annual: 490 },
+  pro: { monthly: 119, annual: 1190 },
+  enterprise: { monthly: 219, annual: 2190 },
 };
 
 async function convertUsdToXaf(usdAmount: number): Promise<number> {
@@ -80,13 +80,15 @@ Deno.serve(async (req: Request) => {
     // read once; calling req.json() a second time throws "Body already
     // consumed" and was the exact cause of checkout failing for every
     // customer trying to pay.
-    const { plan, org_id, payment_country, return_url } = body;
-    const usdPrice = PLAN_PRICES_USD[plan];
-    if (!usdPrice) {
+    const { plan, org_id, payment_country, return_url, billing_cycle } = body;
+    const cycle = billing_cycle === "annual" ? "annual" : "monthly";
+    const prices = PLAN_PRICES_USD[plan];
+    if (!prices) {
       return new Response(JSON.stringify({ ok: false, msg: `Unknown or non-payable plan: ${plan}` }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const usdPrice = prices[cycle];
     const amount = await convertUsdToXaf(usdPrice);
 
     // Verify the caller actually belongs to org_id (org-scoped, mirrors the
@@ -150,7 +152,7 @@ Deno.serve(async (req: Request) => {
       status: "pending",
       price_cents: usdPrice * 100,
       currency: "USD",
-      billing_cycle: "monthly",
+      billing_cycle: cycle,
       payment_provider: "payunit",
       payunit_transaction_id: transactionId,
     }, { onConflict: "org_id" });

@@ -32,11 +32,11 @@ declare global {
 }
 
 
-export const PLAN_PRICES: Record<string, { cents: number; label: string }> = {
-  starter: { cents: 1900, label: 'Starter — $19/mo' },
-  growth: { cents: 4900, label: 'Growth — $49/mo' },
-  pro: { cents: 11900, label: 'Pro — $119/mo' },
-  enterprise: { cents: 21900, label: 'Enterprise — $219/mo' },
+export const PLAN_PRICES: Record<string, { cents: number; annualCents: number; label: string }> = {
+  starter: { cents: 1900, annualCents: 19000, label: 'Starter' },
+  growth: { cents: 4900, annualCents: 49000, label: 'Growth' },
+  pro: { cents: 11900, annualCents: 119000, label: 'Pro' },
+  enterprise: { cents: 21900, annualCents: 219000, label: 'Enterprise' },
 };
 
 export const FLW_PUBLIC_KEY = import.meta.env.VITE_FLW_PUBLIC_KEY as string | undefined;
@@ -86,10 +86,11 @@ export function initiateFlutterwaveCheckout(params: {
   plan: string;
   email: string;
   orgId: string;
+  billingCycle?: 'monthly' | 'annual';
   onSuccess: (txRef: string, paymentId: string) => void;
   onClose: () => void;
 }) {
-  const { plan, email, orgId, onSuccess, onClose } = params;
+  const { plan, email, orgId, billingCycle = 'monthly', onSuccess, onClose } = params;
   const price = PLAN_PRICES[plan];
   if (!price || price.cents === 0) {
     // Defensive fallback only — every plan in PLAN_PRICES currently has a
@@ -98,6 +99,8 @@ export function initiateFlutterwaveCheckout(params: {
     window.location.href = `mailto:sales@liafrik.com?subject=Atlas%20CRM%20Subscription`;
     return;
   }
+  const cents = billingCycle === 'annual' ? price.annualCents : price.cents;
+  const cycleLabel = billingCycle === 'annual' ? '/year' : '/mo';
 
   const txRef = `atlas_${orgId.slice(0, 8)}_${Date.now()}`;
 
@@ -121,12 +124,12 @@ export function initiateFlutterwaveCheckout(params: {
     const modal = window.FlutterwaveCheckout?.({
       public_key: FLW_PUBLIC_KEY,
       tx_ref: txRef,
-      amount: (price.cents / 100).toFixed(2),
+      amount: (cents / 100).toFixed(2),
       currency: 'USD',
       payment_options: 'card, mobilemoneyghana, mobilemoneyrwanda, mobilemoneyuganda, mobilemoneyzambia, mobilemoneytanzania, banktransfer, ussd, qr, credit',
       customer: { email },
       custom_title: 'Atlas CRM Subscription',
-      custom_description: price.label,
+      custom_description: `${price.label} — $${(cents / 100).toFixed(2)}${cycleLabel}`,
       redirect_url: `${window.location.origin}/app/billing?flw_status=success&tx_ref=${txRef}`,
       on_close: () => onClose(),
       callback: (response: FlutterwaveCallbackResponse) => {
@@ -157,6 +160,7 @@ export async function recordSubscription(params: {
   plan: string;
   txRef: string;
   paymentId: string;
+  billingCycle?: 'monthly' | 'annual';
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -166,7 +170,7 @@ export async function recordSubscription(params: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${sessionData.session?.access_token}`,
       },
-      body: JSON.stringify({ org_id: params.orgId, plan: params.plan, tx_ref: params.txRef, transaction_id: params.paymentId }),
+      body: JSON.stringify({ org_id: params.orgId, plan: params.plan, tx_ref: params.txRef, transaction_id: params.paymentId, billing_cycle: params.billingCycle || 'monthly' }),
     });
     const result = await res.json();
     return result.ok ? { success: true } : { success: false, error: result.msg || 'Verification failed' };

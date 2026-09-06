@@ -931,7 +931,7 @@ export function BillingPage() {
   const [verifying, setVerifying] = useState(false);
   const [availablePsps, setAvailablePsps] = useState<PspOption[] | null>(null);
   const [selectedPsp, setSelectedPsp] = useState<string>('');
-  const [checkoutPlan, setCheckoutPlan] = useState<{ name: string; key: string; price: number; features: readonly string[] } | null>(null);
+  const [checkoutPlan, setCheckoutPlan] = useState<{ name: string; key: string; price: number; annualPrice: number; features: readonly string[] } | null>(null);
 
   useEffect(() => { setCurrentPlan(organization?.plan || 'starter'); }, [organization?.plan]);
 
@@ -972,11 +972,12 @@ export function BillingPage() {
     });
   }, [lang]);
 
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const plans = [
-    { name: 'Starter', key: 'starter', price: 19, features: [lang === 'fr' ? '5 employés IA' : '5 AI employees', lang === 'fr' ? '3 utilisateurs' : '3 users', lang === 'fr' ? 'Contacts illimités' : 'Unlimited contacts', lang === 'fr' ? 'Pipelines de ventes' : 'Sales pipelines', lang === 'fr' ? 'Support e-mail' : 'Email support'] },
-    { name: 'Growth', key: 'growth', price: 49, features: [lang === 'fr' ? '15 employés IA' : '15 AI employees', lang === 'fr' ? '10 utilisateurs' : '10 users', lang === 'fr' ? 'Analytique avancée' : 'Advanced analytics', lang === 'fr' ? 'Support prioritaire' : 'Priority support', lang === 'fr' ? 'Accès API & Webhooks' : 'API access & Webhooks'] },
-    { name: 'Pro', key: 'pro', price: 119, features: [lang === 'fr' ? 'Employés IA illimités' : 'Unlimited AI employees', lang === 'fr' ? '25 utilisateurs' : '25 users', lang === 'fr' ? 'Tableaux de bord personnalisés' : 'Custom dashboards', lang === 'fr' ? 'SSO & SAML' : 'SSO & SAML', lang === 'fr' ? 'Support 24/7 + SLA' : '24/7 support + SLA'] },
-    { name: 'Enterprise', key: 'enterprise', price: 219, features: [lang === 'fr' ? 'Tout Pro inclus' : 'Everything in Pro', lang === 'fr' ? 'IA personnalisée' : 'Custom AI training', lang === 'fr' ? 'Utilisateurs illimités' : 'Unlimited users', lang === 'fr' ? 'Gestionnaire dédié' : 'Dedicated manager', lang === 'fr' ? 'Garantie SLA' : 'SLA guarantee'] },
+    { name: 'Starter', key: 'starter', price: 19, annualPrice: 190, features: [lang === 'fr' ? '5 employés IA' : '5 AI employees', lang === 'fr' ? '3 utilisateurs' : '3 users', lang === 'fr' ? 'Contacts illimités' : 'Unlimited contacts', lang === 'fr' ? 'Pipelines de ventes' : 'Sales pipelines', lang === 'fr' ? 'Support e-mail' : 'Email support'] },
+    { name: 'Growth', key: 'growth', price: 49, annualPrice: 490, features: [lang === 'fr' ? '15 employés IA' : '15 AI employees', lang === 'fr' ? '10 utilisateurs' : '10 users', lang === 'fr' ? 'Analytique avancée' : 'Advanced analytics', lang === 'fr' ? 'Support prioritaire' : 'Priority support', lang === 'fr' ? 'Accès API & Webhooks' : 'API access & Webhooks'] },
+    { name: 'Pro', key: 'pro', price: 119, annualPrice: 1190, features: [lang === 'fr' ? 'Employés IA illimités' : 'Unlimited AI employees', lang === 'fr' ? '25 utilisateurs' : '25 users', lang === 'fr' ? 'Tableaux de bord personnalisés' : 'Custom dashboards', lang === 'fr' ? 'SSO & SAML' : 'SSO & SAML', lang === 'fr' ? 'Support 24/7 + SLA' : '24/7 support + SLA'] },
+    { name: 'Enterprise', key: 'enterprise', price: 219, annualPrice: 2190, features: [lang === 'fr' ? 'Tout Pro inclus' : 'Everything in Pro', lang === 'fr' ? 'IA personnalisée' : 'Custom AI training', lang === 'fr' ? 'Utilisateurs illimités' : 'Unlimited users', lang === 'fr' ? 'Gestionnaire dédié' : 'Dedicated manager', lang === 'fr' ? 'Garantie SLA' : 'SLA guarantee'] },
   ] as const;
 
   useEffect(() => { refreshOrg(); }, []);
@@ -990,6 +991,7 @@ export function BillingPage() {
       orgId: organization.id,
       email: session?.user?.email || '',
       paymentCountry: organization.country || undefined,
+      billingCycle,
     });
     if (result.redirected) return; // browser is navigating away to the PSP's hosted page
     if (result.ok) {
@@ -1042,9 +1044,28 @@ export function BillingPage() {
           </p>
         )}
       </div>
+      <div className="mb-6 flex items-center justify-center gap-3">
+        <button
+          onClick={() => setBillingCycle('monthly')}
+          className={`btn-sm rounded-lg font-medium ${billingCycle === 'monthly' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`}
+        >
+          {lang === 'fr' ? 'Mensuel' : 'Monthly'}
+        </button>
+        <button
+          onClick={() => setBillingCycle('annual')}
+          className={`btn-sm rounded-lg font-medium inline-flex items-center gap-1.5 ${billingCycle === 'annual' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`}
+        >
+          {lang === 'fr' ? 'Annuel' : 'Annual'}
+          <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${billingCycle === 'annual' ? 'bg-white text-primary-700' : 'bg-success-100 text-success-700'}`}>
+            {lang === 'fr' ? '2 mois offerts' : '2 months free'}
+          </span>
+        </button>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {plans.map(plan => {
           const isCurrent = plan.key === currentPlan;
+          const displayPrice = billingCycle === 'annual' ? plan.annualPrice : plan.price;
+          const perMonthEquivalent = billingCycle === 'annual' ? (plan.annualPrice / 12).toFixed(0) : null;
           return (
             <div key={plan.name} className={`card p-6 ${isCurrent ? 'border-primary-300 ring-2 ring-primary-100' : ''}`}>
               <div className="flex items-center justify-between">
@@ -1056,8 +1077,11 @@ export function BillingPage() {
                 )}
               </div>
               <p className="text-2xl font-bold text-ink-900 mt-2">
-                {`$${plan.price}/${lang === 'fr' ? 'mois' : 'mo'}`}
+                {`$${displayPrice}/${billingCycle === 'annual' ? (lang === 'fr' ? 'an' : 'yr') : (lang === 'fr' ? 'mois' : 'mo')}`}
               </p>
+              {perMonthEquivalent && (
+                <p className="text-xs text-ink-400">{lang === 'fr' ? `soit $${perMonthEquivalent}/mois` : `≈ $${perMonthEquivalent}/mo`}</p>
+              )}
               <ul className="mt-4 space-y-2">
                 {plan.features.map(f => (
                   <li key={f} className="text-sm text-ink-600 flex items-start gap-2">
@@ -1079,7 +1103,7 @@ export function BillingPage() {
       {checkoutPlan && (
         <PspCheckoutModal
           planLabel={checkoutPlan.name}
-          priceLabel={`$${checkoutPlan.price}/${lang === 'fr' ? 'mois' : 'mo'}`}
+          priceLabel={`$${billingCycle === 'annual' ? checkoutPlan.annualPrice : checkoutPlan.price}/${billingCycle === 'annual' ? (lang === 'fr' ? 'an' : 'yr') : (lang === 'fr' ? 'mois' : 'mo')}`}
           availablePsps={availablePsps || []}
           selectedPsp={selectedPsp}
           onSelect={setSelectedPsp}

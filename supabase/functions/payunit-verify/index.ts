@@ -33,14 +33,15 @@ async function checkStatusAndActivate(authClient: ReturnType<typeof createClient
   // time (before hand-off to PayUnit's hosted page) — never trust an
   // org_id the client could supply directly.
   const { data: sub } = await authClient
-    .from("subscriptions").select("org_id, plan").eq("payunit_transaction_id", transactionId).maybeSingle();
+    .from("subscriptions").select("org_id, plan, billing_cycle").eq("payunit_transaction_id", transactionId).maybeSingle();
   if (!sub) {
     return { ok: false, msg: "No pending transaction found for this id." };
   }
   if (txStatus === "SUCCESS") {
     const now = new Date();
     const periodEnd = new Date(now);
-    periodEnd.setMonth(periodEnd.getMonth() + 1);
+    if (sub.billing_cycle === "annual") periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    else periodEnd.setMonth(periodEnd.getMonth() + 1);
 
     // Writes use the service role — regular authenticated users no
     // longer have direct write access to subscriptions/organizations.plan
