@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ShieldCheck, TrendingUp, Bot, BarChart3,
@@ -64,10 +64,10 @@ const reports = [
 ];
 
 const plans = [
-  { name: 'Starter', monthly: 19, tagline: { fr: 'Pour démarrer', en: 'To get started' }, desc: { fr: 'Ventes, service et marketing avec des agents pré-construits.', en: 'Sales, service and marketing with pre-built agents.' }, cta: { fr: 'Commencer', en: 'Get started' }, popular: false },
-  { name: 'Growth', monthly: 49, tagline: { fr: 'Le plus populaire', en: 'Most popular' }, desc: { fr: 'Automatisation, campagnes et croissance commerciale.', en: 'Automation, campaigns and business growth.' }, cta: { fr: 'Choisir Growth', en: 'Choose Growth' }, popular: true },
-  { name: 'Pro', monthly: 119, tagline: { fr: 'Haute performance', en: 'High performance' }, desc: { fr: 'Analyses IA, support prioritaire et workflows avancés.', en: 'AI analytics, priority support and advanced workflows.' }, cta: { fr: 'Choisir Pro', en: 'Choose Pro' }, popular: false },
-  { name: 'Enterprise', monthly: 219, tagline: { fr: 'Le plus complet', en: 'Most complete' }, desc: { fr: 'Solution dédiée, API illimitée et accompagnement.', en: 'Dedicated solution, unlimited API and support.' }, cta: { fr: 'Choisir Enterprise', en: 'Choose Enterprise' }, popular: false },
+  { name: 'Starter', monthly: 19, annual: 190, tagline: { fr: 'Pour démarrer', en: 'To get started' }, desc: { fr: 'Ventes, service et marketing avec des agents pré-construits.', en: 'Sales, service and marketing with pre-built agents.' }, cta: { fr: 'Commencer', en: 'Get started' }, popular: false },
+  { name: 'Growth', monthly: 49, annual: 490, tagline: { fr: 'Le plus populaire', en: 'Most popular' }, desc: { fr: 'Automatisation, campagnes et croissance commerciale.', en: 'Automation, campaigns and business growth.' }, cta: { fr: 'Choisir Growth', en: 'Choose Growth' }, popular: true },
+  { name: 'Pro', monthly: 119, annual: 1190, tagline: { fr: 'Haute performance', en: 'High performance' }, desc: { fr: 'Analyses IA, support prioritaire et workflows avancés.', en: 'AI analytics, priority support and advanced workflows.' }, cta: { fr: 'Choisir Pro', en: 'Choose Pro' }, popular: false },
+  { name: 'Enterprise', monthly: 219, annual: 2190, tagline: { fr: 'Le plus complet', en: 'Most complete' }, desc: { fr: 'Solution dédiée, API illimitée et accompagnement.', en: 'Dedicated solution, unlimited API and support.' }, cta: { fr: 'Choisir Enterprise', en: 'Choose Enterprise' }, popular: false },
 ];
 
 type Row = { label: { fr: string; en: string }; values: (boolean | string)[] };
@@ -93,18 +93,19 @@ export function LandingPage() {
   // La page d'accueil n'a de copy qu'en fr/en ; on retombe sur 'en' pour les autres langues
   // pour éviter un contenu vide si le profil utilisateur est en es/pt/ar.
   const contentLang: 'fr' | 'en' = lang === 'fr' ? 'fr' : 'en';
-  // Pricing is a flat monthly amount per organization, charged the same
-  // way every time by every PSP (Flutterwave/Paystack/PayUnit — see
-  // src/lib/plans.ts PLAN_PRICES and each PSP's checkout code). There is
-  // no annual billing option anywhere in the real checkout flow
-  // (PayUnit's edge function even hardcodes billing_cycle: "monthly"), so
-  // this page must never advertise one — an "Annual, -17%" toggle used to
-  // sit here showing a discounted yearly price purely for display, with
-  // zero connection to what a customer would actually be charged after
-  // signing up. Don't reintroduce an annual price display without first
-  // building real annual billing all the way through checkout.
+  // Pricing is a flat amount per organization. Annual billing (2 months
+  // free, i.e. annual = monthly x10) is real end to end for Flutterwave,
+  // Paystack, and PayUnit — see src/lib/plans.ts PLAN_PRICES and each
+  // PSP's verify function, which validates the actually-charged amount
+  // against the right tier before activating anything. Paddle annual is
+  // NOT live yet (needs 4 more Price IDs created in Paddle's dashboard —
+  // see AGENTS.md); Paddle still works fine for monthly. If you touch
+  // this toggle, keep it wired to something real — this replaced an
+  // earlier version that showed a discounted annual price with zero
+  // connection to what a customer was actually charged at checkout.
   useScrollReveal();
-  const price = (m: number | null) => (m === null ? (lang === 'fr' ? 'Sur devis' : 'Custom') : `$${m}/${lang === 'fr' ? 'mois' : 'mo'}`);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  const price = (m: number | null) => (m === null ? (lang === 'fr' ? 'Sur devis' : 'Custom') : `$${m}/${billingCycle === 'annual' ? (lang === 'fr' ? 'an' : 'yr') : (lang === 'fr' ? 'mois' : 'mo')}`);
 
   const matrixGroups: { group: { fr: string; en: string }; rows: Row[] }[] = [
     {
@@ -437,6 +438,23 @@ export function LandingPage() {
             <div className="reveal mx-auto max-w-2xl text-center">
               <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Une tarification claire et transparente' : 'Clear and transparent pricing'}</h2>
               <p className="mt-4 text-ink-600">{lang === 'fr' ? 'Choisissez le plan adapté à votre croissance.' : 'Choose the plan that fits your growth.'}</p>
+              <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white p-1">
+                <button
+                  onClick={() => setBillingCycle('monthly')}
+                  className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${billingCycle === 'monthly' ? 'bg-primary-600 text-white' : 'text-ink-500 hover:text-ink-800'}`}
+                >
+                  {lang === 'fr' ? 'Mensuel' : 'Monthly'}
+                </button>
+                <button
+                  onClick={() => setBillingCycle('annual')}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition ${billingCycle === 'annual' ? 'bg-primary-600 text-white' : 'text-ink-500 hover:text-ink-800'}`}
+                >
+                  {lang === 'fr' ? 'Annuel' : 'Annual'}
+                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${billingCycle === 'annual' ? 'bg-white text-primary-700' : 'bg-success-100 text-success-700'}`}>
+                    {lang === 'fr' ? '2 mois offerts' : '2 months free'}
+                  </span>
+                </button>
+              </div>
             </div>
             <div className="mt-12 grid gap-6 lg:grid-cols-4">
               {plans.map((plan) => (
@@ -446,8 +464,12 @@ export function LandingPage() {
                   {!plan.popular && <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-primary-600">{plan.tagline[contentLang]}</p>}
                   <p className="mt-3 min-h-[2.5rem] text-sm leading-6 text-ink-600">{plan.desc[contentLang]}</p>
                   <div className="mt-5">
-                    <p className="text-3xl font-bold text-ink-950">{price(plan.monthly)}</p>
-                    {plan.monthly !== null && <p className="mt-1 text-xs text-ink-400">{lang === 'fr' ? 'par organisation, facturation mensuelle' : 'per organization, billed monthly'}</p>}
+                    <p className="text-3xl font-bold text-ink-950">{price(billingCycle === 'annual' ? plan.annual : plan.monthly)}</p>
+                    <p className="mt-1 text-xs text-ink-400">
+                      {billingCycle === 'annual'
+                        ? (lang === 'fr' ? `par organisation, facturation annuelle (soit $${(plan.annual / 12).toFixed(0)}/mois)` : `per organization, billed annually (≈ $${(plan.annual / 12).toFixed(0)}/mo)`)
+                        : (lang === 'fr' ? 'par organisation, facturation mensuelle' : 'per organization, billed monthly')}
+                    </p>
                   </div>
                   <Link to="/auth" className={`mt-7 inline-flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition ${plan.popular ? 'bg-primary-600 text-white hover:bg-primary-700' : 'bg-ink-950 text-white hover:bg-ink-800'}`}>{plan.cta[contentLang]} <ArrowRight size={14} /></Link>
                 </div>
