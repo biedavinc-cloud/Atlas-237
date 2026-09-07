@@ -893,3 +893,30 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
 - All 5 affected edge functions (flutterwave-verify, paystack-verify,
   paddle-verify, payunit-initialize, payunit-verify) redeployed live via
   the Supabase MCP connector.
+
+## Removed: @liafrik.com domain auto-admin rule (Sep 2026)
+- Earlier session had a deliberate but org-reversed rule: `is_super_admin()`
+  granted full super admin to ANY confirmed `@liafrik.com` email
+  automatically, and a trigger (`on_auth_user_created_liafrik_admin` on
+  `auth.users`) auto-inserted a `super_admins` row for every new
+  `@liafrik.com` signup — no manual approval step either way.
+- Found during a dedicated Super Admin security audit and explicitly
+  reversed at the org's direction: `@liafrik.com` is reserved for
+  customer service / other staff roles, NOT automatic admin access.
+  Super admin status now comes ONLY from an explicit, active row in
+  `public.super_admins` — added manually via the Super Admin → Staff
+  page (real, already-working UI: insert by email, `link_super_admin()`
+  binds it to the real `user_id` on that person's first login, founder
+  removal is extra-protected, minimum 2 active admins enforced). Migration
+  `038` (applied live) drops the trigger and rewrites `is_super_admin()`
+  to remove the domain-based branch.
+- If a future session considers re-adding a domain-wide trust rule for any
+  reason, confirm with the org first — this was explicitly and
+  deliberately removed, not an oversight to "fix" back.
+- Full Super Admin RLS audit at the same time (all confirmed solid, no
+  changes needed): `super_admins`, `platform_staff`, `platform_audit_log`,
+  `platform_revenue`, `platform_expenses` are correctly locked (active
+  staff can read revenue/expenses for internal visibility, only super
+  admins can write); `admin_extend_org_access`/`admin_set_org_access_until`/
+  `admin_set_org_plan` all correctly gate on `is_super_admin(auth.uid())`
+  internally before doing anything.
