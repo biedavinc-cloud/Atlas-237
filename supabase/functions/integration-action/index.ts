@@ -275,19 +275,45 @@ Deno.serve(async (req: Request) => {
 
   try {
     const authHeader = req.headers.get("Authorization") || "";
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-    const { data: userData, error: userErr } = await supabaseClient.auth.getUser();
-    if (userErr || !userData.user) {
-      return new Response(JSON.stringify({ ok: false, msg: "Not authenticated" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    // Two ways to call this function:
+    // 1. Normal: a signed-in user's own JWT — org is derived from RLS via
+    //    that user's session, exactly as before.
+    // 2. Internal only: the real service role key as the Bearer token,
+    //    used exclusively by run-scheduled-workflows (never exposed to a
+    //    browser) — since there's no signed-in user in a cron context,
+    //    the caller must explicitly pass org_id, and RLS is bypassed
+    //    deliberately (service role), scoped by that explicit org_id on
+    //    every query below rather than inferred from a session.
+    const isInternalCall = serviceRoleKey.length > 0 && authHeader === `Bearer ${serviceRoleKey}`;
+
+    let supabaseClient;
+    let callerOrgId: string | null = null;
+    if (isInternalCall) {
+      supabaseClient = createClient(Deno.env.get("SUPABASE_URL")!, serviceRoleKey);
+    } else {
+      supabaseClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const { data: userData, error: userErr } = await supabaseClient.auth.getUser();
+      if (userErr || !userData.user) {
+        return new Response(JSON.stringify({ ok: false, msg: "Not authenticated" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
-    const { action, params, integration_id } = await req.json();
+    const { action, params, integration_id, org_id } = await req.json();
+    if (isInternalCall) {
+      if (!org_id) {
+        return new Response(JSON.stringify({ ok: false, msg: "Missing org_id for internal call" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      callerOrgId = org_id;
+    }
     if (!action) {
       return new Response(JSON.stringify({ ok: false, msg: "Missing action" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -303,7 +329,9 @@ Deno.serve(async (req: Request) => {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const { data: integ } = await supabaseClient.from("integrations").select("config").eq("id", integration_id).eq("status", "connected").maybeSingle();
+      let integQuery = supabaseClient.from("integrations").select("config").eq("id", integration_id).eq("status", "connected");
+      if (isInternalCall) integQuery = integQuery.eq("org_id", callerOrgId);
+      const { data: integ } = await integQuery.maybeSingle();
       if (!integ) {
         return new Response(JSON.stringify({ ok: false, msg: "That custom app is not connected for this organization." }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -320,7 +348,9 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { data: integ } = await supabaseClient.from("integrations").select("config").eq("provider", handler.provider).eq("status", "connected").maybeSingle();
+    let integQuery = supabaseClient.from("integrations").select("config").eq("provider", handler.provider).eq("status", "connected");
+    if (isInternalCall) integQuery = integQuery.eq("org_id", callerOrgId);
+    const { data: integ } = await integQuery.maybeSingle();
     if (!integ) {
       return new Response(JSON.stringify({ ok: false, msg: `${handler.provider} is not connected for this organization.` }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },

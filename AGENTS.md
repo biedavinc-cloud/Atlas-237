@@ -920,3 +920,14 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   admins can write); `admin_extend_org_access`/`admin_set_org_access_until`/
   `admin_set_org_plan` all correctly gate on `is_super_admin(auth.uid())`
   internally before doing anything.
+
+## Paddle annual billing — now fully live (Sep 2026)
+- The 4 real annual Price IDs were created in the Paddle dashboard and
+  are now set as defaults in src/lib/paddle.ts, same pattern as the
+  monthly ones: Starter (pri_01m219ewv01df2azda6p2s21fg), Growth
+  (pri_01m219g8ejmh03bntqcfhx1rwf), Pro (pri_01m219hdz50gsc3hbvc2s4y05h),
+  Enterprise (pri_01m219jf6jvz5wmngpx06p8znd).
+- Paddle is now the 4th PSP with real annual billing working end to end,
+  alongside Flutterwave/Paystack/PayUnit (see "Annual billing" section
+  above). `isPaddleAnnualConfigured()` now returns true; no further setup
+  needed on the Paddle side.

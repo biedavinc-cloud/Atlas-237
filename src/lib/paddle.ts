@@ -33,10 +33,10 @@ const PADDLE_PRICE_IDS: Record<string, string | undefined> = {
  * without real config" rule as everywhere else in this PSP registry.
  */
 const PADDLE_PRICE_IDS_ANNUAL: Record<string, string | undefined> = {
-  starter: import.meta.env.VITE_PADDLE_PRICE_STARTER_ANNUAL as string | undefined,
-  growth: import.meta.env.VITE_PADDLE_PRICE_GROWTH_ANNUAL as string | undefined,
-  pro: import.meta.env.VITE_PADDLE_PRICE_PRO_ANNUAL as string | undefined,
-  enterprise: import.meta.env.VITE_PADDLE_PRICE_ENTERPRISE_ANNUAL as string | undefined,
+  starter: (import.meta.env.VITE_PADDLE_PRICE_STARTER_ANNUAL as string | undefined) || 'pri_01m219ewv01df2azda6p2s21fg',
+  growth: (import.meta.env.VITE_PADDLE_PRICE_GROWTH_ANNUAL as string | undefined) || 'pri_01m219g8ejmh03bntqcfhx1rwf',
+  pro: (import.meta.env.VITE_PADDLE_PRICE_PRO_ANNUAL as string | undefined) || 'pri_01m219hdz50gsc3hbvc2s4y05h',
+  enterprise: (import.meta.env.VITE_PADDLE_PRICE_ENTERPRISE_ANNUAL as string | undefined) || 'pri_01m219jf6jvz5wmngpx06p8znd',
 };
 
 export function isPaddleAnnualConfigured() {
