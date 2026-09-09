@@ -1,7 +1,6 @@
 # Atlas-237
 
-[![Open in Bolt](https://bolt.new/static/open-in-bolt.svg)](https://bolt.new/~/sb1-pgcwubqg)
-
+Dev by Liafrik  www.liafrik.com
 Atlas CRM — AI Business Management Platform (React + Vite + Tailwind + Supabase).
 
 ## Develop
