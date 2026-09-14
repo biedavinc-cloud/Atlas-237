@@ -24,7 +24,9 @@ function GoogleIcon({ size = 18 }: { size?: number }) {
 
 export function AuthPage() {
   useHreflangLinks('/auth');
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'reset'>('login');
+  const [newPassword, setNewPassword] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -60,6 +62,35 @@ export function AuthPage() {
     }
   }, []);
 
+  useEffect(() => {
+    // Supabase fires this real event once the person clicks the link in
+    // the password-reset email and lands back here with a valid recovery
+    // token in the URL — it's how we know to show "set a new password"
+    // instead of the normal login form.
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setMode('reset');
+        setError('');
+        setMessage('');
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  async function submitNewPassword() {
+    if (newPassword.length < 8) {
+      setError(lang === 'fr' ? 'Le mot de passe doit contenir au moins 8 caractères.' : 'Password must be at least 8 characters.');
+      return;
+    }
+    setResettingPassword(true);
+    setError('');
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setResettingPassword(false);
+    if (error) { setError(error.message); return; }
+    setMessage(lang === 'fr' ? 'Mot de passe mis à jour. Vous êtes connecté.' : 'Password updated. You are now signed in.');
+    setTimeout(() => navigate('/app'), 1200);
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
@@ -86,6 +117,7 @@ export function AuthPage() {
           password,
           options: {
             data: { first_name: firstName, last_name: lastName, company_name: companyName, country, currency, timezone, sales_code: salesCode },
+            emailRedirectTo: `${window.location.origin}/app`,
           },
         });
         if (error) throw error;
@@ -96,7 +128,9 @@ export function AuthPage() {
           setMode('login');
         }
       } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email);
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth`,
+        });
         if (error) throw error;
         setMessage(t('auth.resetSent', lang));
       }
@@ -281,10 +315,10 @@ export function AuthPage() {
           <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-6 sm:py-8">
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-ink-950 sm:text-3xl">
-                {mode === 'login' ? t('auth.welcome', lang) : mode === 'signup' ? t('auth.createAccount', lang) : t('auth.resetPassword', lang)}
+                {mode === 'login' ? t('auth.welcome', lang) : mode === 'signup' ? t('auth.createAccount', lang) : mode === 'reset' ? (lang === 'fr' ? 'Choisir un nouveau mot de passe' : 'Choose a new password') : t('auth.resetPassword', lang)}
               </h1>
               <p className="mt-2 text-sm text-ink-500">
-                {mode === 'forgot' ? t('auth.forgotInstruction', lang) : t('auth.trialNote', lang)}
+                {mode === 'forgot' ? t('auth.forgotInstruction', lang) : mode === 'reset' ? (lang === 'fr' ? 'Choisissez un mot de passe robuste pour votre compte.' : 'Choose a strong password for your account.') : t('auth.trialNote', lang)}
               </p>
             </div>
 
@@ -301,6 +335,32 @@ export function AuthPage() {
               </div>
             )}
 
+            {mode === 'reset' ? (
+              <div className="mt-7 space-y-4">
+                <label className="block">
+                  <span className="label">{lang === 'fr' ? 'Nouveau mot de passe' : 'New password'}</span>
+                  <input
+                    type="password"
+                    className="input"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    minLength={8}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={submitNewPassword}
+                  disabled={resettingPassword || newPassword.length < 8}
+                  className="btn-primary w-full btn-lg"
+                >
+                  {resettingPassword && <Loader2 size={18} className="animate-spin" />}
+                  {lang === 'fr' ? 'Mettre à jour le mot de passe' : 'Update password'}
+                  {!resettingPassword && <ArrowRight size={18} />}
+                </button>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="mt-7 space-y-4">
               {mode === 'signup' && (
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -426,8 +486,9 @@ export function AuthPage() {
                 {!submitting && <ArrowRight size={18} />}
               </button>
             </form>
+            )}
 
-            {mode !== 'forgot' && (
+            {mode !== 'forgot' && mode !== 'reset' && (
               <div className="mt-6 flex items-center gap-3">
                 <div className="h-px flex-1 bg-ink-100" />
                 <span className="text-xs font-medium uppercase tracking-wide text-ink-400">{t('auth.or', lang)}</span>
@@ -435,7 +496,7 @@ export function AuthPage() {
               </div>
             )}
 
-            {mode !== 'forgot' && (
+            {mode !== 'forgot' && mode !== 'reset' && (
               <button
                 type="button"
                 onClick={handleGoogle}
@@ -455,7 +516,7 @@ export function AuthPage() {
             )}
 
             <div className="mt-8 border-t border-ink-100 pt-6 text-center text-sm text-ink-600">
-              {mode === 'forgot' ? (
+              {mode === 'reset' ? null : mode === 'forgot' ? (
                 <button onClick={() => { setMode('login'); setError(''); setMessage(''); }} className="font-semibold text-primary-700 hover:text-primary-800 transition-colors">
                   {t('auth.backToLogin', lang)}
                 </button>

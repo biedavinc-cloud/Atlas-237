@@ -931,3 +931,25 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   alongside Flutterwave/Paystack/PayUnit (see "Annual billing" section
   above). `isPaddleAnnualConfigured()` now returns true; no further setup
   needed on the Paddle side.
+
+## Real bug fixed: password reset sent users to localhost:3000 (Sep 2026)
+- Two real code bugs, not a dashboard-only issue: `resetPasswordForEmail(email)`
+  and `signUp(...)` were both called with no `redirectTo`/`emailRedirectTo`
+  option at all — Supabase falls back entirely to the project's "Site URL"
+  dashboard setting in that case, which defaults to `http://localhost:3000`
+  and has to be manually changed. Fixed by passing the real, current origin
+  explicitly on both calls (`${window.location.origin}/auth` and `/app`),
+  so the correct link is generated regardless of what the dashboard Site
+  URL happens to be set to.
+- A second, bigger gap: there was no actual "set a new password" screen at
+  all — clicking the reset link had nowhere real to land. AuthPage now
+  listens for Supabase's real `PASSWORD_RECOVERY` auth event (fired
+  automatically when the link is clicked and a recovery session is
+  established) and switches to a dedicated `reset` mode: a simple
+  new-password form that calls `supabase.auth.updateUser({ password })` —
+  a real, complete password-reset flow end to end, not just a fixed link.
+- Still worth checking in the Supabase dashboard (Authentication → URL
+  Configuration): the project's "Site URL" and "Redirect URLs" allow-list
+  should include the real production domain (`https://atlas.liafrik.com`)
+  as a good practice/defense-in-depth, even though the code no longer
+  depends on it for these two flows specifically.

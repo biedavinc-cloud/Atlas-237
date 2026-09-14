@@ -159,6 +159,16 @@ export function ApprovalsPage() {
   );
 }
 
+/** Mirrors computeNextRun() in supabase/functions/run-scheduled-workflows — keep both in sync if intervals change. */
+function computeInitialNextRun(interval: string): string {
+  const next = new Date();
+  if (interval === 'hourly') next.setHours(next.getHours() + 1);
+  else if (interval === 'weekly') next.setDate(next.getDate() + 7);
+  else if (interval === 'monthly') next.setMonth(next.getMonth() + 1);
+  else next.setDate(next.getDate() + 1);
+  return next.toISOString();
+}
+
 export function AIWorkflowsPage() {
   const { language, profile } = useAuth();
   const lang = language;
@@ -172,6 +182,7 @@ export function AIWorkflowsPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [triggerType, setTriggerType] = useState('manual');
+  const [scheduleInterval, setScheduleInterval] = useState('daily');
   const [enabled, setEnabled] = useState(true);
   const [actions, setActions] = useState<WorkflowAction[]>([]);
   const [saving, setSaving] = useState(false);
@@ -202,14 +213,14 @@ export function AIWorkflowsPage() {
 
   function openCreate() {
     setEditing(null);
-    setName(''); setDescription(''); setTriggerType('manual'); setEnabled(true); setAgentId('');
+    setName(''); setDescription(''); setTriggerType('manual'); setScheduleInterval('daily'); setEnabled(true); setAgentId('');
     setActions([{ type: 'create_task', title: '' }]);
     setModalOpen(true);
   }
 
   function openEdit(wf: WorkflowType) {
     setEditing(wf);
-    setName(wf.name); setDescription(wf.description || ''); setTriggerType(wf.trigger_type || 'manual'); setEnabled(wf.enabled); setAgentId(wf.agent_id || '');
+    setName(wf.name); setDescription(wf.description || ''); setTriggerType(wf.trigger_type || 'manual'); setScheduleInterval((wf.trigger_config as Record<string, string> | null)?.schedule_interval || 'daily'); setEnabled(wf.enabled); setAgentId(wf.agent_id || '');
     setActions((Array.isArray(wf.actions) && wf.actions.length > 0 ? wf.actions : [{ type: 'create_task', title: '' }]) as WorkflowAction[]);
     setModalOpen(true);
   }
@@ -221,10 +232,13 @@ export function AIWorkflowsPage() {
   async function save() {
     if (!name.trim()) return;
     setSaving(true);
+    const nextRunAt = triggerType === 'schedule' ? computeInitialNextRun(scheduleInterval) : null;
     const payload = {
       name: name.trim(),
       description: description.trim() || null,
       trigger_type: triggerType,
+      trigger_config: triggerType === 'schedule' ? { schedule_interval: scheduleInterval } : {},
+      next_run_at: nextRunAt,
       enabled,
       actions,
       agent_id: agentId || null,
@@ -340,9 +354,20 @@ export function AIWorkflowsPage() {
                 <option value="event">{t('status.event', lang)}</option>
                 <option value="webhook">{t('status.webhook', lang)}</option>
               </select>
-              {triggerType !== 'manual' && (
-                <p className="text-xs text-ink-400 mt-1">
-                  {lang === 'fr' ? 'Seul le déclenchement manuel ("Exécuter") lance réellement ce flux aujourd\'hui — planification et écoute d\'événements ne sont pas encore automatisées.' : 'Only the manual trigger ("Run now") actually runs this workflow today — scheduled and event-based triggers aren\'t automated yet.'}
+              {triggerType === 'schedule' && (
+                <>
+                  <select className="input mt-2" value={scheduleInterval} onChange={e => setScheduleInterval(e.target.value)}>
+                    <option value="hourly">{lang === 'fr' ? 'Toutes les heures' : 'Hourly'}</option>
+                    <option value="daily">{lang === 'fr' ? 'Chaque jour' : 'Daily'}</option>
+                    <option value="weekly">{lang === 'fr' ? 'Chaque semaine' : 'Weekly'}</option>
+                    <option value="monthly">{lang === 'fr' ? 'Chaque mois' : 'Monthly'}</option>
+                  </select>
+                  <p className="text-xs text-ink-400 mt-1">{lang === 'fr' ? "Ce flux s'exécutera automatiquement selon cet intervalle, réellement — vérifié toutes les 5 minutes par une tâche planifiée." : "This workflow will actually run automatically on this interval — checked every 5 minutes by a real scheduled job."}</p>
+                </>
+              )}
+              {(triggerType === 'event' || triggerType === 'webhook') && (
+                <p className="text-xs text-warning-600 mt-1">
+                  {lang === 'fr' ? "L'écoute d'événements/webhooks entrants n'est pas encore automatisée — seule la planification (\"Schedule\") et l'exécution manuelle fonctionnent réellement aujourd'hui." : "Listening for incoming events/webhooks isn't automated yet — only scheduling and the manual trigger actually run today."}
                 </p>
               )}
             </div>

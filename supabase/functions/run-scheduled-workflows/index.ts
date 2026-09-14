@@ -16,6 +16,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+// Dedicated shared secret for the pg_cron job (migration 041) to call this
+// function — NOT the service role key. There's no way to read the real
+// service role key's value or set a new project secret through the tools
+// available in this session, so a purpose-built secret generated once and
+// embedded on both sides (here, and in the matching pg_cron SQL call) is
+// the pragmatic alternative. Low severity if ever exposed: the worst case
+// is a scheduled workflow running a bit early or extra, not a
+// data-isolation breach — every workflow's own org_id (read from its own
+// DB row, never from the caller) still scopes all of its actions
+// correctly regardless of who or what triggered this check.
+const CRON_SECRET = "da73caf38062ff5e07e232f3e5396ad73708ca4b592962e24d1ce07257bc6ec3";
+
 interface WorkflowAction {
   type: string;
   title?: string;
@@ -37,7 +49,7 @@ interface RunStep {
 // sync deliberately; adding an action type to one without the other means
 // "Run now" and scheduled runs would disagree on what a workflow can do.
 const INTEGRATION_ACTION_TYPES = new Set([
-  "send_telegram", "send_sms", "mailchimp_subscribe", "send_whatsapp",
+  "send_telegram", "send_sms", "mailchimp_subscribe", "send_whatsapp", "send_email",
   "hubspot_upsert_contact", "freshdesk_create_ticket", "mollie_create_payment",
   "cinetpay_create_payment", "wave_create_checkout", "chapa_initialize",
   "campay_collect", "shopify_create_customer", "woocommerce_create_customer",
@@ -100,7 +112,7 @@ Deno.serve(async (req: Request) => {
 
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const authHeader = req.headers.get("Authorization") || "";
-  if (!serviceRoleKey || authHeader !== `Bearer ${serviceRoleKey}`) {
+  if (authHeader !== `Bearer ${CRON_SECRET}`) {
     return new Response(JSON.stringify({ ok: false, msg: "Forbidden — internal function" }), {
       status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -95,6 +95,7 @@ const AVAILABLE_APPS: AppDef[] = [
   { provider: 'zendesk', name: 'Zendesk', category: 'Support', authType: 'oauth', docsUrl: 'https://developer.zendesk.com' },
   { provider: 'intercom', name: 'Intercom', category: 'Support', authType: 'oauth', docsUrl: 'https://developers.intercom.com' },
   { provider: 'freshdesk', name: 'Freshdesk', category: 'Support', authType: 'api_key', configFields: [{ key: 'api_key', label: 'API Key', placeholder: 'xxx', type: 'password' }, { key: 'domain', label: 'Domain', placeholder: 'yourcompany.freshdesk.com' }], docsUrl: 'https://developers.freshdesk.com' },
+  { provider: 'resend', name: 'Resend (Email)', category: 'Communication', authType: 'api_key', configFields: [{ key: 'api_key', label: 'API Key', placeholder: 're_xxx', type: 'password' }, { key: 'from_email', label: 'From email', placeholder: 'notifications@yourdomain.com' }], docsUrl: 'https://resend.com/docs' },
 
   // Communication / Messaging
   { provider: 'facebook_messenger', name: 'Facebook Messenger', category: 'Messaging', authType: 'oauth', docsUrl: 'https://developers.facebook.com/docs/messenger-platform' },

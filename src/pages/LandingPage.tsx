@@ -122,8 +122,10 @@ export function LandingPage() {
       rows: [
         { label: { fr: 'Agents IA pré-construits' , en: 'Pre-built AI agents' }, values: [true, true, true, true] },
         { label: { fr: 'Automations / workflows', en: 'Automations / workflows' }, values: [false, true, true, true] },
+        { label: { fr: 'Accès API & Webhooks', en: 'API access & Webhooks' }, values: [false, true, true, true] },
         { label: { fr: 'Analyses prédictives', en: 'Predictive analytics' }, values: [false, false, true, true] },
         { label: { fr: 'Tableaux de bord personnalisés', en: 'Custom dashboards' }, values: [false, false, true, true] },
+        { label: { fr: 'IA personnalisée', en: 'Custom AI training' }, values: [false, false, false, true] },
       ],
     },
     {
@@ -138,6 +140,7 @@ export function LandingPage() {
       group: { fr: 'Sécurité & Administration', en: 'Security & Administration' },
       rows: [
         { label: { fr: 'Marque personnalisée', en: 'Custom branding' }, values: [false, true, true, true] },
+        { label: { fr: 'Rôles & permissions personnalisés', en: 'Custom roles & permissions' }, values: [false, true, true, true] },
         { label: { fr: 'SSO / SAML', en: 'SSO / SAML' }, values: [false, false, true, true] },
         { label: { fr: 'Journal d\'audit', en: 'Audit log' }, values: [false, true, true, true] },
         { label: { fr: 'Support dédié', en: 'Dedicated support' }, values: ['Email', lang === 'fr' ? 'Prioritaire' : 'Priority', '24/7', lang === 'fr' ? 'Délégué' : 'Dedicated'] },

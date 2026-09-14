@@ -130,6 +130,14 @@ async function verifyFreshdesk(config: Record<string, string>): Promise<VerifyRe
   return { ok: res.ok, message: res.ok ? undefined : `Freshdesk returned HTTP ${res.status}.` };
 }
 
+async function verifyResend(config: Record<string, string>): Promise<VerifyResult> {
+  const res = await fetch("https://api.resend.com/domains", {
+    headers: { Authorization: `Bearer ${config.api_key}` },
+  });
+  if (res.status === 401 || res.status === 403) return { ok: false, message: "Resend rejected this API key." };
+  return { ok: res.ok, message: res.ok ? undefined : `Resend returned HTTP ${res.status}.` };
+}
+
 const VERIFIERS: Record<string, (config: Record<string, string>) => Promise<VerifyResult>> = {
   openai: verifyOpenAI,
   anthropic: verifyAnthropic,
@@ -144,6 +152,7 @@ const VERIFIERS: Record<string, (config: Record<string, string>) => Promise<Veri
   calendly: verifyCalendly,
   telegram: verifyTelegram,
   freshdesk: verifyFreshdesk,
+  resend: verifyResend,
 };
 
 Deno.serve(async (req: Request) => {

@@ -85,5 +85,5 @@ export function validateKeyFormat(provider: string, configData: Record<string, s
 /** Providers with a real live-verification call in the verify-integration-key edge function. */
 export const LIVE_VERIFIABLE_PROVIDERS = new Set([
   'openai', 'anthropic', 'gemini', 'stripe', 'twilio', 'shopify', 'hubspot',
-  'mailchimp', 'flutterwave', 'paystack', 'calendly', 'telegram', 'freshdesk',
+  'mailchimp', 'flutterwave', 'paystack', 'calendly', 'telegram', 'freshdesk', 'resend',
 ]);

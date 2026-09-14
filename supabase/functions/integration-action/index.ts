@@ -101,6 +101,25 @@ async function sendWhatsapp(config: Record<string, string>, params: Record<strin
   return { ok: res.ok, msg: res.ok ? `Sent (id ${body?.messages?.[0]?.id || "?"})` : (body?.error?.message || `WhatsApp HTTP ${res.status}`) };
 }
 
+async function sendEmail(config: Record<string, string>, params: Record<string, unknown>): Promise<ActionResult> {
+  const to = params.to;
+  const subject = params.subject;
+  const message = params.message;
+  if (!to || !subject || !message) return { ok: false, msg: "Missing to, subject, or message" };
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${config.api_key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: config.from_email,
+      to: [String(to)],
+      subject: String(subject),
+      text: String(message),
+    }),
+  });
+  const body = await res.json().catch(() => null);
+  return { ok: res.ok, msg: res.ok ? `Sent (id ${body?.id || "?"})` : (body?.message || `Resend HTTP ${res.status}`) };
+}
+
 async function hubspotUpsertContact(config: Record<string, string>, params: Record<string, unknown>): Promise<ActionResult> {
   const email = params.email;
   if (!email) return { ok: false, msg: "Missing email" };
@@ -257,6 +276,7 @@ const ACTIONS: Record<string, { provider: string; run: (config: Record<string, s
   send_sms: { provider: "twilio", run: sendSms },
   mailchimp_subscribe: { provider: "mailchimp", run: mailchimpSubscribe },
   send_whatsapp: { provider: "whatsapp", run: sendWhatsapp },
+  send_email: { provider: "resend", run: sendEmail },
   hubspot_upsert_contact: { provider: "hubspot", run: hubspotUpsertContact },
   freshdesk_create_ticket: { provider: "freshdesk", run: freshdeskCreateTicket },
   mollie_create_payment: { provider: "mollie", run: mollieCreatePayment },

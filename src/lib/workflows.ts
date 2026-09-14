@@ -14,7 +14,7 @@ import type { Workflow } from '@/types';
 export type WorkflowActionType =
   | 'create_task' | 'create_notification' | 'trigger_webhook'
   | 'send_telegram' | 'send_sms' | 'mailchimp_subscribe' | 'call_custom_app'
-  | 'send_whatsapp' | 'hubspot_upsert_contact' | 'freshdesk_create_ticket'
+  | 'send_whatsapp' | 'send_email' | 'hubspot_upsert_contact' | 'freshdesk_create_ticket'
   | 'mollie_create_payment' | 'cinetpay_create_payment' | 'wave_create_checkout'
   | 'chapa_initialize' | 'campay_collect' | 'shopify_create_customer' | 'woocommerce_create_customer';
 
@@ -48,6 +48,7 @@ export const WORKFLOW_ACTION_TYPES: { value: WorkflowActionType; label: { fr: st
   { value: 'send_telegram', label: { fr: 'Envoyer un message Telegram', en: 'Send a Telegram message' } },
   { value: 'send_sms', label: { fr: 'Envoyer un SMS (Twilio)', en: 'Send an SMS (Twilio)' } },
   { value: 'send_whatsapp', label: { fr: 'Envoyer un message WhatsApp', en: 'Send a WhatsApp message' } },
+  { value: 'send_email', label: { fr: 'Envoyer un email', en: 'Send an email' } },
   { value: 'mailchimp_subscribe', label: { fr: 'Ajouter à une liste Mailchimp', en: 'Add to a Mailchimp list' } },
   { value: 'hubspot_upsert_contact', label: { fr: 'Créer un contact HubSpot', en: 'Create a HubSpot contact' } },
   { value: 'freshdesk_create_ticket', label: { fr: 'Créer un ticket Freshdesk', en: 'Create a Freshdesk ticket' } },
@@ -67,6 +68,7 @@ export const WORKFLOW_ACTION_PROVIDER: Partial<Record<WorkflowActionType, string
   send_sms: 'twilio',
   mailchimp_subscribe: 'mailchimp',
   send_whatsapp: 'whatsapp',
+  send_email: 'resend',
   hubspot_upsert_contact: 'hubspot',
   freshdesk_create_ticket: 'freshdesk',
   mollie_create_payment: 'mollie',
@@ -86,6 +88,11 @@ export const WORKFLOW_PARAM_FIELDS: Partial<Record<WorkflowActionType, { key: st
   ],
   send_whatsapp: [
     { key: 'to', label: { fr: 'Numéro (avec indicatif)', en: 'Phone number (with country code)' }, placeholder: '2376xxxxxxxx' },
+    { key: 'message', label: { fr: 'Message', en: 'Message' } },
+  ],
+  send_email: [
+    { key: 'to', label: { fr: 'Destinataire', en: 'To (email)' }, placeholder: 'client@exemple.com' },
+    { key: 'subject', label: { fr: 'Sujet', en: 'Subject' } },
     { key: 'message', label: { fr: 'Message', en: 'Message' } },
   ],
   mailchimp_subscribe: [
