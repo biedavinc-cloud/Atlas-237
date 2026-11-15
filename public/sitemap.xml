@@ -235,24 +235,6 @@
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://atlas.liafrik.com/legal/blog</loc>
-    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/legal/blog" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/legal/blog" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/legal/blog" />
-    <lastmod>2026-08-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://atlas.liafrik.com/en/legal/blog</loc>
-    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/legal/blog" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/legal/blog" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/legal/blog" />
-    <lastmod>2026-08-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
     <loc>https://atlas.liafrik.com/legal/gdpr</loc>
     <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/legal/gdpr" />
     <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/legal/gdpr" />
@@ -413,5 +395,131 @@
     <lastmod>2026-08-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://atlas.liafrik.com/blog</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/blog" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/blog" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/blog" />
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://atlas.liafrik.com/en/blog</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/blog" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/blog" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/blog" />
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://atlas.liafrik.com/blog/atlas-crm-pense-pour-l-afrique</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/blog/atlas-crm-pense-pour-l-afrique" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/blog/atlas-crm-pense-pour-l-afrique" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/blog/atlas-crm-pense-pour-l-afrique" />
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://atlas.liafrik.com/en/blog/atlas-crm-pense-pour-l-afrique</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/blog/atlas-crm-pense-pour-l-afrique" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/blog/atlas-crm-pense-pour-l-afrique" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/blog/atlas-crm-pense-pour-l-afrique" />
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://atlas.liafrik.com/blog/du-premier-appel-a-la-facture-payee</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/blog/du-premier-appel-a-la-facture-payee" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/blog/du-premier-appel-a-la-facture-payee" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/blog/du-premier-appel-a-la-facture-payee" />
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://atlas.liafrik.com/en/blog/du-premier-appel-a-la-facture-payee</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/blog/du-premier-appel-a-la-facture-payee" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/blog/du-premier-appel-a-la-facture-payee" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/blog/du-premier-appel-a-la-facture-payee" />
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://atlas.liafrik.com/blog/ask-atlas-une-ia-qui-repond-avec-vos-chiffres</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/blog/ask-atlas-une-ia-qui-repond-avec-vos-chiffres" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/blog/ask-atlas-une-ia-qui-repond-avec-vos-chiffres" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/blog/ask-atlas-une-ia-qui-repond-avec-vos-chiffres" />
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://atlas.liafrik.com/en/blog/ask-atlas-une-ia-qui-repond-avec-vos-chiffres</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/blog/ask-atlas-une-ia-qui-repond-avec-vos-chiffres" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/blog/ask-atlas-une-ia-qui-repond-avec-vos-chiffres" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/blog/ask-atlas-une-ia-qui-repond-avec-vos-chiffres" />
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://atlas.liafrik.com/blog/payer-son-logiciel-en-mobile-money</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/blog/payer-son-logiciel-en-mobile-money" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/blog/payer-son-logiciel-en-mobile-money" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/blog/payer-son-logiciel-en-mobile-money" />
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://atlas.liafrik.com/en/blog/payer-son-logiciel-en-mobile-money</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/blog/payer-son-logiciel-en-mobile-money" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/blog/payer-son-logiciel-en-mobile-money" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/blog/payer-son-logiciel-en-mobile-money" />
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://atlas.liafrik.com/blog/whatsapp-sms-automatiser-sans-perdre-le-contact</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/blog/whatsapp-sms-automatiser-sans-perdre-le-contact" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/blog/whatsapp-sms-automatiser-sans-perdre-le-contact" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/blog/whatsapp-sms-automatiser-sans-perdre-le-contact" />
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://atlas.liafrik.com/en/blog/whatsapp-sms-automatiser-sans-perdre-le-contact</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/blog/whatsapp-sms-automatiser-sans-perdre-le-contact" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/blog/whatsapp-sms-automatiser-sans-perdre-le-contact" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/blog/whatsapp-sms-automatiser-sans-perdre-le-contact" />
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://atlas.liafrik.com/blog/atlas-libooks-sellia-ecosysteme-liafrik</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/blog/atlas-libooks-sellia-ecosysteme-liafrik" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/blog/atlas-libooks-sellia-ecosysteme-liafrik" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/blog/atlas-libooks-sellia-ecosysteme-liafrik" />
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://atlas.liafrik.com/en/blog/atlas-libooks-sellia-ecosysteme-liafrik</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://atlas.liafrik.com/blog/atlas-libooks-sellia-ecosysteme-liafrik" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://atlas.liafrik.com/en/blog/atlas-libooks-sellia-ecosysteme-liafrik" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://atlas.liafrik.com/blog/atlas-libooks-sellia-ecosysteme-liafrik" />
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>

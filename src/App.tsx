@@ -7,6 +7,7 @@ import { SetPasswordPage } from '@/pages/SetPasswordPage';
 import { LandingPage } from '@/pages/LandingPage';
 import { LegalPage, type LegalPage as LegalPageKey } from '@/pages/LegalPage';
 import { AppLayout } from '@/components/AppLayout';
+import { IS_DEMO, enterDemo } from '@/lib/demo/mode';
 import { Paywall } from '@/components/Paywall';
 import { Loading } from '@/components/Loading';
 import type { Language } from '@/lib/i18n';
@@ -23,9 +24,16 @@ const ContactsPage = lazy(() => import('@/pages/CRMPages').then(m => ({ default:
 const CompaniesPage = lazy(() => import('@/pages/CRMPages').then(m => ({ default: m.CompaniesPage })));
 const LeadsPage = lazy(() => import('@/pages/CRMPages').then(m => ({ default: m.LeadsPage })));
 const DealsPage = lazy(() => import('@/pages/CRMPages').then(m => ({ default: m.DealsPage })));
-const PipelinesPage = lazy(() => import('@/pages/CRMPages').then(m => ({ default: m.PipelinesPage })));
+const PipelinesPage = lazy(() => import('@/pages/PipelinePage').then(m => ({ default: m.PipelinesPage })));
 const ActivitiesPage = lazy(() => import('@/pages/CRMPages').then(m => ({ default: m.ActivitiesPage })));
 const CalendarPage = lazy(() => import('@/pages/CRMPages').then(m => ({ default: m.CalendarPage })));
+const ContactDetailPage = lazy(() => import('@/pages/RecordPages').then(m => ({ default: m.ContactDetailPage })));
+const CompanyDetailPage = lazy(() => import('@/pages/RecordPages').then(m => ({ default: m.CompanyDetailPage })));
+const DealDetailPage = lazy(() => import('@/pages/RecordPages').then(m => ({ default: m.DealDetailPage })));
+const LeadDetailPage = lazy(() => import('@/pages/RecordPages').then(m => ({ default: m.LeadDetailPage })));
+const DocumentPage = lazy(() => import('@/pages/DocumentPage').then(m => ({ default: m.DocumentPage })));
+const BlogIndexPage = lazy(() => import('@/pages/BlogPages').then(m => ({ default: m.BlogIndexPage })));
+const BlogArticlePage = lazy(() => import('@/pages/BlogPages').then(m => ({ default: m.BlogArticlePage })));
 const TasksPage = lazy(() => import('@/pages/CRMPages').then(m => ({ default: m.TasksPage })));
 const ProductsPage = lazy(() => import('@/pages/BusinessPages').then(m => ({ default: m.ProductsPage })));
 const QuotesPage = lazy(() => import('@/pages/BusinessPages').then(m => ({ default: m.QuotesPage })));
@@ -79,9 +87,13 @@ function ProtectedRoutes() {
         <Route path="approvals" element={<ApprovalsPage />} />
         {/* CRM */}
         <Route path="contacts" element={<ContactsPage />} />
+        <Route path="contacts/:id" element={<ContactDetailPage />} />
         <Route path="companies" element={<CompaniesPage />} />
+        <Route path="companies/:id" element={<CompanyDetailPage />} />
         <Route path="leads" element={<LeadsPage />} />
+        <Route path="leads/:id" element={<LeadDetailPage />} />
         <Route path="deals" element={<DealsPage />} />
+        <Route path="deals/:id" element={<DealDetailPage />} />
         <Route path="pipelines" element={<PipelinesPage />} />
         <Route path="activities" element={<ActivitiesPage />} />
         <Route path="calendar" element={<CalendarPage />} />
@@ -89,8 +101,10 @@ function ProtectedRoutes() {
         {/* Business */}
         <Route path="products" element={<ProductsPage />} />
         <Route path="quotes" element={<QuotesPage />} />
+        <Route path="quotes/:id" element={<DocumentPage kind="quote" key="quote" />} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="invoices" element={<InvoicesPage />} />
+        <Route path="invoices/:id" element={<DocumentPage kind="invoice" key="invoice" />} />
         <Route path="payments" element={<PaymentsPage />} />
         <Route path="marketing" element={<MarketingPage />} />
         <Route path="support" element={<SupportPage />} />
@@ -165,6 +179,12 @@ export default function App() {
             <Route path="staff" element={<Suspense fallback={<PageFallback />}><SuperAdminStaffPage /></Suspense>} />
             <Route path="accounting" element={<Suspense fallback={<PageFallback />}><SuperAdminAccountingPage /></Suspense>} />
           </Route>
+          <Route path="/demo" element={<DemoEntry />} />
+          <Route path="/en/demo" element={<DemoEntry lang="en" />} />
+          <Route path="/blog" element={<Suspense fallback={<Loading fullPage />}><BlogIndexPage /></Suspense>} />
+          <Route path="/blog/:slug" element={<Suspense fallback={<Loading fullPage />}><BlogArticlePage /></Suspense>} />
+          <Route path="/en/blog" element={<Suspense fallback={<Loading fullPage />}><BlogIndexPage lang="en" /></Suspense>} />
+          <Route path="/en/blog/:slug" element={<Suspense fallback={<Loading fullPage />}><BlogArticlePage lang="en" /></Suspense>} />
           <Route path="/legal/:page" element={<LegalRoute />} />
           <Route path="/en/legal/:page" element={<LegalRoute lang="en" />} />
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -180,12 +200,22 @@ function LegalRoute({ lang }: { lang?: Language }) {
   const { page } = useParams();
   const { language, setLanguage } = useAuth();
   useEffect(() => { if (lang && lang !== language) setLanguage(lang); }, [lang, language, setLanguage]);
+  if (page === 'blog') return <Navigate to={lang === 'en' ? '/en/blog' : '/blog'} replace />;
   if (!page || !LEGAL_PAGES.includes(page)) return <Navigate to="/" replace />;
   return <LegalPage page={page as LegalPageKey} />;
 }
 
+/** /demo: switches this tab to the sample workspace (full reload so the demo client loads). */
+function DemoEntry({ lang }: { lang?: Language }) {
+  useEffect(() => { if (!IS_DEMO) enterDemo(lang || (window.location.pathname.startsWith('/en') ? 'en' : 'fr')); }, [lang]);
+  if (IS_DEMO) return <Navigate to="/app" replace />;
+  return <Loading fullPage />;
+}
+
 function SuperAdminRoute() {
   const { session, loading, isSuperAdmin } = useAuth();
+  // The demo workspace never exposes platform administration.
+  if (IS_DEMO) return <Navigate to="/app" replace />;
   if (loading) return <Loading fullPage />;
   if (!session) return <Navigate to="/auth" replace />;
   if (!isSuperAdmin) return <Navigate to="/app" replace />;

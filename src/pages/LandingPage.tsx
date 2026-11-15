@@ -162,6 +162,8 @@ export function LandingPage() {
             <a href="#pricing" className="hover:text-primary-700 transition">{lang === 'fr' ? 'Tarifs' : 'Pricing'}</a>
             <a href="#industries" className="hover:text-primary-700 transition">{lang === 'fr' ? 'Industries' : 'Industries'}</a>
             <a href="#faq" className="hover:text-primary-700 transition">FAQ</a>
+            <Link to={lang === 'fr' ? '/blog' : '/en/blog'} className="hover:text-primary-700 transition">Blog</Link>
+            <a href={lang === 'fr' ? '/demo' : '/en/demo'} className="hover:text-primary-700 transition">{lang === 'fr' ? 'Démo' : 'Demo'}</a>
           </nav>
           <div className="flex items-center gap-2.5">
             <button
@@ -208,9 +210,9 @@ export function LandingPage() {
               <Link to="/auth" className="group inline-flex items-center gap-2 rounded-lg bg-primary-600 px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-primary-600/20 transition hover:bg-primary-700 hover:shadow-xl hover:shadow-primary-600/30">
                 {lang === 'fr' ? 'Commencer gratuitement' : 'Start for free'} <ArrowRight size={18} className="transition group-hover:translate-x-1" />
               </Link>
-              <Link to="/auth" className="inline-flex items-center gap-2 rounded-lg border border-ink-200 bg-white px-7 py-3.5 text-base font-semibold text-ink-800 transition hover:bg-ink-50 hover:border-ink-300">
-                <PlayCircle size={18} /> {lang === 'fr' ? 'Voir la démo' : 'Watch demo'}
-              </Link>
+              <a href={lang === 'fr' ? '/demo' : '/en/demo'} className="inline-flex items-center gap-2 rounded-lg border border-ink-200 bg-white px-7 py-3.5 text-base font-semibold text-ink-800 transition hover:bg-ink-50 hover:border-ink-300">
+                <PlayCircle size={18} /> {lang === 'fr' ? 'Essayer la démo' : 'Try the live demo'}
+              </a>
             </div>
             <p className="mt-5 text-xs text-ink-500">{lang === 'fr' ? 'Rien à installer · Sans carte bancaire · 14 jours gratuits' : 'Nothing to install · No credit card · 14-day free trial'}</p>
           </div>
@@ -309,9 +311,9 @@ export function LandingPage() {
                   <Link to="/auth" className="group inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-semibold text-primary-700 transition hover:bg-primary-50">
                     {lang === 'fr' ? 'Commencer gratuitement' : 'Start for free'} <ArrowRight size={16} className="transition group-hover:translate-x-1" />
                   </Link>
-                  <Link to="/auth" className="inline-flex items-center gap-2 rounded-lg border border-white/30 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
-                    <PlayCircle size={16} /> {lang === 'fr' ? 'Voir la démo' : 'Watch demo'}
-                  </Link>
+                  <a href={lang === 'fr' ? '/demo' : '/en/demo'} className="inline-flex items-center gap-2 rounded-lg border border-white/30 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+                    <PlayCircle size={16} /> {lang === 'fr' ? 'Essayer la démo' : 'Try the live demo'}
+                  </a>
                 </div>
               </div>
               <div className="reveal rounded-2xl bg-white/10 p-8 backdrop-blur-sm">
@@ -625,7 +627,8 @@ export function LandingPage() {
                 { l: lang === 'fr' ? 'Documentation' : 'Documentation', to: '/legal/docs' },
                 { l: 'Statut', to: '/legal/status' },
                 { l: lang === 'fr' ? 'Communauté' : 'Community', to: '/legal/community' },
-                { l: 'Blog', to: '/legal/blog' },
+                { l: 'Blog', to: lang === 'fr' ? '/blog' : '/en/blog' },
+                { l: lang === 'fr' ? 'Démo en ligne' : 'Live demo', to: lang === 'fr' ? '/demo' : '/en/demo' },
               ] },
               { h: lang === 'fr' ? 'Entreprise' : 'Company', links: [
                 { l: lang === 'fr' ? 'À propos' : 'About', to: '/legal/about' },
@@ -653,7 +656,7 @@ export function LandingPage() {
           </div>
 
           <div className="mt-8 flex flex-col items-center justify-between gap-6 pt-0 sm:flex-row">
-            <p className="text-xs text-ink-500">© {new Date().getFullYear()} Atlas CRM · <a href="https://liafrik.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">LiAfrik</a> Dubai & {lang === 'fr' ? 'Afrique' : 'Africa'}. {lang === 'fr' ? 'Tous droits réservés.' : 'All rights reserved.'}</p>
+            <p className="text-xs text-ink-500">© {new Date().getFullYear()} Atlas CRM · {lang === 'fr' ? 'développé par' : 'built by'} <a href="https://liafrik.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">Liafrik Tech</a> · {lang === 'fr' ? 'Dubaï – Yaoundé' : 'Dubai – Yaoundé'}. {lang === 'fr' ? 'Tous droits réservés.' : 'All rights reserved.'}</p>
             <div className="flex items-center gap-4">
               <a href="https://www.tiktok.com/@liyahgroup" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="text-ink-500 transition hover:text-white"><TikTokIcon size={18} /></a>
               <a href="https://www.facebook.com/share/1LMAGqsy3n/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-ink-500 transition hover:text-white"><Facebook size={18} /></a>

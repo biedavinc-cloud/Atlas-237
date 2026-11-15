@@ -301,6 +301,17 @@ export function getCountryName(code: string, lang: 'en' | 'fr' | 'es' | 'pt' | '
 }
 
 /** Format a monetary amount according to currency */
+/**
+ * Formats an amount already in major units (e.g. 145000000 XAF, 49.5 USD).
+ * Use this for CRM amounts (deals, invoices, products), which are stored in
+ * major units. formatMoney() below is only for values stored in cents.
+ */
+export function formatAmount(amount: number, currencyCode: string, lang: string = 'en'): string {
+  const cur = getCurrency(currencyCode);
+  return formatMoney(Math.round((Number(amount) || 0) * Math.pow(10, cur.decimals)), currencyCode, lang);
+}
+
+/** Formats a value stored in the currency's minor unit (cents). */
 export function formatMoney(cents: number, currencyCode: string, lang: string = 'en'): string {
   const cur = getCurrency(currencyCode);
   const value = cents / Math.pow(10, cur.decimals);

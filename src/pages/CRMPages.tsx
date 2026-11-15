@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Users, Building2, UserPlus, Handshake, KanbanSquare, Activity, Calendar, ListChecks, Check, RotateCcw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Users, Building2, UserPlus, Handshake, Activity, Calendar, ListChecks, Check, RotateCcw, KanbanSquare, List, Shuffle } from 'lucide-react';
 import { ListPage, type FormField } from '@/components/ListPage';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -8,58 +9,36 @@ import { Badge, PageHeader } from '@/components/ui';
 import { EmptyState } from '@/components/EmptyState';
 import { Loading } from '@/components/Loading';
 import type { Contact, Company, Lead, Deal } from '@/types';
-import { CURRENCIES, formatMoney } from '@/lib/i18n-countries';
+import { formatAmount } from '@/lib/i18n-countries';
 import { QuickMessageButton } from '@/components/QuickMessageButton';
+import { ConvertLeadModal } from '@/components/ConvertLeadModal';
+import { contactFields, companyFields, leadFields, dealFields, contactRelation, dealRelation, companyRelation } from '@/lib/entityFields';
 
-function currencyField(language: string, orgCurrency: string): FormField {
-  return {
-    key: 'currency',
-    label: language === 'fr' ? 'Devise' : 'Currency',
-    type: 'select',
-    required: true,
-    defaultValue: orgCurrency,
-    options: CURRENCIES.map((c) => ({ value: c.code, label: `${c.code} — ${c.name} (${c.symbol})` })),
-  };
-}
+type WithCompany = { company_rel?: { id: string; name: string } | null };
 
 export function ContactsPage() {
   const { language } = useAuth();
-  const fields: FormField[] = [
-    { key: 'first_name', label: t('auth.firstName', language), type: 'text', required: true },
-    { key: 'last_name', label: t('auth.lastName', language), type: 'text', required: true },
-    { key: 'email', label: t('common.email', language), type: 'email' },
-    { key: 'country', label: t('list.country', language), type: 'country' },
-    { key: 'phone', label: t('common.phone', language), type: 'phone', countryFieldKey: 'country' },
-    { key: 'job_title', label: t('list.title', language), type: 'text' },
-    { key: 'company', label: t('common.company', language), type: 'text' },
-    { key: 'city', label: t('list.city', language), type: 'text' },
-    { key: 'status', label: t('common.status', language), type: 'select', options: [
-      { value: 'active', label: t('status.active', language) }, { value: 'inactive', label: t('status.inactive', language) }, { value: 'lead', label: t('status.lead', language) },
-    ], defaultValue: 'active' },
-    { key: 'lead_score', label: t('list.leadScore', language), type: 'number', defaultValue: 0 },
-    { key: 'tags', label: t('list.tags', language), type: 'tags' },
-    { key: 'notes', label: t('list.notes', language), type: 'textarea' },
-  ];
-
   return (
-    <ListPage<Contact>
+    <ListPage<Contact & WithCompany>
       table="contacts"
       title={t('nav.contacts', language)}
-      subtitle=""
       columns={[
         { key: 'first_name', label: t('common.name', language), render: (r) => <span className="font-medium text-ink-800">{r.first_name} {r.last_name}</span> },
+        { key: 'company', label: t('common.company', language), render: (r) => r.company_rel?.name || (typeof r.company === 'string' ? r.company : '') || '—' },
         { key: 'email', label: t('common.email', language), render: (r) => r.email || '—' },
         { key: 'phone', label: t('common.phone', language), render: (r) => r.phone || '—' },
-        { key: 'job_title', label: t('list.title', language), render: (r) => r.job_title || '—' },
         { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'active' ? 'success' : 'neutral'}>{tStatus(r.status, language)}</Badge> },
-        { key: 'lead_score', label: t('list.leadScore', language), render: (r) => <span className="font-semibold">{r.lead_score}</span> },
+        { key: 'lead_score', label: t('list.leadScore', language), render: (r) => <span className="font-semibold tabular">{r.lead_score}</span> },
       ]}
-      formFields={fields}
-      emptyIcon={<Users size={28} />}
+      formFields={contactFields(language)}
+      relations="*, company_rel:companies(id,name)"
+      searchColumns={['first_name', 'last_name', 'email', 'phone', 'company', 'job_title']}
+      emptyIcon={<Users size={26} />}
       emptyTitle={t('empty.noContacts', language)}
       emptyDescription={t('empty.noContactsDesc', language)}
       orderBy="created_at"
       importable
+      rowLink={(r) => `/app/contacts/${r.id}`}
       rowActions={(row) => <QuickMessageButton phone={row.phone} name={`${row.first_name} ${row.last_name}`} />}
     />
   );
@@ -68,23 +47,6 @@ export function ContactsPage() {
 export function CompaniesPage() {
   const { language, organization } = useAuth();
   const orgCurrency = organization?.currency || 'USD';
-  const fields: FormField[] = [
-    { key: 'name', label: t('common.name', language), type: 'text', required: true },
-    { key: 'industry', label: t('list.industry', language), type: 'text' },
-    { key: 'website', label: t('list.website', language), type: 'text' },
-    { key: 'size', label: t('list.size', language), type: 'select', options: [
-      { value: '1-10', label: '1-10' }, { value: '11-50', label: '11-50' }, { value: '51-200', label: '51-200' }, { value: '201-500', label: '201-500' }, { value: '500+', label: '500+' },
-    ]},
-    { key: 'city', label: t('list.city', language), type: 'text' },
-    { key: 'country', label: t('list.country', language), type: 'country' },
-    { key: 'revenue', label: t('list.revenue', language), type: 'number' },
-    currencyField(language, orgCurrency),
-    { key: 'status', label: t('common.status', language), type: 'select', options: [
-      { value: 'active', label: t('status.active', language) }, { value: 'inactive', label: t('status.inactive', language) },
-    ], defaultValue: 'active' },
-    { key: 'notes', label: t('list.notes', language), type: 'textarea' },
-  ];
-
   return (
     <ListPage<Company>
       table="companies"
@@ -92,122 +54,108 @@ export function CompaniesPage() {
       columns={[
         { key: 'name', label: t('common.name', language), render: (r) => <span className="font-medium text-ink-800">{r.name}</span> },
         { key: 'industry', label: t('list.industry', language), render: (r) => r.industry || '—' },
-        { key: 'website', label: t('list.website', language), render: (r) => r.website ? <a href={r.website} target="_blank" rel="noopener" className="text-primary-600 hover:underline">{r.website}</a> : '—' },
+        { key: 'city', label: t('list.city', language), render: (r) => r.city || '—' },
         { key: 'size', label: t('list.size', language), render: (r) => r.size || '—' },
-        { key: 'revenue', label: t('list.revenue', language), render: (r) => r.revenue ? formatMoney(r.revenue * 100, r.currency || orgCurrency, language) : '—' },
+        { key: 'revenue', label: t('list.revenue', language), render: (r) => r.revenue ? formatAmount(r.revenue, r.currency || orgCurrency, language) : '—' },
         { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'active' ? 'success' : 'neutral'}>{tStatus(r.status, language)}</Badge> },
       ]}
-      formFields={fields}
-      emptyIcon={<Building2 size={28} />}
+      formFields={companyFields(language, orgCurrency)}
+      searchColumns={['name', 'industry', 'city', 'website']}
+      emptyIcon={<Building2 size={26} />}
       emptyTitle={t('empty.noCompanies', language)}
       emptyDescription={t('empty.noCompaniesDesc', language)}
       orderBy="created_at"
+      importable
+      rowLink={(r) => `/app/companies/${r.id}`}
     />
   );
 }
 
 export function LeadsPage() {
-  const { language } = useAuth();
-  const fields: FormField[] = [
-    { key: 'first_name', label: t('auth.firstName', language), type: 'text', required: true },
-    { key: 'last_name', label: t('auth.lastName', language), type: 'text', required: true },
-    { key: 'email', label: t('common.email', language), type: 'email' },
-    { key: 'phone', label: t('common.phone', language), type: 'phone' },
-    { key: 'company_name', label: t('common.company', language), type: 'text' },
-    { key: 'title', label: t('list.title', language), type: 'text' },
-    { key: 'source', label: t('list.source', language), type: 'select', options: [
-      { value: 'website', label: t('status.website2', language) }, { value: 'referral', label: t('status.referral', language) }, { value: 'cold_outreach', label: t('status.coldOutreach', language) }, { value: 'event', label: t('status.event', language) }, { value: 'social', label: t('status.social', language) },
-    ]},
-    { key: 'status', label: t('common.status', language), type: 'select', options: [
-      { value: 'new', label: t('status.new', language) }, { value: 'contacted', label: t('status.contacted', language) }, { value: 'qualified', label: t('status.qualified', language) }, { value: 'converted', label: t('status.converted', language) }, { value: 'lost', label: t('status.lost', language) },
-    ], defaultValue: 'new' },
-    { key: 'temperature', label: t('list.temperature', language), type: 'select', options: [
-      { value: 'hot', label: t('status.hot', language) }, { value: 'warm', label: t('status.warm', language) }, { value: 'cold', label: t('status.cold', language) },
-    ], defaultValue: 'warm' },
-    { key: 'potential_value', label: t('list.potentialValue', language), type: 'number', defaultValue: 0 },
-    { key: 'notes', label: t('list.notes', language), type: 'textarea' },
-  ];
-
+  const { language, organization } = useAuth();
+  const orgCurrency = organization?.currency || 'USD';
+  const [converting, setConverting] = useState<{ lead: Lead; reload: () => void } | null>(null);
+  const fr = language === 'fr';
   return (
-    <ListPage<Lead>
-      table="leads"
-      title={t('nav.leads', language)}
-      columns={[
-        { key: 'first_name', label: t('common.name', language), render: (r) => <span className="font-medium text-ink-800">{r.first_name} {r.last_name}</span> },
-        { key: 'company_name', label: t('common.company', language), render: (r) => r.company_name || '—' },
-        { key: 'source', label: t('list.source', language), render: (r) => r.source || '—' },
-        { key: 'temperature', label: t('list.temperature', language), render: (r) => <Badge variant={r.temperature === 'hot' ? 'error' : r.temperature === 'warm' ? 'warning' : 'neutral'}>{tStatus(r.temperature, language)}</Badge> },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'converted' ? 'success' : r.status === 'lost' ? 'error' : 'primary'}>{tStatus(r.status, language)}</Badge> },
-        { key: 'potential_value', label: t('common.value', language), render: (r) => `$${(r.potential_value || 0).toLocaleString()}` },
-      ]}
-      formFields={fields}
-      emptyIcon={<UserPlus size={28} />}
-      emptyTitle={t('empty.noLeads', language)}
-      emptyDescription={t('empty.noLeadsDesc', language)}
-      orderBy="created_at"
-      importable
-      rowActions={(row) => <QuickMessageButton phone={row.phone} name={`${row.first_name} ${row.last_name}`} />}
-    />
+    <>
+      <ListPage<Lead>
+        table="leads"
+        title={t('nav.leads', language)}
+        columns={[
+          { key: 'first_name', label: t('common.name', language), render: (r) => <span className="font-medium text-ink-800">{r.first_name} {r.last_name}</span> },
+          { key: 'company_name', label: t('common.company', language), render: (r) => r.company_name || '—' },
+          { key: 'source', label: t('list.source', language), render: (r) => r.source ? tStatus(r.source, language) : '—' },
+          { key: 'temperature', label: t('list.temperature', language), render: (r) => <Badge variant={r.temperature === 'hot' ? 'error' : r.temperature === 'warm' ? 'warning' : 'neutral'}>{tStatus(r.temperature, language)}</Badge> },
+          { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'converted' ? 'success' : r.status === 'lost' ? 'error' : 'primary'}>{tStatus(r.status, language)}</Badge> },
+          { key: 'potential_value', label: t('common.value', language), render: (r) => <span className="tabular">{formatAmount((r.potential_value || 0), orgCurrency, language)}</span> },
+        ]}
+        formFields={leadFields(language)}
+        searchColumns={['first_name', 'last_name', 'email', 'phone', 'company_name']}
+        emptyIcon={<UserPlus size={26} />}
+        emptyTitle={t('empty.noLeads', language)}
+        emptyDescription={t('empty.noLeadsDesc', language)}
+        orderBy="created_at"
+        importable
+        rowLink={(r) => `/app/leads/${r.id}`}
+        rowActions={(row, reload) => (
+          <>
+            {row.status !== 'converted' && (
+              <button onClick={() => setConverting({ lead: row, reload })} className="btn-icon h-7 w-7 hover:bg-success-50 hover:text-success-600" title={fr ? 'Convertir' : 'Convert'} aria-label={fr ? 'Convertir' : 'Convert'}>
+                <Shuffle size={14} />
+              </button>
+            )}
+            <QuickMessageButton phone={row.phone} name={`${row.first_name} ${row.last_name}`} />
+          </>
+        )}
+      />
+      {converting && (
+        <ConvertLeadModal lead={converting.lead} onClose={() => setConverting(null)} onDone={() => { converting.reload(); setConverting(null); }} />
+      )}
+    </>
+  );
+}
+
+type DealRow = Deal & { stage?: { name: string } | null; contact?: { first_name: string; last_name: string } | null; company?: { name: string } | null };
+
+export function DealsViewSwitch({ active }: { active: 'list' | 'board' }) {
+  const { language } = useAuth();
+  const fr = language === 'fr';
+  return (
+    <div className="inline-flex rounded-lg border border-ink-200 bg-white p-0.5" role="tablist">
+      <Link to="/app/deals" role="tab" aria-selected={active === 'list'} className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ${active === 'list' ? 'bg-ink-100 text-ink-900' : 'text-ink-500 hover:text-ink-800'}`}>
+        <List size={14} /> {fr ? 'Liste' : 'List'}
+      </Link>
+      <Link to="/app/pipelines" role="tab" aria-selected={active === 'board'} className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ${active === 'board' ? 'bg-ink-100 text-ink-900' : 'text-ink-500 hover:text-ink-800'}`}>
+        <KanbanSquare size={14} /> {fr ? 'Pipeline' : 'Board'}
+      </Link>
+    </div>
   );
 }
 
 export function DealsPage() {
   const { language, organization } = useAuth();
   const orgCurrency = organization?.currency || 'USD';
-  const fields: FormField[] = [
-    { key: 'name', label: t('list.dealName', language), type: 'text', required: true },
-    { key: 'value', label: t('common.value', language), type: 'number', required: true, defaultValue: 0 },
-    currencyField(language, orgCurrency),
-    { key: 'closing_date', label: t('list.closingDate', language), type: 'date' },
-    { key: 'status', label: t('common.status', language), type: 'select', options: [
-      { value: 'open', label: t('status.open', language) }, { value: 'won', label: t('status.won', language) }, { value: 'lost', label: t('status.lost', language) },
-    ], defaultValue: 'open' },
-    { key: 'probability', label: t('list.probability', language), type: 'number', defaultValue: 0 },
-    { key: 'notes', label: t('list.notes', language), type: 'textarea' },
-  ];
-
   return (
-    <ListPage<Deal>
+    <ListPage<DealRow>
       table="deals"
       title={t('nav.deals', language)}
+      headerExtra={<DealsViewSwitch active="list" />}
       columns={[
         { key: 'name', label: t('nav.deals', language), render: (r) => <span className="font-medium text-ink-800">{r.name}</span> },
-        { key: 'value', label: t('common.value', language), render: (r) => <span className="font-semibold">{formatMoney((r.value || 0) * 100, r.currency || orgCurrency, language)}</span> },
-        { key: 'probability', label: t('list.probability', language), render: (r) => `${r.probability}%` },
+        { key: 'company_id', label: t('common.company', language), render: (r) => r.company?.name || (r.contact ? `${r.contact.first_name} ${r.contact.last_name}` : '—') },
+        { key: 'stage_id', label: language === 'fr' ? 'Étape' : 'Stage', render: (r) => r.stage?.name || '—' },
+        { key: 'value', label: t('common.value', language), render: (r) => <span className="font-semibold tabular">{formatAmount((r.value || 0), r.currency || orgCurrency, language)}</span> },
         { key: 'closing_date', label: t('list.closeDate', language), render: (r) => r.closing_date ? new Date(r.closing_date).toLocaleDateString(language) : '—' },
         { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'won' ? 'success' : r.status === 'lost' ? 'error' : 'primary'}>{tStatus(r.status, language)}</Badge> },
       ]}
-      formFields={fields}
-      emptyIcon={<Handshake size={28} />}
+      formFields={dealFields(language, orgCurrency)}
+      searchColumns={['name']}
+      emptyIcon={<Handshake size={26} />}
       emptyTitle={t('empty.noDeals', language)}
       emptyDescription={t('empty.noDealsDesc', language)}
-      relations="*, stage:pipeline_stages(*), contact:contacts(*), company:companies(*)"
+      relations="*, stage:pipeline_stages(name), contact:contacts(first_name,last_name), company:companies(name)"
       orderBy="created_at"
-    />
-  );
-}
-
-export function PipelinesPage() {
-  const { language } = useAuth();
-  const fields: FormField[] = [
-    { key: 'name', label: t('common.name', language), type: 'text', required: true },
-    { key: 'description', label: t('list.description', language), type: 'textarea' },
-    { key: 'sort_order', label: t('list.sortOrder', language), type: 'number', defaultValue: 0 },
-  ];
-
-  return (
-    <ListPage<{ id: string; name: string; description: string | null; sort_order: number; [key: string]: unknown }>
-      table="pipelines"
-      title={t('nav.pipelines', language)}
-      columns={[
-        { key: 'name', label: t('common.name', language), render: (r) => <span className="font-medium text-ink-800">{r.name}</span> },
-        { key: 'description', label: t('list.description', language), render: (r) => r.description || '—' },
-      ]}
-      formFields={fields}
-      emptyIcon={<KanbanSquare size={28} />}
-      emptyTitle={t('empty.noPipelines', language)}
-      emptyDescription={t('empty.noPipelinesDesc', language)}
-      orderBy="sort_order"
+      rowLink={(r) => `/app/deals/${r.id}`}
     />
   );
 }
@@ -223,6 +171,9 @@ export function ActivitiesPage() {
       { value: 'pending', label: t('status.pending', language) }, { value: 'completed', label: t('status.completed', language) },
     ], defaultValue: 'pending' },
     { key: 'scheduled_at', label: t('list.scheduled', language), type: 'date' },
+    contactRelation(language),
+    companyRelation(language),
+    dealRelation(language),
     { key: 'description', label: t('list.description', language), type: 'textarea' },
   ];
 

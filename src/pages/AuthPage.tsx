@@ -24,7 +24,10 @@ function GoogleIcon({ size = 18 }: { size?: number }) {
 
 export function AuthPage() {
   useHreflangLinks('/auth');
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'reset'>('login');
+  // ?mode=signup (e.g. from the demo's "Create my account") opens sign-up directly.
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'reset'>(() => {
+    try { return new URLSearchParams(window.location.search).get('mode') === 'signup' ? 'signup' : 'login'; } catch { return 'login'; }
+  });
   const [newPassword, setNewPassword] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -527,6 +530,13 @@ export function AuthPage() {
                     {mode === 'login' ? t('auth.signup', lang) : t('auth.login', lang)}
                   </button>
                 </span>
+              )}
+              {mode !== 'reset' && (
+                <p className="mt-3">
+                  <a href={lang === 'en' ? '/en/demo' : '/demo'} className="font-semibold text-ink-700 underline decoration-ink-300 underline-offset-4 hover:text-primary-700 hover:decoration-primary-400">
+                    {lang === 'fr' ? 'Explorer la démo sans créer de compte' : 'Explore the demo without an account'}
+                  </a>
+                </p>
               )}
             </div>
           </div>

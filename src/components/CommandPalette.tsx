@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, CornerDownLeft, Sparkles, Plus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { t } from '@/lib/i18n';
+import { IS_DEMO } from '@/lib/demo/mode';
 import { NAV_SECTIONS, QUICK_CREATE, SUPER_ADMIN_ITEMS, normalize, type NavItem } from '@/lib/navigation';
 
 interface Entry {
@@ -48,7 +49,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         haystack: normalize(`${label} ${create} ${t(item.labelKey, 'en')} ${item.keywords || ''}`),
       });
     }
-    if (isSuperAdmin) {
+    if (isSuperAdmin && !IS_DEMO) {
       const platform = t('shell.platform', language);
       for (const item of SUPER_ADMIN_ITEMS) {
         const label = t(item.labelKey, language);

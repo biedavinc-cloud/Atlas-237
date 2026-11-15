@@ -135,7 +135,7 @@ and individual pages. Tables expected: contacts, companies, leads, deals, pipeli
 activities, products, quotes, orders, invoices, payments, campaigns, tickets, ai_agents,
 ai_tasks, approvals, workflows, ai_memory, knowledge_documents, integrations, api_keys,
 webhooks, notifications, audit_logs, profiles, organizations. SQL migrations are at
-`supabase/migrations/` (latest: `20260828140000_028_add_contacts_company_text_column.sql`).
+`supabase/migrations/` (latest: `20261115120000_042_korapay_cinetpay_billing.sql`).
 - Whenever you add or edit a `ListPage` `formFields` array, or a direct
   `supabase.from(table).insert({...})` / `.update({...})` call anywhere else,
   double-check every key against the table's real columns in
@@ -643,7 +643,7 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   now set as defaults in `src/lib/paddle.ts` alongside the client token —
   Paddle is fully configured and will appear as a payment option with no
   further setup needed.
-- Legal Notice page now has the real company registration: LiAfrik (SPC
+- Legal Notice page now has the real company registration: Liafrik (SPC
   FZC), Dubai, UAE, license number 4425201.01 — no more placeholder text.
 
 ## Performance advisor findings (Sep 2026) — reviewed, deferred, not launch-blocking
@@ -798,7 +798,7 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   THEN add the matching routes + LANG_PREFIXES entries in useHreflang.ts.
   Don't add the URL/hreflang plumbing ahead of the real content existing.
 - Added `index.html` JSON-LD (`SoftwareApplication` + `Organization`)
-  with only verified real facts (the 4 real plan prices, the real LiAfrik
+  with only verified real facts (the 4 real plan prices, the real Liafrik
   legal entity/Dubai address, the real social links) — helps both rich
   search snippets and AI systems that parse schema.org data to describe
   the product accurately instead of guessing.
@@ -992,3 +992,80 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   The function now prefers a `CRON_SECRET` project secret; the hardcoded
   fallback is still committed in a public repo and in migration 041 —
   rotate it (set the secret + reschedule the cron job with the new value).
+
+## CRM core: record pages, relations, pipeline, documents (Nov 2026)
+- `src/lib/entityFields.ts` holds the form definitions for contacts,
+  companies, leads, deals, quotes, invoices — shared by the list pages and
+  the detail pages. `FormField` has a `'relation'` type (foreign-key picker,
+  `relation: { table, select, label }`); every relation key must be a real
+  FK column (`company_id`, `contact_id`, `deal_id`, `stage_id`).
+- `ListPage` now paginates server-side (25/page, `count: 'exact'`), searches
+  server-side with `ilike` over `searchColumns`, filters by status, sorts by
+  column, exports every matching row to CSV, and opens `rowLink(row)` on row
+  click. The form lives in the exported `RecordFormModal` (also used by the
+  detail pages). `?new=1&<field>=<value>` prefills the create form.
+- Detail pages (`src/pages/RecordPages.tsx`): `/app/contacts/:id`,
+  `/companies/:id`, `/deals/:id`, `/leads/:id` — related lists with
+  prefilled quick-create, activity timeline/composer (activities.<fk>),
+  tasks via `tasks.related_type/related_id`.
+- `/app/pipelines` is a kanban board (`src/pages/PipelinePage.tsx`) over
+  `pipeline_stages`; drag/drop or move buttons update `stage_id` +
+  `probability`; won/lost drop zones; stage manager; open deals without a
+  stage appear in a leading "No stage" column of the first pipeline.
+- Lead conversion (`ConvertLeadModal`) creates contact (+ company without
+  duplicates, + deal on a stage), sets `converted_contact_id/converted_at`,
+  fires `lead.converted`.
+- Quotes/invoices (`src/pages/DocumentPage.tsx`, `/app/quotes/:id`,
+  `/app/invoices/:id`): line items in `quote_items`/`invoice_items`
+  (replaced on save), totals/tax/discount/amount due, print-to-PDF via
+  `window.print()` (print CSS in index.css prints only `.doc-paper`),
+  quote → invoice, "mark as paid" inserts a real `payments` row.
+- Real bug fixed: `formatMoney(amount * 100, …)` divides by 10^decimals,
+  so every XAF/XOF amount (0 decimals) was shown 100× too large. CRM
+  amounts (major units) now go through `formatAmount()`; keep
+  `formatMoney()` for values stored in cents (subscriptions, super admin).
+- UsagePage showed estimated "API calls/storage/emails sent" — replaced by
+  real counts and the real plan caps (AI employees, users, contacts).
+
+## Korapay + CinetPay (subscriptions) — needs deploy + secrets
+- Migration `042` (billing_payment_intents + subscription columns) and
+  functions `billing-initialize`, `billing-verify`, `billing-webhook`
+  (+ shared `supabase/functions/_shared/billing.ts`). None are live until
+  `supabase db push` + `supabase functions deploy` and the secrets in
+  `.env.example` are set. `billing-webhook` has `verify_jwt = false`.
+- Flow: initialize records the expected plan/price (USD converted live to
+  `KORAPAY_CURRENCY`/`CINETPAY_CURRENCY`, default XAF; refuses if no FX
+  rate) BEFORE redirecting; return (`?billing_provider&billing_ref` on
+  /app/billing) and webhooks both call `settleIntent()`, which re-queries
+  the provider, checks amount/currency, and flips the intent
+  pending→succeeded with a conditional update so the subscription is
+  extended once. Early renewals extend from the current period end.
+- CinetPay's return_url is a POST → it goes through `billing-webhook`
+  (`?return=1`), which 303-redirects to the intent's validated return URL.
+- Register the Korapay webhook URL in the Korapay dashboard:
+  `<SUPABASE_URL>/functions/v1/billing-webhook?provider=korapay`.
+
+## Demo mode (/demo)
+- `src/lib/demo/`: `mode.ts` (sessionStorage flag, read once at load),
+  `client.ts` (in-memory supabase-js stand-in: query builder, embeds,
+  rpc, auth, storage, and a fetch patch for `/functions/v1/*`),
+  `seed.ts` (fictional "Savane Distribution", Douala/Yaoundé, XAF, Pro
+  trial). `src/lib/supabase.ts` exports the demo client when `IS_DEMO`.
+- Super Admin never appears in the demo: `is_super_admin` → false, nav/
+  palette hide it, `/super-admin` redirects to `/app`, platform tables
+  are empty. No integration/API key/webhook is seeded as connected, and
+  `getAvailablePsps()` returns [] so no real checkout can open.
+- If you add a new table or a new query-builder method used by the app,
+  check the demo still works (open /demo); unknown tables just read empty.
+
+## Blog (/blog, /en/blog) — Liafrik products only
+- Content in `src/lib/blog/posts.ts` (FR + EN blocks), pages in
+  `src/pages/BlogPages.tsx`, listed in `public/sitemap.xml`. `/legal/blog`
+  redirects to `/blog`. Only write about Liafrik products (Atlas, Libooks,
+  Sellia…) and only claim features that exist; Libooks/Sellia articles stay
+  at "Liafrik product, connects to Atlas by API key" until real product
+  descriptions are provided.
+
+## Branding
+- The company name is written "Liafrik" (not "LiAfrik"). Credit line:
+  "Atlas — développé par Liafrik Tech · Dubaï – Yaoundé".

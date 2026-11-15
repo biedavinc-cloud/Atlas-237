@@ -24,9 +24,9 @@
 //    simplified version of the mark. It is a stylized stand-in, not the
 //    official artwork, and is labelled as such in code review / logo
 //    audits.
-// 'atlas' is LiAfrik's own first-party product and has no supplied file,
+// 'atlas' is Liafrik's own first-party product and has no supplied file,
 // so it stays custom-designed (category 2 style, inline SVG below).
-// 'libooks' and 'sellia' are also first-party LiAfrik products, but each
+// 'libooks' and 'sellia' are also first-party Liafrik products, but each
 // now uses its actual supplied official mark as an image file (category 0).
 
 /** Providers with a real logo file in public/brand-logos/ — see category 0 above. */

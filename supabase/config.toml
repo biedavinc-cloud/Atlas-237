@@ -22,3 +22,9 @@ verify_jwt = false
 # The function itself refuses any request without that exact secret.
 [functions.run-scheduled-workflows]
 verify_jwt = false
+
+# Korapay / CinetPay call this directly (webhooks + CinetPay's POST return).
+# They can't send a Supabase JWT; the function only uses the payload to find
+# the reference and re-verifies with the provider's API before activating.
+[functions.billing-webhook]
+verify_jwt = false

@@ -9,6 +9,8 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { t, type Language } from '@/lib/i18n';
 import { NAV_SECTIONS, SUPER_ADMIN_ITEMS, type NavItem } from '@/lib/navigation';
 import { CommandPalette } from '@/components/CommandPalette';
+import { DemoBanner } from '@/components/DemoBanner';
+import { IS_DEMO } from '@/lib/demo/mode';
 
 const LANGUAGES: { code: Language; label: string }[] = [
   { code: 'fr', label: 'Français' },
@@ -197,7 +199,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             );
           })}
 
-          {isSuperAdmin && (
+          {isSuperAdmin && !IS_DEMO && (
             <div className="mt-5 rounded-xl bg-white/[0.04] ring-1 ring-inset ring-white/[0.06] p-1.5">
               {showLabels && (
                 <button className="sidebar-section !mt-1 !px-2" onClick={() => toggleSection('super')} aria-expanded={!closedSections.includes('super')}>
@@ -311,6 +313,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
+        {IS_DEMO && <DemoBanner />}
         <main className="flex-1 overflow-y-auto scrollbar-thin" id="main">
           <div className="px-4 py-5 sm:px-6 sm:py-7 lg:px-8 max-w-[1400px] mx-auto">
             {children}

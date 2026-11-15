@@ -8,6 +8,8 @@ import { askAtlas } from '@/lib/askAtlas';
 import { t } from '@/lib/i18n';
 import { getErrorMessage } from '@/lib/errors';
 import { confirmPayunitPayment } from '@/lib/payunit';
+import { verifyRedirectCheckout } from '@/lib/redirectBilling';
+import { IS_DEMO } from '@/lib/demo/mode';
 import { getAvailablePsps, payWithPsp, type PspOption } from '@/lib/psp';
 import { PspCheckoutModal } from '@/components/PspCheckoutModal';
 import { PageHeader, Badge, StatCard } from '@/components/ui';
@@ -980,6 +982,30 @@ export function BillingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
+  // Returning from a Korapay / CinetPay hosted checkout
+  // (?billing_provider=…&billing_ref=…): confirm with the provider
+  // server-side before showing anything or unlocking the plan.
+  const [returnNotice, setReturnNotice] = useState<{ tone: 'success' | 'warning' | 'error'; text: string } | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('billing_ref') || params.get('reference');
+    if (!params.get('billing_provider') || !ref) return;
+    setVerifying(true);
+    verifyRedirectCheckout(ref).then(async (res) => {
+      setVerifying(false);
+      window.history.replaceState({}, '', window.location.pathname);
+      if (res.status === 'succeeded') {
+        await refreshOrg();
+        setReturnNotice({ tone: 'success', text: lang === 'fr' ? 'Paiement confirmé, votre abonnement est actif.' : 'Payment confirmed, your subscription is active.' });
+      } else if (res.status === 'pending') {
+        setReturnNotice({ tone: 'warning', text: lang === 'fr' ? 'Paiement en attente de confirmation par l’opérateur. Votre plan sera activé automatiquement dès réception.' : 'Payment is awaiting operator confirmation. Your plan will activate automatically once it arrives.' });
+      } else {
+        setReturnNotice({ tone: 'error', text: res.msg || (lang === 'fr' ? 'Le paiement n’a pas abouti.' : 'The payment did not go through.') });
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   // Prices come from PLAN_PRICES and every bullet maps to a real flag in
   // PLAN_FEATURES (src/lib/plans.ts) — this card used to sell "Advanced
@@ -1044,7 +1070,9 @@ export function BillingPage() {
         </div>
         {availablePsps !== null && availablePsps.length === 0 && (
           <p className="mt-3 rounded-lg bg-warning-50 p-2 text-xs text-warning-700">
-            {lang === 'fr' ? 'Aucun moyen de paiement n\'est configuré actuellement. Contactez le support.' : 'No payment provider is currently configured. Contact support.'}
+            {IS_DEMO
+              ? (lang === 'fr' ? 'Le paiement est désactivé dans la démo. Créez votre compte gratuit pour vous abonner.' : 'Payment is disabled in the demo. Create your free account to subscribe.')
+              : (lang === 'fr' ? 'Aucun moyen de paiement n\'est configuré actuellement. Contactez le support.' : 'No payment provider is currently configured. Contact support.')}
           </p>
         )}
         {!canManageBilling && (
@@ -1055,6 +1083,11 @@ export function BillingPage() {
         {verifying && (
           <p className="mt-3 rounded-lg bg-primary-50 p-2 text-xs text-primary-700 flex items-center gap-2">
             <Loader2 size={12} className="animate-spin" /> {lang === 'fr' ? 'Confirmation du paiement...' : 'Confirming payment...'}
+          </p>
+        )}
+        {returnNotice && (
+          <p role="status" className={`mt-3 rounded-lg p-2.5 text-sm ${returnNotice.tone === 'success' ? 'bg-success-50 text-success-700' : returnNotice.tone === 'warning' ? 'bg-warning-50 text-warning-800' : 'bg-error-50 text-error-700'}`}>
+            {returnNotice.text}
           </p>
         )}
       </div>
@@ -1135,80 +1168,64 @@ export function BillingPage() {
 export function UsagePage() {
   const { language } = useAuth();
   const lang = language;
+  const fr = lang === 'fr';
   const { plan, features } = usePlanAccess();
-  const [usage, setUsage] = useState({
-    aiTasks: 0, apiCalls: 0, storage: 0, activeUsers: 1,
-    contacts: 0, emailsSent: 0,
-  });
+  // Real counts only. This page used to show "API calls" (= AI tasks × 12),
+  // "storage" and "emails sent" figures that were estimated, not measured,
+  // and capped AI tasks at maxAIEmployees × 100 — a limit that exists nowhere.
+  const [usage, setUsage] = useState({ agents: 0, users: 0, contacts: 0, aiTasks: 0, workflowRuns: 0, records: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
+      const count = async (table: string) => (await supabase.from(table).select('id', { count: 'exact', head: true })).count || 0;
       try {
-        const [aiTasksRes, contactsRes, invoicesRes, employeesRes] = await Promise.all([
-          supabase.from('ai_tasks').select('*', { count: 'exact', head: true }),
-          supabase.from('contacts').select('*', { count: 'exact', head: true }),
-          supabase.from('invoices').select('*', { count: 'exact', head: true }),
-          supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        ]);
-        setUsage({
-          aiTasks: aiTasksRes.count || 0,
-          apiCalls: (aiTasksRes.count || 0) * 12,
-          storage: Math.round(((contactsRes.count || 0) * 0.2 + (invoicesRes.count || 0) * 0.5) * 10) / 10,
-          activeUsers: employeesRes.count || 1,
-          contacts: contactsRes.count || 0,
-          emailsSent: (invoicesRes.count || 0) * 3,
-        });
-      } catch {
-        // tables may be empty
+        const [agents, users, contacts, aiTasks, workflowRuns, companies, deals, invoices] = await Promise.all(
+          ['ai_agents', 'profiles', 'contacts', 'ai_tasks', 'workflow_runs', 'companies', 'deals', 'invoices'].map(count),
+        );
+        setUsage({ agents, users, contacts, aiTasks, workflowRuns, records: contacts + companies + deals + invoices });
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  const contactCap = features.maxContacts === 'unlimited' ? null : features.maxContacts;
-  const aiCap = features.maxAIEmployees === 'unlimited' ? null : features.maxAIEmployees;
-  const userCap = features.maxUsers === 'unlimited' ? null : features.maxUsers;
-
-  const limits: Record<string, { value: number; cap: number | null }> = {
-    [lang === 'fr' ? 'Tâches IA' : 'AI Tasks']: { value: usage.aiTasks, cap: aiCap ? aiCap * 100 : null },
-    [lang === 'fr' ? 'Appels API' : 'API Calls']: { value: usage.apiCalls, cap: features.apiAccess ? null : 0 },
-    [lang === 'fr' ? 'Stockage' : 'Storage']: { value: Math.round(usage.storage), cap: null },
-    [lang === 'fr' ? 'Contacts' : 'Contacts']: { value: usage.contacts, cap: contactCap },
-    [lang === 'fr' ? 'Utilisateurs' : 'Users']: { value: usage.activeUsers, cap: userCap },
-    [lang === 'fr' ? 'E-mails envoyés' : 'Emails Sent']: { value: usage.emailsSent, cap: null },
-  };
+  const cap = (v: number | 'unlimited') => (v === 'unlimited' ? null : v);
+  const limits: { label: string; value: number; cap: number | null }[] = [
+    { label: fr ? 'Employés IA' : 'AI employees', value: usage.agents, cap: cap(features.maxAIEmployees) },
+    { label: fr ? 'Utilisateurs' : 'Users', value: usage.users, cap: cap(features.maxUsers) },
+    { label: fr ? 'Contacts' : 'Contacts', value: usage.contacts, cap: cap(features.maxContacts) },
+  ];
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title={t('nav.usage', lang)} subtitle={`${lang === 'fr' ? 'Plan actuel' : 'Current plan'}: ${plan}`} />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label={lang === 'fr' ? 'Tâches IA' : 'AI Tasks'} value={loading ? '…' : String(usage.aiTasks)} icon={<Sparkles size={20} />} color="primary" />
-        <StatCard label={lang === 'fr' ? 'Appels API' : 'API Calls'} value={loading ? '…' : String(usage.apiCalls)} icon={<Gauge size={20} />} color="accent" />
-        <StatCard label={lang === 'fr' ? 'Stockage' : 'Storage'} value={loading ? '…' : `${usage.storage} MB`} icon={<Gauge size={20} />} color="success" />
-        <StatCard label={lang === 'fr' ? 'Utilisateurs actifs' : 'Active Users'} value={loading ? '…' : String(usage.activeUsers)} icon={<Gauge size={20} />} color="warning" />
+      <PageHeader title={t('nav.usage', lang)} subtitle={`${fr ? 'Plan actuel' : 'Current plan'} : ${plan}`} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StatCard label={fr ? 'Fiches CRM' : 'CRM records'} hint={fr ? 'contacts, entreprises, affaires, factures' : 'contacts, companies, deals, invoices'} value={loading ? '…' : usage.records.toLocaleString(lang)} icon={<Gauge size={18} />} color="primary" />
+        <StatCard label={fr ? 'Tâches IA' : 'AI tasks'} value={loading ? '…' : usage.aiTasks.toLocaleString(lang)} icon={<Sparkles size={18} />} color="accent" to="/app/ai-tasks" />
+        <StatCard label={fr ? 'Exécutions de workflows' : 'Workflow runs'} value={loading ? '…' : usage.workflowRuns.toLocaleString(lang)} icon={<Gauge size={18} />} color="success" to="/app/ai-workflows" />
+        <StatCard label={fr ? 'Utilisateurs' : 'Users'} value={loading ? '…' : usage.users.toLocaleString(lang)} icon={<Gauge size={18} />} color="warning" to="/app/employees" />
       </div>
       <div className="card p-6">
-        <h3 className="font-bold text-ink-800 mb-1">{lang === 'fr' ? 'Utilisation mensuelle' : 'Monthly Usage'}</h3>
-        <p className="text-xs text-ink-400 mb-4">{lang === 'fr' ? `Limites selon votre plan ${plan}.` : `Limits based on your ${plan} plan.`}</p>
-        <div className="space-y-4">
-          {Object.entries(limits).map(([item, { value, cap }]) => {
-            const pct = cap ? Math.min(100, Math.round((value / cap) * 100)) : 0;
-            const capLabel = cap === null ? (lang === 'fr' ? 'Illimité' : 'Unlimited') : (cap === 0 ? (lang === 'fr' ? 'Non disponible' : 'Not available') : cap.toLocaleString());
+        <h3 className="card-title mb-1">{fr ? 'Limites de votre plan' : 'Your plan limits'}</h3>
+        <p className="text-sm text-ink-500 mb-5">{fr ? `Ce que le plan ${plan} inclut, et où vous en êtes.` : `What the ${plan} plan includes, and where you stand.`}</p>
+        <div className="space-y-5">
+          {limits.map(({ label, value, cap: c }) => {
+            const pct = c ? Math.min(100, Math.round((value / c) * 100)) : 0;
             return (
-              <div key={item}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-ink-600">{item}</span>
-                  <span className="text-ink-400">{value.toLocaleString()} / {capLabel}</span>
+              <div key={label}>
+                <div className="flex justify-between text-sm mb-1.5">
+                  <span className="font-medium text-ink-700">{label}</span>
+                  <span className="text-ink-500 tabular">{value.toLocaleString(lang)} / {c === null ? (fr ? 'illimité' : 'unlimited') : c.toLocaleString(lang)}</span>
                 </div>
                 <div className="h-2 bg-ink-100 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${cap === 0 ? 'bg-ink-200' : pct > 80 ? 'bg-error-500' : pct > 50 ? 'bg-warning-500' : 'bg-primary-500'}`} style={{ width: `${cap === null || cap === 0 ? 0 : pct}%` }} />
+                  <div className={`h-full rounded-full ${pct > 90 ? 'bg-error-500' : pct > 70 ? 'bg-warning-500' : 'bg-primary-500'}`} style={{ width: `${c === null ? 0 : pct}%` }} />
                 </div>
               </div>
             );
           })}
         </div>
+        <Link to="/app/billing" className="btn-secondary btn-sm mt-6">{fr ? 'Changer de plan' : 'Change plan'}</Link>
       </div>
     </div>
   );

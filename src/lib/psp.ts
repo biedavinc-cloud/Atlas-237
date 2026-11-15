@@ -2,6 +2,8 @@ import { isFlutterwaveConfigured, initiateFlutterwaveCheckout, recordSubscriptio
 import { isPayunitConfigured, initiatePayunitCheckout } from '@/lib/payunit';
 import { isPaystackConfigured, initiatePaystackCheckout, confirmPaystackPayment } from '@/lib/paystack';
 import { isPaddleConfigured, initiatePaddleCheckout, confirmPaddlePayment } from '@/lib/paddle';
+import { redirectProvidersAvailable, startRedirectCheckout } from '@/lib/redirectBilling';
+import { IS_DEMO } from '@/lib/demo/mode';
 
 /**
  * Payment Service Provider registry.
@@ -54,6 +56,18 @@ export const PSP_REGISTRY: PspOption[] = [
     method: 'Card / PayPal / Apple Pay (global, Merchant of Record)',
     checkAvailable: async () => isPaddleConfigured(),
   },
+  {
+    key: 'cinetpay',
+    label: 'CinetPay',
+    method: 'Mobile Money (Orange, MTN, Moov, Wave) / card — CFA zone',
+    checkAvailable: async () => (await redirectProvidersAvailable()).cinetpay,
+  },
+  {
+    key: 'korapay',
+    label: 'Korapay',
+    method: 'Card / Mobile Money / bank transfer — Africa',
+    checkAvailable: async () => (await redirectProvidersAvailable()).korapay,
+  },
   // Future PSPs are added here — the Billing page automatically picks
   // them up, checks availability, and includes them in the manual-
   // selection list. Nothing else needs to change.
@@ -61,6 +75,8 @@ export const PSP_REGISTRY: PspOption[] = [
 
 /** Checks every registered PSP in parallel and returns only the available ones, in registry priority order. */
 export async function getAvailablePsps(): Promise<PspOption[]> {
+  // The demo workspace never opens a real checkout.
+  if (IS_DEMO) return [];
   const results = await Promise.all(PSP_REGISTRY.map(async (psp) => ({ psp, available: await psp.checkAvailable() })));
   return results.filter((r) => r.available).map((r) => r.psp);
 }
@@ -122,6 +138,12 @@ export async function payWithPsp(
         onClose: () => resolve({ ok: false, msg: 'cancelled' }),
       });
     });
+  }
+  if (pspKey === 'korapay' || pspKey === 'cinetpay') {
+    const result = await startRedirectCheckout({ provider: pspKey, plan: params.plan, orgId: params.orgId, billingCycle: params.billingCycle });
+    if (!result.ok || !result.checkoutUrl) return { ok: false, msg: result.msg };
+    window.location.href = result.checkoutUrl;
+    return { ok: true, redirected: true };
   }
   return { ok: false, msg: 'unknown_psp' };
 }

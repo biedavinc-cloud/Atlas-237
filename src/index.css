@@ -205,3 +205,33 @@
     background-color: rgb(255 255 255 / 0.12);
   }
 }
+
+/* Quote / invoice paper: inputs look like text until hovered/focused. */
+@layer components {
+  .doc-input {
+    @apply w-full rounded-md border border-transparent bg-transparent px-1.5 py-1 text-sm text-ink-900 hover:border-ink-200 focus:border-primary-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100;
+    -moz-appearance: textfield;
+  }
+  .doc-input::-webkit-outer-spin-button,
+  .doc-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+}
+
+/* Printing (browser "Save as PDF"): only the document paper is printed. */
+@media print {
+  @page { size: A4; margin: 14mm; }
+  html, body, #root, #root * { overflow: visible !important; }
+  #root [class*="h-[100dvh]"], #root main { height: auto !important; }
+  body * { visibility: hidden; }
+  .doc-paper, .doc-paper * { visibility: visible; }
+  .doc-paper { position: absolute; inset: 0 auto auto 0; width: 100%; max-width: none !important; box-shadow: none !important; border-radius: 0 !important; --tw-ring-shadow: 0 0 #0000 !important; }
+  .no-print, .doc-paper .no-print { display: none !important; }
+  .doc-input { border-color: transparent !important; padding-left: 0; padding-right: 0; }
+  .doc-input::placeholder { color: transparent; }
+}
+
+/* Long-form reading (blog): a serif body distinct from the app's UI font. */
+@layer components {
+  .blog-serif {
+    font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, 'Times New Roman', serif;
+  }
+}

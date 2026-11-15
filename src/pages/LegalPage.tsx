@@ -207,13 +207,13 @@ function Content({ page, lang }: { page: LegalPage; lang: 'en' | 'fr' | 'es' | '
       return (
         <>
           {h2(fr ? 'Mentions Légales' : 'Legal Notice', '')}
-          <p>{fr ? "Le site et la plateforme Atlas CRM sont édités par LiAfrik (SPC FZC), société immatriculée à Dubaï, Émirats Arabes Unis, sous le numéro de licence 4425201.01, avec des activités en Afrique et à l'international. Tous droits réservés." : 'The Atlas CRM site and platform are published by LiAfrik (SPC FZC), a company registered in Dubai, United Arab Emirates, under license number 4425201.01, with operations across Africa and internationally. All rights reserved.'}</p>
+          <p>{fr ? "Le site et la plateforme Atlas CRM sont édités par Liafrik (SPC FZC), société immatriculée à Dubaï, Émirats Arabes Unis, sous le numéro de licence 4425201.01, avec des activités en Afrique et à l'international. Tous droits réservés." : 'The Atlas CRM site and platform are published by Liafrik (SPC FZC), a company registered in Dubai, United Arab Emirates, under license number 4425201.01, with operations across Africa and internationally. All rights reserved.'}</p>
           <h3 className="mt-6 text-lg font-bold text-ink-900">{fr ? 'Contact' : 'Contact'}</h3>
           <ul><li>Email: hello@liafrik.com</li><li>{fr ? 'Site : ' : 'Site: '}<a href="https://liafrik.com" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">liafrik.com</a></li></ul>
           <h3 className="mt-6 text-lg font-bold text-ink-900">{fr ? 'Hébergement' : 'Hosting'}</h3>
           <p>{fr ? "Le site est hébergé par Cloudflare, Inc. La base de données et les fonctions serveur sont hébergées par Supabase." : 'The site is hosted by Cloudflare, Inc. The database and server functions are hosted by Supabase.'}</p>
           <h3 className="mt-6 text-lg font-bold text-ink-900">{fr ? 'Propriété intellectuelle' : 'Intellectual property'}</h3>
-          <p>{fr ? "L'ensemble du contenu de ce site (textes, logos, marques, code) est la propriété de LiAfrik, sauf mention contraire, et ne peut être reproduit sans autorisation écrite préalable." : 'All content on this site (text, logos, trademarks, code) is the property of LiAfrik, unless otherwise stated, and may not be reproduced without prior written authorization.'}</p>
+          <p>{fr ? "L'ensemble du contenu de ce site (textes, logos, marques, code) est la propriété de Liafrik, sauf mention contraire, et ne peut être reproduit sans autorisation écrite préalable." : 'All content on this site (text, logos, trademarks, code) is the property of Liafrik, unless otherwise stated, and may not be reproduced without prior written authorization.'}</p>
         </>
       );
     case 'pledge':
@@ -274,7 +274,7 @@ export function LegalPage({ page }: { page: LegalPage }) {
       </div>
 
       <footer className="border-t border-ink-100 bg-ink-950 py-8 text-center text-xs text-ink-500">
-        © {new Date().getFullYear()} Atlas CRM · LiAfrik Dubai & {lang === 'fr' ? 'Afrique' : 'Africa'}
+        © {new Date().getFullYear()} Atlas CRM · {lang === 'fr' ? 'développé par Liafrik Tech · Dubaï – Yaoundé' : 'built by Liafrik Tech · Dubai – Yaoundé'}
       </footer>
     </div>
   );

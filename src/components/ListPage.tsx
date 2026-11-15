@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Plus, Search, Edit2, Trash2, Upload, FileSpreadsheet, CheckCircle2, Loader2, AlertCircle, Download } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Plus, Search, Edit2, Trash2, Upload, FileSpreadsheet, CheckCircle2, Loader2, AlertCircle, Download, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
@@ -81,17 +81,34 @@ interface ListPageProps<T extends { id: string }> {
   maxRowsMessage?: string;
   /** Extra per-row action buttons rendered before Edit/Delete (e.g. "Send WhatsApp", "Create payment link"). */
   rowActions?: (row: T, reload: () => void) => React.ReactNode;
+  /** Clicking a row opens this route (the record's detail page). */
+  rowLink?: (row: T) => string;
+  /** Columns searched server-side (ilike). Defaults to the form's text/email/phone fields. */
+  searchColumns?: string[];
+  /** Extra controls rendered in the header next to "Add" (e.g. a view switch). */
+  headerExtra?: React.ReactNode;
 }
 
 export interface FormField {
   key: string;
   label: string;
-  type: 'text' | 'email' | 'tel' | 'number' | 'select' | 'textarea' | 'date' | 'country' | 'phone' | 'tags';
+  type: 'text' | 'email' | 'tel' | 'number' | 'select' | 'textarea' | 'date' | 'country' | 'phone' | 'tags' | 'relation';
   required?: boolean;
   options?: { value: string; label: string }[];
   defaultValue?: string | number;
   /** For type 'phone': the key of a 'country' field in the same form, used to auto-select the dial code. */
   countryFieldKey?: string;
+  /**
+   * For type 'relation': a foreign key picked from another table (e.g. a
+   * deal's contact_id). Options are loaded from `table`, labelled with
+   * `label(row)`; `select` can embed parents for the label.
+   */
+  relation?: {
+    table: string;
+    select?: string;
+    label: (row: Record<string, unknown>) => string;
+    orderBy?: string;
+  };
 }
 
 function ImportModal({ table, fields, onClose, onDone, language }: {
@@ -307,74 +324,100 @@ function ImportModal({ table, fields, onClose, onDone, language }: {
   );
 }
 
-export function ListPage<T extends { id: string }>({
-  table, title, subtitle, columns, formFields, emptyIcon, emptyTitle, emptyDescription, select, relations, orderBy, importable, maxRows, maxRowsMessage, rowActions,
-}: ListPageProps<T>) {
+const PAGE_SIZE = 25;
+
+/** Postgres-safe value for a PostgREST `or=(col.ilike.*x*)` filter. */
+function escapeIlike(q: string): string {
+  return q.replace(/[%,()*\\]/g, ' ').trim();
+}
+
+async function notifyNewTicket(ticket: Record<string, unknown>) {
+  // Fire-and-forget: notification failures must never block ticket
+  // creation itself. Silently no-ops if RESEND_API_KEY isn't configured.
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-ticket-notification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionData.session?.access_token || ''}`,
+      },
+      body: JSON.stringify({
+        ticket_number: ticket.ticket_number || ticket.id,
+        subject: ticket.subject,
+        priority: ticket.priority,
+        description: ticket.description,
+      }),
+    });
+  } catch {
+    // ignore — best-effort notification only
+  }
+}
+
+/** Loads the options of a 'relation' field once per modal opening. */
+function RelationSelect({ field, value, onChange, id }: { field: FormField; value: string; onChange: (v: string) => void; id: string }) {
+  const [options, setOptions] = useState<{ value: string; label: string }[] | null>(null);
+  useEffect(() => {
+    const rel = field.relation;
+    if (!rel) return;
+    let q = supabase.from(rel.table).select(rel.select || '*').limit(1000);
+    if (rel.orderBy) q = q.order(rel.orderBy, { ascending: true });
+    q.then(({ data }) => {
+      const rows = (data || []) as unknown as Record<string, unknown>[];
+      setOptions(rows.map(r => ({ value: String(r.id), label: rel.label(r) || '—' })).sort((a, b) => a.label.localeCompare(b.label)));
+    });
+  }, [field.relation]);
+  return (
+    <select id={id} className="input" value={value} onChange={e => onChange(e.target.value)} disabled={options === null}>
+      <option value="">{options === null ? '…' : '—'}</option>
+      {options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  );
+}
+
+/**
+ * Create/edit form for one record of `table`. Used by ListPage and by the
+ * record detail pages, so both write exactly the same way (tags arrays,
+ * blank stripping, webhooks, ticket notifications).
+ */
+export function RecordFormModal({ open, onClose, onSaved, table, title, fields, record, defaults }: {
+  open: boolean;
+  onClose: () => void;
+  onSaved: (row: Record<string, unknown>) => void;
+  table: string;
+  title: string;
+  fields: FormField[];
+  /** Existing row to edit; omit to create. */
+  record?: Record<string, unknown> | null;
+  /** Prefilled values for a new record (e.g. contact_id from a detail page). */
+  defaults?: Record<string, unknown>;
+}) {
   const { language } = useAuth();
-  const [rows, setRows] = useState<T[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<T | null>(null);
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [importOpen, setImportOpen] = useState(false);
+  const editing = Boolean(record?.id);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    let query = supabase.from(table).select(select || '*');
-    if (relations) query = supabase.from(table).select(relations);
-    if (orderBy) query = query.order(orderBy, { ascending: false });
-    else query = query.order('created_at', { ascending: false });
-    const { data, error } = await query;
-    if (!error) setRows((data || []) as unknown as T[]);
-    setLoading(false);
-  }, [table, select, relations, orderBy]);
-
-  useEffect(() => { load(); }, [load]);
-
-  // Quick-create deep link (command palette / "New contact" shortcuts):
-  // /app/contacts?new=1 opens the create form once, then cleans the URL so
-  // a refresh or back-navigation doesn't reopen it.
-  const [searchParams, setSearchParams] = useSearchParams();
-  const handledNewParam = useRef(false);
   useEffect(() => {
-    if (handledNewParam.current || searchParams.get('new') !== '1') return;
-    if (maxRows != null && rows.length >= maxRows && !loading) return;
-    handledNewParam.current = true;
-    openCreate();
-    const next = new URLSearchParams(searchParams);
-    next.delete('new');
-    setSearchParams(next, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, loading]);
-
-  function openCreate() {
+    if (!open) return;
     setError('');
-    setEditing(null);
-    const defaults: Record<string, unknown> = {};
-    formFields.forEach(f => { if (f.defaultValue !== undefined) defaults[f.key] = f.defaultValue; });
-    setFormData(defaults);
-    setModalOpen(true);
-  }
-
-  function openEdit(row: T) {
-    setEditing(row);
     const data: Record<string, unknown> = {};
-    formFields.forEach(f => {
-      const v = (row as Record<string, unknown>)[f.key];
-      // 'tags' columns are real Postgres arrays (e.g. text[]); the input
-      // itself works with a plain comma-separated string, so convert here
-      // and convert back on save (see handleSave).
-      data[f.key] = f.type === 'tags' && Array.isArray(v) ? v.join(', ') : v;
-    });
+    if (record) {
+      fields.forEach(f => {
+        const v = record[f.key];
+        // 'tags' columns are real Postgres arrays (text[]); the input works
+        // with a comma-separated string, converted back on save.
+        data[f.key] = f.type === 'tags' && Array.isArray(v) ? v.join(', ') : v;
+      });
+    } else {
+      fields.forEach(f => { if (f.defaultValue !== undefined) data[f.key] = f.defaultValue; });
+      Object.assign(data, defaults || {});
+    }
     setFormData(data);
-    setModalOpen(true);
-  }
+  }, [open, record, fields, defaults]);
 
   async function handleSave() {
-    const missing = formFields.filter(f => {
+    const missing = fields.filter(f => {
       if (!f.required) return false;
       const v = formData[f.key];
       return v === undefined || v === null || String(v).trim() === '';
@@ -386,46 +429,41 @@ export function ListPage<T extends { id: string }>({
     setSaving(true);
     setError('');
     try {
-      // Strip UI-only companion keys (e.g. "country__mode") added by
-      // special field renderers (country/phone) — never real columns.
+      // Strip UI-only companion keys ("country__mode") and, on create,
+      // blanks so column defaults apply.
       const payload = Object.fromEntries(
         Object.entries(formData).filter(([k, v]) =>
           !k.includes('__mode') && !k.endsWith('__other') &&
-          // On create, let column defaults apply instead of sending blanks.
-          (editing || (v !== null && v !== ''))
+          (editing || (v !== null && v !== '' && v !== undefined))
         )
       );
-      // Array-type columns (e.g. contacts.tags text[]) need a real array,
-      // not the comma-separated string the 'tags' input works with —
-      // sending a bare string like "1250" to Postgres for an array column
-      // fails with "malformed array literal": Postgres tries to parse the
-      // string itself as array syntax (e.g. "{a,b,c}") and rejects it.
-      formFields.forEach(f => {
+      fields.forEach(f => {
         if (f.type === 'tags' && f.key in payload) {
           const raw = payload[f.key];
           payload[f.key] = typeof raw === 'string'
             ? raw.split(',').map(s => s.trim()).filter(Boolean)
             : (Array.isArray(raw) ? raw : []);
         }
+        // An emptied relation means "no link", not an invalid uuid "".
+        if (f.type === 'relation' && payload[f.key] === '') payload[f.key] = null;
       });
-      if (editing) {
-        const { error } = await supabase.from(table).update(payload).eq('id', editing.id);
+      if (editing && record?.id) {
+        const { data: updated, error } = await supabase.from(table).update(payload).eq('id', record.id as string).select().single();
         if (error) throw error;
         for (const ev of computeWebhookEvents(table, 'updated', payload)) {
-          triggerWebhooks(ev, { id: editing.id, table, ...payload });
+          triggerWebhooks(ev, { id: record.id, table, ...payload });
         }
+        onSaved((updated as Record<string, unknown>) || { ...record, ...payload });
       } else {
         const { data: inserted, error } = await supabase.from(table).insert(payload).select().single();
         if (error) throw error;
-        if (table === 'tickets' && inserted) {
-          notifyNewTicket(inserted as Record<string, unknown>);
-        }
+        if (table === 'tickets' && inserted) notifyNewTicket(inserted as Record<string, unknown>);
         for (const ev of computeWebhookEvents(table, 'created', payload)) {
           triggerWebhooks(ev, { id: (inserted as Record<string, unknown> | null)?.id, table, ...payload });
         }
+        onSaved((inserted as Record<string, unknown>) || payload);
       }
-      setModalOpen(false);
-      load();
+      onClose();
     } catch (err: unknown) {
       setError(getErrorMessage(err, 'Save failed'));
     } finally {
@@ -433,27 +471,193 @@ export function ListPage<T extends { id: string }>({
     }
   }
 
-  async function notifyNewTicket(ticket: Record<string, unknown>) {
-    // Fire-and-forget: notification failures must never block ticket
-    // creation itself. Silently no-ops if RESEND_API_KEY isn't configured.
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-ticket-notification`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionData.session?.access_token || ''}`,
-        },
-        body: JSON.stringify({
-          ticket_number: ticket.ticket_number || ticket.id,
-          subject: ticket.subject,
-          priority: ticket.priority,
-          description: ticket.description,
-        }),
-      });
-    } catch {
-      // ignore — best-effort notification only
+  const set = (key: string, value: unknown) => setFormData(prev => ({ ...prev, [key]: value }));
+
+  return (
+    <Modal open={open} onClose={onClose} title={editing ? t('common.edit', language) : t('common.add', language)} description={title} size="lg">
+      {error && <div role="alert" className="mb-4 flex items-start gap-2 rounded-lg bg-error-50 border border-error-200 px-4 py-2.5 text-sm text-error-700"><AlertCircle size={16} className="mt-0.5 flex-none" />{error}</div>}
+      <form onSubmit={e => { e.preventDefault(); handleSave(); }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {fields.map(field => {
+            const id = `f-${table}-${field.key}`;
+            return (
+              <div key={field.key} className={field.type === 'textarea' ? 'sm:col-span-2' : ''}>
+                <label className="label" htmlFor={id}>
+                  {field.label}{field.required && <span className="text-error-600 ms-0.5" aria-hidden>*</span>}
+                </label>
+                {field.type === 'relation' ? (
+                  <RelationSelect id={id} field={field} value={String(formData[field.key] ?? '')} onChange={v => set(field.key, v)} />
+                ) : field.type === 'select' ? (
+                  <select id={id} className="input" value={String(formData[field.key] ?? '')} onChange={e => set(field.key, e.target.value)}>
+                    <option value="">—</option>
+                    {field.options?.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  </select>
+                ) : field.type === 'country' ? (() => {
+                  const val = String(formData[field.key] ?? '');
+                  const explicitOther = formData[`${field.key}__mode`] === 'other';
+                  const isKnown = !explicitOther && (!val || COUNTRIES.some(c => c.code === val));
+                  return (
+                    <div className="space-y-2">
+                      <select
+                        id={id}
+                        className="input"
+                        value={isKnown ? val : '__other__'}
+                        onChange={e => {
+                          if (e.target.value === '__other__') setFormData(prev => ({ ...prev, [field.key]: '', [`${field.key}__mode`]: 'other' }));
+                          else setFormData(prev => ({ ...prev, [field.key]: e.target.value, [`${field.key}__mode`]: 'known' }));
+                        }}
+                      >
+                        <option value="">—</option>
+                        {COUNTRIES.map(c => <option key={c.code} value={c.code}>{language === 'fr' ? c.nameFr : c.name}</option>)}
+                        <option value="__other__">{language === 'fr' ? 'Autre (préciser)…' : 'Other (specify)…'}</option>
+                      </select>
+                      {!isKnown && (
+                        <input type="text" className="input" placeholder={language === 'fr' ? 'Nom du pays' : 'Country name'} value={val}
+                          onChange={e => setFormData(prev => ({ ...prev, [field.key]: e.target.value, [`${field.key}__mode`]: 'other' }))} autoFocus />
+                      )}
+                    </div>
+                  );
+                })() : field.type === 'phone' ? (() => {
+                  const raw = String(formData[field.key] ?? '');
+                  const sortedByDialLength = [...COUNTRIES].sort((a, b) => b.dialCode.length - a.dialCode.length);
+                  const matched = sortedByDialLength.find(c => raw === c.dialCode || raw.startsWith(c.dialCode + ' '));
+                  let dial = matched?.dialCode || '';
+                  const rest = matched ? raw.slice(matched.dialCode.length).trim() : raw;
+                  if (!dial && field.countryFieldKey) {
+                    const c = COUNTRIES.find(c => c.code === String(formData[field.countryFieldKey!] ?? ''));
+                    if (c) dial = c.dialCode;
+                  }
+                  return (
+                    <div className="flex gap-2">
+                      <select className="input w-28 flex-shrink-0" aria-label="Dial code" value={dial} onChange={e => set(field.key, `${e.target.value} ${rest}`.trim())}>
+                        <option value="">—</option>
+                        {COUNTRIES.map(c => <option key={c.code} value={c.dialCode}>{c.code} {c.dialCode}</option>)}
+                      </select>
+                      <input id={id} type="tel" className="input flex-1" value={rest} onChange={e => set(field.key, dial ? `${dial} ${e.target.value}`.trim() : e.target.value)} />
+                    </div>
+                  );
+                })() : field.type === 'tags' ? (
+                  <input id={id} type="text" className="input" placeholder={language === 'fr' ? 'ex : vip, prospect, tech' : 'e.g. vip, prospect, tech'}
+                    value={String(formData[field.key] ?? '')} onChange={e => set(field.key, e.target.value)} />
+                ) : field.type === 'textarea' ? (
+                  <textarea id={id} className="input min-h-[96px]" value={String(formData[field.key] ?? '')} onChange={e => set(field.key, e.target.value)} />
+                ) : (
+                  <input
+                    id={id}
+                    type={field.type}
+                    className="input"
+                    value={field.type === 'date' ? String(formData[field.key] ?? '').slice(0, 10) : String(formData[field.key] ?? '')}
+                    // An emptied number field is "no value", not 0.
+                    onChange={e => set(field.key, field.type === 'number' ? (e.target.value === '' ? null : Number(e.target.value)) : e.target.value)}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-ink-100">
+          <button type="button" onClick={onClose} className="btn-secondary btn-sm">{t('common.cancel', language)}</button>
+          <button type="submit" disabled={saving} className="btn-primary btn-sm">
+            {saving && <Loader2 size={14} className="animate-spin" />}
+            {editing ? t('common.save', language) : t('common.create', language)}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function csvCell(v: unknown): unknown {
+  if (v === null || v === undefined) return '';
+  if (Array.isArray(v)) return v.join(', ');
+  if (typeof v === 'object') return '';
+  return v;
+}
+
+export function ListPage<T extends { id: string }>({
+  table, title, subtitle, columns, formFields, emptyIcon, emptyTitle, emptyDescription, select, relations, orderBy,
+  importable, maxRows, maxRowsMessage, rowActions, rowLink, searchColumns, headerExtra,
+}: ListPageProps<T>) {
+  const { language } = useAuth();
+  const navigate = useNavigate();
+  const [rows, setRows] = useState<T[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [search, setSearch] = useState('');
+  const [debounced, setDebounced] = useState('');
+  const [page, setPage] = useState(0);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [sort, setSort] = useState<{ key: string; asc: boolean }>({ key: orderBy || 'created_at', asc: false });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<T | null>(null);
+  const [createDefaults, setCreateDefaults] = useState<Record<string, unknown> | undefined>(undefined);
+  const [importOpen, setImportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const statusField = formFields.find(f => f.key === 'status' && f.type === 'select' && f.options?.length);
+  const searchable = searchColumns ?? formFields.filter(f => ['text', 'email', 'tel', 'phone'].includes(f.type)).map(f => f.key).slice(0, 6);
+  const sortable = new Set([...formFields.filter(f => f.type !== 'relation').map(f => f.key), 'created_at']);
+
+  useEffect(() => {
+    const id = setTimeout(() => { setDebounced(search.trim()); setPage(0); }, 250);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const applyFilters = useCallback((query: any) => {
+    let q = query;
+    const term = escapeIlike(debounced);
+    if (term && searchable.length) q = q.or(searchable.map(c => `${c}.ilike.*${term}*`).join(','));
+    if (statusFilter) q = q.eq('status', statusFilter);
+    return q;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debounced, statusFilter, searchable.join(',')]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    const from = page * PAGE_SIZE;
+    let query = supabase.from(table).select(relations || select || '*', { count: 'exact' });
+    query = applyFilters(query).order(sort.key, { ascending: sort.asc }).range(from, from + PAGE_SIZE - 1);
+    const { data, error, count } = await query;
+    if (error) setLoadError(error.message);
+    else {
+      setRows((data || []) as unknown as T[]);
+      setTotal(count ?? (data || []).length);
     }
+    setLoading(false);
+  }, [table, select, relations, page, sort, applyFilters]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Quick-create deep link (/app/contacts?new=1&company_id=…): opens the
+  // form once, prefilled with any params that match a form field, then
+  // cleans the URL so a refresh doesn't reopen it.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const handledNewParam = useRef(false);
+  useEffect(() => {
+    if (handledNewParam.current || searchParams.get('new') !== '1') return;
+    handledNewParam.current = true;
+    const defaults: Record<string, unknown> = {};
+    formFields.forEach(f => { const v = searchParams.get(f.key); if (v) defaults[f.key] = v; });
+    openCreate(defaults);
+    setSearchParams(new URLSearchParams(), { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const atCap = maxRows != null && total >= maxRows;
+
+  function openCreate(defaults?: Record<string, unknown>) {
+    if (atCap) return;
+    setEditing(null);
+    setCreateDefaults(defaults);
+    setModalOpen(true);
+  }
+
+  function openEdit(row: T) {
+    setEditing(row);
+    setModalOpen(true);
   }
 
   async function handleDelete(row: T) {
@@ -466,12 +670,46 @@ export function ListPage<T extends { id: string }>({
     load();
   }
 
-  const filtered = search
-    ? rows.filter(r => {
-        const searchable = columns.map(c => String((r as Record<string, unknown>)[c.key] ?? '')).join(' ').toLowerCase();
-        return searchable.includes(search.toLowerCase());
-      })
-    : rows;
+  // Exports every row matching the current search/filter (not just this page).
+  async function exportCsv() {
+    setExporting(true);
+    try {
+      const all: Record<string, unknown>[] = [];
+      for (let from = 0; ; from += 1000) {
+        const q = applyFilters(supabase.from(table).select(select || '*')).order(sort.key, { ascending: sort.asc }).range(from, from + 999);
+        const { data, error } = await q;
+        if (error) throw error;
+        all.push(...((data || []) as unknown as Record<string, unknown>[]));
+        if (!data || data.length < 1000) break;
+      }
+      const keys = ['id', ...formFields.filter(f => f.type !== 'relation').map(f => f.key), 'created_at'];
+      const csv = Papa.unparse({
+        fields: ['id', ...formFields.filter(f => f.type !== 'relation').map(f => f.label), 'created_at'],
+        data: all.map(r => keys.map(k => csvCell(r[k]))),
+      });
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${table}_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(getErrorMessage(err, 'Export failed'));
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  function toggleSort(key: string) {
+    if (!sortable.has(key)) return;
+    setPage(0);
+    setSort(prev => prev.key === key ? { key, asc: !prev.asc } : { key, asc: true });
+  }
+
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const fr = language === 'fr';
+  const filtersActive = Boolean(debounced || statusFilter);
 
   return (
     <div className="animate-fade-in">
@@ -479,78 +717,97 @@ export function ListPage<T extends { id: string }>({
         title={title}
         subtitle={subtitle}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {headerExtra}
+            <button onClick={exportCsv} disabled={exporting || total === 0} className="btn-secondary btn-sm" title={fr ? 'Exporter en CSV' : 'Export to CSV'}>
+              {exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} <span className="hidden sm:inline">{fr ? 'Exporter' : 'Export'}</span>
+            </button>
             {importable && (
               <button onClick={() => setImportOpen(true)} className="btn-secondary btn-sm">
-                <Upload size={16} /> {t('common.import', language)}
+                <Upload size={15} /> <span className="hidden sm:inline">{t('common.import', language)}</span>
               </button>
             )}
-            <button
-              onClick={openCreate}
-              disabled={maxRows != null && rows.length >= maxRows}
-              title={maxRows != null && rows.length >= maxRows ? maxRowsMessage : undefined}
-              className="btn-primary btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button onClick={() => openCreate()} disabled={atCap} title={atCap ? maxRowsMessage : undefined} className="btn-primary btn-sm">
               <Plus size={16} /> {t('common.add', language)}
             </button>
           </div>
         }
       />
 
-      {maxRows != null && rows.length >= maxRows && maxRowsMessage && (
+      {atCap && maxRowsMessage && (
         <p className="mb-4 text-xs text-warning-700 bg-warning-50 rounded-lg px-3 py-2">{maxRowsMessage}</p>
       )}
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="relative w-full sm:max-w-sm">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="relative w-full sm:max-w-xs">
           <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-400" />
-          <input
-            className="input ps-9"
-            type="search"
-            aria-label={t('common.search', language)}
-            placeholder={t('common.search', language)}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+          <input className="input ps-9" type="search" aria-label={t('common.search', language)} placeholder={t('common.search', language)} value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        {!loading && rows.length > 0 && (
-          <p className="text-xs text-ink-500 tabular">
-            {search ? `${filtered.length} / ${rows.length}` : rows.length} {t('common.results', language)}
-          </p>
+        {statusField && (
+          <select className="input w-auto min-w-[150px]" aria-label={statusField.label} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(0); }}>
+            <option value="">{fr ? 'Tous les statuts' : 'All statuses'}</option>
+            {statusField.options!.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        )}
+        {!loading && (
+          <p className="ms-auto text-xs text-ink-500 tabular">{total} {t('common.results', language)}</p>
         )}
       </div>
 
-      {loading ? (
+      {loading && rows.length === 0 ? (
         <Loading text={t('common.loading', language)} />
-      ) : filtered.length === 0 ? (
+      ) : loadError ? (
+        <div className="card p-6 text-sm text-error-700 flex items-start gap-2"><AlertCircle size={16} className="mt-0.5" />{loadError}</div>
+      ) : rows.length === 0 ? (
         <div className="card">
-          <EmptyState
-            icon={emptyIcon}
-            title={emptyTitle}
-            description={emptyDescription}
-            action={<button onClick={openCreate} className="btn-primary btn-sm"><Plus size={16} /> {t('common.add', language)}</button>}
-          />
+          {filtersActive ? (
+            <EmptyState icon={<Search size={24} />} title={fr ? 'Aucun résultat' : 'No results'} description={fr ? 'Aucune fiche ne correspond à cette recherche ou à ce filtre.' : 'No record matches this search or filter.'}
+              action={<button onClick={() => { setSearch(''); setStatusFilter(''); }} className="btn-secondary btn-sm">{fr ? 'Effacer les filtres' : 'Clear filters'}</button>} />
+          ) : (
+            <EmptyState icon={emptyIcon} title={emptyTitle} description={emptyDescription}
+              action={<button onClick={() => openCreate()} className="btn-primary btn-sm"><Plus size={16} /> {t('common.add', language)}</button>} />
+          )}
         </div>
       ) : (
-        <div className="card overflow-hidden">
+        <div className={`card overflow-hidden transition-opacity ${loading ? 'opacity-60' : ''}`}>
           <div className="overflow-x-auto scrollbar-thin">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-ink-200/70 bg-ink-50/70">
-                  {columns.map(col => (
-                    <th key={col.key} scope="col" className={`th text-start ${col.className || ''}`}>
-                      {col.label}
-                    </th>
-                  ))}
+                  {columns.map(col => {
+                    const canSort = sortable.has(col.key);
+                    const active = sort.key === col.key;
+                    return (
+                      <th key={col.key} scope="col" className={`th text-start ${col.className || ''}`} aria-sort={active ? (sort.asc ? 'ascending' : 'descending') : undefined}>
+                        {canSort ? (
+                          <button onClick={() => toggleSort(col.key)} className={`inline-flex items-center gap-1 hover:text-ink-800 ${active ? 'text-ink-800' : ''}`}>
+                            {col.label}
+                            {active && (sort.asc ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+                          </button>
+                        ) : col.label}
+                      </th>
+                    );
+                  })}
                   <th scope="col" className="w-20 px-4 py-2.5"><span className="sr-only">{t('common.actions', language)}</span></th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(row => (
-                  <tr key={row.id} className="group border-b border-ink-100 last:border-0 table-row-hover">
-                    {columns.map(col => (
+                {rows.map(row => (
+                  <tr
+                    key={row.id}
+                    className={`group border-b border-ink-100 last:border-0 table-row-hover ${rowLink ? 'cursor-pointer' : ''}`}
+                    onClick={rowLink ? (e) => {
+                      if ((e.target as HTMLElement).closest('button, a, input, select')) return;
+                      navigate(rowLink(row));
+                    } : undefined}
+                  >
+                    {columns.map((col, ci) => (
                       <td key={col.key} className={`px-4 py-3 text-sm text-ink-700 ${col.className || ''}`}>
-                        {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? '—')}
+                        {ci === 0 && rowLink ? (
+                          <a href={rowLink(row)} onClick={e => { e.preventDefault(); navigate(rowLink(row)); }} className="hover:text-primary-700 hover:underline underline-offset-2">
+                            {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? '—')}
+                          </a>
+                        ) : (col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? '—'))}
                       </td>
                     ))}
                     <td className="px-4 py-3">
@@ -569,142 +826,34 @@ export function ListPage<T extends { id: string }>({
               </tbody>
             </table>
           </div>
+          {pages > 1 && (
+            <div className="flex items-center justify-between gap-3 border-t border-ink-100 px-4 py-2.5 text-sm text-ink-600">
+              <span className="tabular">{page * PAGE_SIZE + 1}–{Math.min(total, (page + 1) * PAGE_SIZE)} / {total}</span>
+              <div className="flex items-center gap-1">
+                <button className="btn-icon" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))} aria-label={fr ? 'Page précédente' : 'Previous page'}><ChevronLeft size={16} className="rtl:rotate-180" /></button>
+                <span className="px-2 tabular">{page + 1} / {pages}</span>
+                <button className="btn-icon" disabled={page + 1 >= pages} onClick={() => setPage(p => p + 1)} aria-label={fr ? 'Page suivante' : 'Next page'}><ChevronRight size={16} className="rtl:rotate-180" /></button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      <Modal
+      <RecordFormModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? t('common.edit', language) : t('common.add', language)}
-        description={title}
-        size="lg"
-      >
-        {error && <div role="alert" className="mb-4 flex items-start gap-2 rounded-lg bg-error-50 border border-error-200 px-4 py-2.5 text-sm text-error-700"><AlertCircle size={16} className="mt-0.5 flex-none" />{error}</div>}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {formFields.map(field => (
-            <div key={field.key} className={field.type === 'textarea' ? 'sm:col-span-2' : ''}>
-              <label className="label" htmlFor={`f-${table}-${field.key}`}>
-                {field.label}{field.required && <span className="text-error-600 ms-0.5" aria-hidden>*</span>}
-              </label>
-              {field.type === 'select' ? (
-                <select
-                  id={`f-${table}-${field.key}`}
-                  className="input"
-                  value={String(formData[field.key] ?? '')}
-                  onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
-                >
-                  <option value="">—</option>
-                  {field.options?.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
-              ) : field.type === 'country' ? (() => {
-                const val = String(formData[field.key] ?? '');
-                const explicitOther = formData[`${field.key}__mode`] === 'other';
-                const isKnown = !explicitOther && (!val || COUNTRIES.some(c => c.code === val));
-                const showOther = !isKnown;
-                return (
-                  <div className="space-y-2">
-                    <select
-                      className="input"
-                      value={showOther ? '__other__' : val}
-                      onChange={e => {
-                        if (e.target.value === '__other__') {
-                          setFormData({ ...formData, [field.key]: '', [`${field.key}__mode`]: 'other' });
-                        } else {
-                          setFormData({ ...formData, [field.key]: e.target.value, [`${field.key}__mode`]: 'known' });
-                        }
-                      }}
-                    >
-                      <option value="">—</option>
-                      {COUNTRIES.map(c => <option key={c.code} value={c.code}>{language === 'fr' ? c.nameFr : c.name}</option>)}
-                      <option value="__other__">{language === 'fr' ? 'Autre (préciser)…' : 'Other (specify)…'}</option>
-                    </select>
-                    {showOther && (
-                      <input
-                        type="text"
-                        className="input"
-                        placeholder={language === 'fr' ? 'Nom du pays' : 'Country name'}
-                        value={val}
-                        onChange={e => setFormData({ ...formData, [field.key]: e.target.value, [`${field.key}__mode`]: 'other' })}
-                        autoFocus
-                      />
-                    )}
-                  </div>
-                );
-              })() : field.type === 'phone' ? (() => {
-                const raw = String(formData[field.key] ?? '');
-                const sortedByDialLength = [...COUNTRIES].sort((a, b) => b.dialCode.length - a.dialCode.length);
-                const matched = sortedByDialLength.find(c => raw === c.dialCode || raw.startsWith(c.dialCode + ' '));
-                let dial = matched?.dialCode || '';
-                const rest = matched ? raw.slice(matched.dialCode.length).trim() : raw;
-                if (!dial && field.countryFieldKey) {
-                  const countryCode = String(formData[field.countryFieldKey] ?? '');
-                  const c = COUNTRIES.find(c => c.code === countryCode);
-                  if (c) dial = c.dialCode;
-                }
-                return (
-                  <div className="flex gap-2">
-                    <select
-                      className="input w-28 flex-shrink-0"
-                      value={dial}
-                      onChange={e => setFormData({ ...formData, [field.key]: `${e.target.value} ${rest}`.trim() })}
-                    >
-                      <option value="">—</option>
-                      {COUNTRIES.map(c => <option key={c.code} value={c.dialCode}>{c.code} {c.dialCode}</option>)}
-                    </select>
-                    <input
-                      type="tel"
-                      className="input flex-1"
-                      value={rest}
-                      onChange={e => setFormData({ ...formData, [field.key]: dial ? `${dial} ${e.target.value}`.trim() : e.target.value })}
-                      required={field.required}
-                    />
-                  </div>
-                );
-              })() : field.type === 'tags' ? (
-                <input
-                  type="text"
-                  className="input"
-                  placeholder={language === 'fr' ? 'ex: vip, prospect, tech' : 'e.g. vip, prospect, tech'}
-                  value={String(formData[field.key] ?? '')}
-                  onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
-                />
-              ) : field.type === 'textarea' ? (
-                <textarea
-                  id={`f-${table}-${field.key}`}
-                  className="input min-h-[96px]"
-                  value={String(formData[field.key] ?? '')}
-                  onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
-                />
-              ) : (
-                <input
-                  id={`f-${table}-${field.key}`}
-                  type={field.type}
-                  className="input"
-                  value={String(formData[field.key] ?? '')}
-                  onChange={e => setFormData({
-                    ...formData,
-                    // An emptied number field is "no value", not 0.
-                    [field.key]: field.type === 'number' ? (e.target.value === '' ? null : Number(e.target.value)) : e.target.value,
-                  })}
-                  required={field.required}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-ink-100">
-          <button onClick={() => setModalOpen(false)} className="btn-secondary btn-sm">{t('common.cancel', language)}</button>
-          <button onClick={handleSave} disabled={saving} className="btn-primary btn-sm">
-            {saving && <Loader2 size={14} className="animate-spin" />}
-            {editing ? t('common.save', language) : t('common.create', language)}
-          </button>
-        </div>
-      </Modal>
+        onSaved={() => load()}
+        table={table}
+        title={title}
+        fields={formFields}
+        record={editing as unknown as Record<string, unknown> | null}
+        defaults={createDefaults}
+      />
 
       {importOpen && (
         <ImportModal
           table={table}
-          fields={formFields}
+          fields={formFields.filter(f => f.type !== 'relation')}
           language={language}
           onClose={() => setImportOpen(false)}
           onDone={() => { setImportOpen(false); load(); }}

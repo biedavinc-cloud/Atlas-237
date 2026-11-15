@@ -3,11 +3,12 @@ import { ListPage, type FormField } from '@/components/ListPage';
 import { useAuth } from '@/context/AuthContext';
 import { t, tStatus } from '@/lib/i18n';
 import { Badge } from '@/components/ui';
-import { CURRENCIES, formatMoney } from '@/lib/i18n-countries';
+import { CURRENCIES, formatAmount } from '@/lib/i18n-countries';
 import { usePlanAccess } from '@/lib/plans';
 import { UpgradeGate } from '@/components/UpgradeGate';
 import { QuickPaymentLinkButton } from '@/components/QuickPaymentLinkButton';
 import type { Product, Invoice, Ticket, Campaign } from '@/types';
+import { contactRelation, companyRelation, quoteFields, invoiceFields } from '@/lib/entityFields';
 
 /**
  * Currency field for forms that record a monetary amount. Defaults to the
@@ -49,7 +50,7 @@ export function ProductsPage() {
         { key: 'name', label: t('common.name', language), render: (r) => <span className="font-medium text-ink-800">{r.name}</span> },
         { key: 'sku', label: t('list.sku', language), render: (r) => r.sku || '—' },
         { key: 'category', label: t('list.category', language), render: (r) => r.category || '—' },
-        { key: 'price', label: t('list.price', language), render: (r) => <span className="font-semibold">{formatMoney((r.price || 0) * 100, r.currency || orgCurrency, language)}</span> },
+        { key: 'price', label: t('list.price', language), render: (r) => <span className="font-semibold">{formatAmount((r.price || 0), r.currency || orgCurrency, language)}</span> },
         { key: 'stock', label: t('list.stock', language), render: (r) => r.stock ?? '—' },
         { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'active' ? 'success' : 'neutral'}>{tStatus(r.status, language)}</Badge> },
       ]}
@@ -68,34 +69,30 @@ export function QuotesPage() {
   const orgCurrency = organization?.currency || 'USD';
   const { hasFeature: hasPlanFeature } = usePlanAccess();
   const allowed = hasPlanFeature('quotesInvoicing');
-  const fields: FormField[] = [
-    { key: 'quote_number', label: t('list.quoteNumber', language), type: 'text', required: true },
-    { key: 'status', label: t('common.status', language), type: 'select', options: [
-      { value: 'draft', label: t('status.draft', language) }, { value: 'sent', label: t('status.sent', language) }, { value: 'accepted', label: t('status.accepted', language) }, { value: 'rejected', label: t('status.rejected', language) },
-    ], defaultValue: 'draft' },
-    { key: 'total', label: t('common.total', language), type: 'number', defaultValue: 0 },
-    currencyField(language, orgCurrency),
-    { key: 'expiration_date', label: t('list.expirationDate', language), type: 'date' },
-    { key: 'notes', label: t('list.notes', language), type: 'textarea' },
-  ];
+  type QuoteRow = { id: string; quote_number: string; status: string; total: number; currency?: string; expiration_date: string | null; contact?: { first_name: string; last_name: string } | null; company?: { name: string } | null; [key: string]: unknown };
 
   return !allowed ? (
     <UpgradeGate language={language} feature={t('nav.quotes', language)} minPlan="growth" />
   ) : (
-    <ListPage<{ id: string; quote_number: string; status: string; total: number; currency?: string; expiration_date: string | null; [key: string]: unknown }>
+    <ListPage<QuoteRow>
       table="quotes"
       title={t('nav.quotes', language)}
+      subtitle={language === 'fr' ? 'Ouvrez un devis pour y ajouter des lignes, l’imprimer en PDF ou le convertir en facture.' : 'Open a quote to add line items, print it to PDF or convert it to an invoice.'}
       columns={[
         { key: 'quote_number', label: t('list.quoteNumber', language), render: (r) => <span className="font-medium text-ink-800">{r.quote_number}</span> },
+        { key: 'company_id', label: language === 'fr' ? 'Client' : 'Customer', render: (r) => r.company?.name || (r.contact ? `${r.contact.first_name} ${r.contact.last_name}` : '—') },
         { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'accepted' ? 'success' : r.status === 'rejected' ? 'error' : 'warning'}>{tStatus(r.status, language)}</Badge> },
-        { key: 'total', label: t('common.total', language), render: (r) => formatMoney((r.total || 0) * 100, (r.currency as string) || orgCurrency, language) },
+        { key: 'total', label: t('common.total', language), render: (r) => <span className="font-semibold tabular">{formatAmount((r.total || 0), (r.currency as string) || orgCurrency, language)}</span> },
         { key: 'expiration_date', label: t('list.expires', language), render: (r) => r.expiration_date ? new Date(r.expiration_date).toLocaleDateString(language) : '—' },
       ]}
-      formFields={fields}
-      emptyIcon={<FileText size={28} />}
+      formFields={quoteFields(language, orgCurrency)}
+      searchColumns={['quote_number']}
+      relations="*, contact:contacts(first_name,last_name), company:companies(name)"
+      emptyIcon={<FileText size={26} />}
       emptyTitle={t('empty.noQuotes', language)}
       emptyDescription={t('empty.noQuotesDesc', language)}
       orderBy="created_at"
+      rowLink={(r) => `/app/quotes/${r.id}`}
     />
   );
 }
@@ -124,7 +121,7 @@ export function OrdersPage() {
         { key: 'order_number', label: t('list.orderNumber', language), render: (r) => <span className="font-medium text-ink-800">{r.order_number}</span> },
         { key: 'status', label: t('common.status', language), render: (r) => <Badge variant="primary">{tStatus(r.status, language)}</Badge> },
         { key: 'payment_status', label: t('list.payment', language), render: (r) => <Badge variant={r.payment_status === 'paid' ? 'success' : r.payment_status === 'partial' ? 'warning' : 'error'}>{tStatus(r.payment_status, language)}</Badge> },
-        { key: 'total', label: t('common.total', language), render: (r) => formatMoney((r.total || 0) * 100, (r.currency as string) || orgCurrency, language) },
+        { key: 'total', label: t('common.total', language), render: (r) => formatAmount((r.total || 0), (r.currency as string) || orgCurrency, language) },
       ]}
       formFields={fields}
       emptyIcon={<ShoppingCart size={28} />}
@@ -140,40 +137,34 @@ export function InvoicesPage() {
   const orgCurrency = organization?.currency || 'USD';
   const { hasFeature: hasPlanFeature } = usePlanAccess();
   const allowed = hasPlanFeature('quotesInvoicing');
-  const fields: FormField[] = [
-    { key: 'invoice_number', label: t('list.invoiceNumber', language), type: 'text', required: true },
-    { key: 'status', label: t('common.status', language), type: 'select', options: [
-      { value: 'draft', label: t('status.draft', language) }, { value: 'sent', label: t('status.sent', language) }, { value: 'paid', label: t('status.paid', language) }, { value: 'overdue', label: t('status.overdue', language) },
-    ], defaultValue: 'draft' },
-    { key: 'payment_status', label: t('list.payment', language), type: 'select', options: [
-      { value: 'unpaid', label: t('status.unpaid', language) }, { value: 'partial', label: t('status.partial', language) }, { value: 'paid', label: t('status.paid', language) },
-    ], defaultValue: 'unpaid' },
-    { key: 'total', label: t('common.total', language), type: 'number', defaultValue: 0 },
-    currencyField(language, orgCurrency),
-    { key: 'issue_date', label: t('list.issueDate', language), type: 'date' },
-    { key: 'due_date', label: t('list.dueDate', language), type: 'date' },
-    { key: 'notes', label: t('list.notes', language), type: 'textarea' },
-  ];
+  type InvoiceRow = Invoice & { contact?: { first_name: string; last_name: string } | null; company?: { name: string } | null };
 
   return !allowed ? (
     <UpgradeGate language={language} feature={t('nav.invoices', language)} minPlan="growth" />
   ) : (
-    <ListPage<Invoice>
+    <ListPage<InvoiceRow>
       table="invoices"
       title={t('nav.invoices', language)}
+      subtitle={language === 'fr' ? 'Ouvrez une facture pour gérer ses lignes, l’imprimer en PDF ou enregistrer un paiement.' : 'Open an invoice to manage its lines, print it to PDF or record a payment.'}
       columns={[
         { key: 'invoice_number', label: t('list.invoiceNumber', language), render: (r) => <span className="font-medium text-ink-800">{r.invoice_number}</span> },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'paid' ? 'success' : r.status === 'overdue' ? 'error' : 'warning'}>{tStatus(r.status, language)}</Badge> },
+        { key: 'company_id', label: language === 'fr' ? 'Client' : 'Customer', render: (r) => r.company?.name || (r.contact ? `${r.contact.first_name} ${r.contact.last_name}` : '—') },
         { key: 'payment_status', label: t('list.payment', language), render: (r) => <Badge variant={r.payment_status === 'paid' ? 'success' : r.payment_status === 'partial' ? 'warning' : 'error'}>{tStatus(r.payment_status, language)}</Badge> },
-        { key: 'total', label: t('common.total', language), render: (r) => <span className="font-semibold">{formatMoney((r.total || 0) * 100, r.currency || orgCurrency, language)}</span> },
-        { key: 'due_date', label: t('list.due', language), render: (r) => r.due_date ? new Date(r.due_date).toLocaleDateString(language) : '—' },
+        { key: 'total', label: t('common.total', language), render: (r) => <span className="font-semibold tabular">{formatAmount((r.total || 0), r.currency || orgCurrency, language)}</span> },
+        { key: 'due_date', label: t('list.due', language), render: (r) => {
+          if (!r.due_date) return '—';
+          const late = r.payment_status !== 'paid' && new Date(r.due_date) < new Date();
+          return <span className={late ? 'font-semibold text-error-600' : ''}>{new Date(r.due_date).toLocaleDateString(language)}</span>;
+        } },
       ]}
-      formFields={fields}
-      emptyIcon={<Receipt size={28} />}
+      formFields={invoiceFields(language, orgCurrency)}
+      searchColumns={['invoice_number']}
+      emptyIcon={<Receipt size={26} />}
       emptyTitle={t('empty.noInvoices', language)}
       emptyDescription={t('empty.noInvoicesDesc', language)}
-      relations="*, contact:contacts(*), company:companies(*)"
+      relations="*, contact:contacts(first_name,last_name), company:companies(name)"
       orderBy="created_at"
+      rowLink={(r) => `/app/invoices/${r.id}`}
       rowActions={(row) => <QuickPaymentLinkButton amount={row.total} currency={row.currency || orgCurrency} label={row.invoice_number} />}
     />
   );
@@ -199,7 +190,7 @@ export function PaymentsPage() {
       table="payments"
       title={t('nav.payments', language)}
       columns={[
-        { key: 'amount', label: t('superAdmin.amount', language), render: (r) => <span className="font-semibold">{formatMoney((r.amount || 0) * 100, (r.currency as string) || orgCurrency, language)}</span> },
+        { key: 'amount', label: t('superAdmin.amount', language), render: (r) => <span className="font-semibold">{formatAmount((r.amount || 0), (r.currency as string) || orgCurrency, language)}</span> },
         { key: 'method', label: t('list.method', language), render: (r) => r.method || '—' },
         { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'completed' ? 'success' : r.status === 'failed' ? 'error' : 'warning'}>{tStatus(r.status, language)}</Badge> },
         { key: 'reference', label: t('list.reference', language), render: (r) => r.reference || '—' },
@@ -238,7 +229,7 @@ export function MarketingPage() {
         { key: 'name', label: t('common.name', language), render: (r) => <span className="font-medium text-ink-800">{r.name}</span> },
         { key: 'type', label: t('list.type', language), render: (r) => <Badge variant="primary">{tStatus(r.type, language)}</Badge> },
         { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'active' ? 'success' : r.status === 'completed' ? 'neutral' : 'warning'}>{tStatus(r.status, language)}</Badge> },
-        { key: 'budget', label: t('list.budget', language), render: (r) => formatMoney((r.budget || 0) * 100, r.currency || orgCurrency, language) },
+        { key: 'budget', label: t('list.budget', language), render: (r) => formatAmount((r.budget || 0), r.currency || orgCurrency, language) },
       ]}
       formFields={fields}
       emptyIcon={<Megaphone size={28} />}
@@ -262,6 +253,8 @@ export function SupportPage() {
     { key: 'status', label: t('common.status', language), type: 'select', options: [
       { value: 'open', label: t('status.open', language) }, { value: 'in_progress', label: t('status.inProgress', language) }, { value: 'resolved', label: t('status.resolved', language) }, { value: 'closed', label: t('status.closed', language) },
     ], defaultValue: 'open' },
+    contactRelation(language),
+    companyRelation(language),
     { key: 'category', label: t('list.category', language), type: 'text' },
     { key: 'description', label: t('list.description', language), type: 'textarea' },
   ];
