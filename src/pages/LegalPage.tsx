@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ShieldCheck, FileText, Cookie, Mail, Users, Lock, BookOpen, Activity, Database, Heart, RotateCcw } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Logo } from '@/components/Logo';
@@ -32,6 +32,70 @@ const PAGE_META: Record<LegalPage, { icon: typeof ShieldCheck; title: { en: stri
   tableau: { icon: BookOpen, title: { en: 'Atlas Dashboards', fr: 'Atlas Dashboards' }, updated: '2026-08-08' },
 };
 
+
+/** Live status: real requests to the backend from the visitor's browser (this page used to always say "operational"). */
+function StatusLive({ fr }: { fr: boolean }) {
+  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+  const [checks, setChecks] = useState<{ name: string; ok: boolean | null; ms?: number }[]>([
+    { name: 'Auth', ok: null }, { name: 'API', ok: null }, { name: fr ? 'Application web' : 'Web app', ok: true },
+  ]);
+  useEffect(() => {
+    if (!url || !key) { setChecks(c => c.map(x => (x.ok === null ? { ...x, ok: false } : x))); return; }
+    const probe = async (name: string, path: string) => {
+      const t0 = performance.now();
+      try {
+        const r = await fetch(`${url}${path}`, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+        return { name, ok: r.status < 500, ms: Math.round(performance.now() - t0) };
+      } catch { return { name, ok: false, ms: Math.round(performance.now() - t0) }; }
+    };
+    Promise.all([probe('Auth', '/auth/v1/health'), probe('API', '/rest/v1/organizations?select=id&limit=1')])
+      .then(([a, b]) => setChecks([a, b, { name: fr ? 'Application web' : 'Web app', ok: true }]));
+  }, [url, key, fr]);
+  const all = checks.every(c => c.ok === true);
+  const pending = checks.some(c => c.ok === null);
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        <span className={`h-3 w-3 rounded-full ${pending ? 'bg-ink-300 animate-pulse' : all ? 'bg-success-500' : 'bg-error-500'}`} />
+        <span className={`font-semibold ${pending ? 'text-ink-600' : all ? 'text-success-700' : 'text-error-700'}`}>
+          {pending ? (fr ? 'Vérification en cours…' : 'Checking…') : all ? (fr ? 'Tous les systèmes répondent' : 'All systems responding') : (fr ? 'Incident en cours sur au moins un service' : 'At least one service is having issues')}
+        </span>
+      </div>
+      <ul>{checks.map(c => <li key={c.name}>{c.name} — {c.ok === null ? '…' : c.ok ? (fr ? 'Opérationnel' : 'Operational') : (fr ? 'Ne répond pas' : 'Not responding')}{c.ms ? ` (${c.ms} ms)` : ''}</li>)}</ul>
+      <p className="mt-3 text-sm text-ink-500">{fr ? 'Ces vérifications sont faites en direct depuis votre navigateur à l’ouverture de la page.' : 'These checks run live from your browser when the page opens.'}</p>
+    </>
+  );
+}
+
+const PRODUCT_PAGES: Record<string, { fr: { intro: string; items: string[] }; en: { intro: string; items: string[] }; demo: string }> = {
+  'sales-cloud': {
+    fr: { intro: 'Tout le cycle de vente, de la première piste à la facture payée.', items: ['Pistes, contacts, entreprises et affaires reliés, avec une fiche complète par client', 'Pipeline visuel en glisser-déposer, valeur totale et pondérée par étape', 'Conversion d’une piste en contact, entreprise et affaire en un clic', 'Devis et factures avec lignes de produits, TVA et impression PDF', 'Import CSV/Excel et export CSV de chaque liste'] },
+    en: { intro: 'The whole sales cycle, from first lead to paid invoice.', items: ['Linked leads, contacts, companies and deals, with a full page per customer', 'Drag-and-drop pipeline with total and weighted value per stage', 'One-click lead conversion into contact, company and deal', 'Quotes and invoices with line items, tax and PDF printing', 'CSV/Excel import and CSV export of every list'] },
+    demo: '/app/pipelines',
+  },
+  'service-cloud': {
+    fr: { intro: 'Le support client au même endroit que les ventes.', items: ['Tickets avec priorité, statut et rattachement au contact et à l’entreprise', 'Notification e-mail à l’équipe à chaque nouveau ticket (si Resend est configuré)', 'Base de connaissances lue par l’assistant Ask Atlas', 'Agent IA de support qui trie et suggère, avec validation humaine'] },
+    en: { intro: 'Customer support in the same place as sales.', items: ['Tickets with priority, status and link to contact and company', 'Email notification to the team for each new ticket (when Resend is configured)', 'Knowledge base read by the Ask Atlas assistant', 'AI support agent that triages and suggests, with human approval'] },
+    demo: '/app/support',
+  },
+  agentforce: {
+    fr: { intro: 'Des employés IA qui préparent le travail et vous demandent votre accord.', items: ['Ask Atlas : questions en langage naturel sur vos propres chiffres', 'Choix du moteur : modèle de la plateforme, ou votre clé OpenAI, Anthropic ou Gemini', 'File d’approbation pour toute action sensible', 'Workflows programmés : tâches, notifications, WhatsApp, SMS, e-mail, Telegram, webhooks'] },
+    en: { intro: 'AI employees that prepare the work and ask for your approval.', items: ['Ask Atlas: natural-language questions about your own numbers', 'Choice of engine: the platform model, or your own OpenAI, Anthropic or Gemini key', 'Approval queue for every sensitive action', 'Scheduled workflows: tasks, notifications, WhatsApp, SMS, email, Telegram, webhooks'] },
+    demo: '/app/ask-atlas',
+  },
+  'data-360': {
+    fr: { intro: 'Vos données entrent, sortent et circulent sans friction.', items: ['Import CSV/Excel avec correspondance des colonnes', 'Export CSV de toute liste filtrée', 'Webhooks signés HMAC-SHA256 sur les événements CRM', 'Clés API et applications personnalisées', 'Isolation stricte des données par organisation (Row-Level Security)'] },
+    en: { intro: 'Your data comes in, goes out and flows without friction.', items: ['CSV/Excel import with column mapping', 'CSV export of any filtered list', 'HMAC-SHA256 signed webhooks on CRM events', 'API keys and custom apps', 'Strict per-organisation data isolation (Row-Level Security)'] },
+    demo: '/app/api-webhooks',
+  },
+  tableau: {
+    fr: { intro: 'Le pilotage en temps réel, sans tableur.', items: ['Centre de commande : chiffre d’affaires, affaires ouvertes, pistes, factures impayées', '« À traiter en priorité » : affaires en retard, tâches dépassées, tickets ouverts', 'Rapports et tableaux de bord personnalisés (plan Pro)', 'Insights IA sur les affaires à risque'] },
+    en: { intro: 'Real-time steering, without spreadsheets.', items: ['Command center: revenue, open deals, leads, unpaid invoices', '“Needs your attention”: late deals, overdue tasks, open tickets', 'Reports and custom dashboards (Pro plan)', 'AI insights on deals at risk'] },
+    demo: '/app/dashboards',
+  },
+};
+
 function Content({ page, lang }: { page: LegalPage; lang: 'en' | 'fr' | 'es' | 'pt' | 'ar' }) {
   const fr = lang === 'fr';
   const h2 = (fr: string, en: string) => <h2 className="mt-8 text-xl font-bold text-ink-900">{fr ? fr : en}</h2>;
@@ -55,7 +119,7 @@ function Content({ page, lang }: { page: LegalPage; lang: 'en' | 'fr' | 'es' | '
           {h2(fr ? 'Acceptation des conditions' : 'Acceptance of Terms', '')}
           <p>{fr ? 'En utilisant Atlas CRM, vous acceptez les présentes conditions. Si vous n\'acceptez pas, n\'utilisez pas le service.' : 'By using Atlas CRM, you agree to these terms. If you do not agree, do not use the service.'}</p>
           {h2(fr ? 'Essai et abonnement' : 'Trial and Subscription', '')}
-          <p>{fr ? 'Un essai gratuit de 14 jours est offert. Après l\'essai, un abonnement payant est requis (19 $, 49 $, 119 $ ou sur devis). L\'accès est suspendu si le paiement n\'est pas effectué.' : 'A 14-day free trial is offered. After the trial, a paid subscription is required ($19, $49, $119, or custom). Access is suspended if payment is not made.'}</p>
+          <p>{fr ? 'Un essai gratuit de 14 jours est offert. Après l\'essai, un abonnement payant est requis (19 $, 49 $, 119 $ ou 219 $ par mois, ou dix fois ce montant par an). L\'accès est suspendu si le paiement n\'est pas effectué.' : 'A 14-day free trial is offered. After the trial, a paid subscription is required ($19, $49, $119 or $219 per month, or ten times that per year). Access is suspended if payment is not made.'}</p>
           {h2(fr ? 'Utilisation acceptable' : 'Acceptable Use', '')}
           <p>{fr ? 'Vous vous engagez à ne pas utiliser la plateforme à des fins illégales ou abusives.' : 'You agree not to use the platform for illegal or abusive purposes.'}</p>
           {h2(fr ? 'Limitation de responsabilité' : 'Limitation of Liability', '')}
@@ -84,7 +148,7 @@ function Content({ page, lang }: { page: LegalPage; lang: 'en' | 'fr' | 'es' | '
       return (
         <>
           {h2(fr ? 'Sécurité de la plateforme' : 'Platform Security', '')}
-          <ul><li>{fr ? 'Chiffrement TLS 1.3 en transit, AES-256 au repos' : 'TLS 1.3 encryption in transit, AES-256 at rest'}</li><li>{fr ? 'Authentification SSO/SAML et OAuth2' : 'SSO/SAML and OAuth2 authentication'}</li><li>{fr ? 'Row-Level Security (RLS) sur toutes les données, isolation stricte par organisation' : 'Row-Level Security (RLS) on all data, strict per-organization isolation'}</li><li>{fr ? 'Audit logs complets et traçabilité' : 'Comprehensive audit logs and traceability'}</li><li>{fr ? 'Pratiques conformes au RGPD/GDPR' : 'GDPR-aligned practices'}</li></ul>
+          <ul><li>{fr ? 'Chiffrement TLS 1.3 en transit, AES-256 au repos' : 'TLS 1.3 encryption in transit, AES-256 at rest'}</li><li>{fr ? 'Double authentification (TOTP), connexion Google, SSO/SAML sur les plans Pro et Enterprise (activation accompagnée)' : 'Two-factor authentication (TOTP), Google sign-in, SSO/SAML on Pro and Enterprise plans (assisted setup)'}</li><li>{fr ? 'Row-Level Security (RLS) sur toutes les données, isolation stricte par organisation' : 'Row-Level Security (RLS) on all data, strict per-organization isolation'}</li><li>{fr ? 'Audit logs complets et traçabilité' : 'Comprehensive audit logs and traceability'}</li><li>{fr ? 'Pratiques conformes au RGPD/GDPR' : 'GDPR-aligned practices'}</li></ul>
           <p className="mt-4 text-sm text-ink-500">{fr ? 'Une certification SOC 2 Type II n\'est pas encore obtenue ; elle fait partie de notre feuille de route sécurité.' : 'SOC 2 Type II certification has not yet been obtained; it is on our security roadmap.'}</p>
           {h2(fr ? 'Signaler une vulnérabilité' : 'Report a Vulnerability', '')}
           <p>{fr ? 'Contactez security@liafrik.com pour signaler une faille de sécurité.' : 'Contact security@liafrik.com to report a security vulnerability.'}</p>
@@ -163,8 +227,7 @@ function Content({ page, lang }: { page: LegalPage; lang: 'en' | 'fr' | 'es' | '
       return (
         <>
           {h2(fr ? 'Statut du système' : 'System Status', '')}
-          <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-success-500" /><span className="font-semibold text-success-700">{fr ? 'Tous les systèmes opérationnels' : 'All systems operational'}</span></div>
-          <ul><li>API — {fr ? 'Opérationnel' : 'Operational'}</li><li>Dashboard — {fr ? 'Opérationnel' : 'Operational'}</li><li>Webhooks — {fr ? 'Opérationnel' : 'Operational'}</li><li>Auth — {fr ? 'Opérationnel' : 'Operational'}</li></ul>
+          <StatusLive fr={fr} />
         </>
       );
     case 'community':
@@ -223,14 +286,25 @@ function Content({ page, lang }: { page: LegalPage; lang: 'en' | 'fr' | 'es' | '
           <p>{fr ? 'Nous investissons 1% de notre équité, technologie et temps pour créer un changement durable dans nos communautés.' : 'We invest 1% of our equity, technology, and time to create lasting change in our communities.'}</p>
         </>
       );
-    default:
+    default: {
+      const prod = PRODUCT_PAGES[page];
+      const c = prod ? prod[fr ? 'fr' : 'en'] : null;
       return (
         <>
-          {h2(fr ? 'Présentation du produit' : 'Product Overview', '')}
-          <p>{fr ? 'Découvrez comment ce module d\'Atlas CRM peut transformer votre entreprise avec l\'IA agentique.' : 'Discover how this Atlas CRM module can transform your business with agentic AI.'}</p>
-          <Link to="/auth" className="btn-primary btn-sm mt-4 inline-flex">{fr ? 'Essayer gratuitement' : 'Try for free'}</Link>
+          {h2(fr ? 'Ce que vous obtenez' : 'What you get', '')}
+          {c ? (
+            <>
+              <p>{c.intro}</p>
+              <ul>{c.items.map(i => <li key={i}>{i}</li>)}</ul>
+            </>
+          ) : <p>{fr ? 'Découvrez ce module dans la démo.' : 'Explore this module in the demo.'}</p>}
+          <div className="mt-6 flex flex-wrap gap-3">
+            <a href={fr ? '/demo' : '/en/demo'} className="btn-secondary btn-sm">{fr ? 'Voir dans la démo' : 'See it in the demo'}</a>
+            <Link to="/auth" className="btn-primary btn-sm">{fr ? 'Essayer gratuitement' : 'Try for free'}</Link>
+          </div>
         </>
       );
+    }
   }
 }
 

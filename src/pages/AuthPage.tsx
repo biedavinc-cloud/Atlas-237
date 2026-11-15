@@ -260,11 +260,6 @@ export function AuthPage() {
           </div>
 
           <div className="relative flex items-center gap-3">
-            <div className="flex -space-x-2">
-              {['AM', 'KO', 'RD'].map((i) => (
-                <div key={i} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-primary-600 bg-white text-[11px] font-bold text-primary-600">{i}</div>
-              ))}
-            </div>
             <p className="text-xs text-primary-100">{t('auth.socialProof', lang)}</p>
           </div>
         </div>

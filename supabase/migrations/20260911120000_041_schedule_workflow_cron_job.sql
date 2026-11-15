@@ -1,3 +1,4 @@
+-- NOTE: the secret below was retired by migrations 044/045 (now in Vault).
 -- Real pg_cron job that calls run-scheduled-workflows every 5 minutes,
 -- making the "schedule" trigger_type on a Workflow genuinely automated
 -- instead of a stored-but-never-executed value. Uses a dedicated shared

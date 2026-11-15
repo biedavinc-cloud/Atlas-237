@@ -1061,11 +1061,47 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
 ## Blog (/blog, /en/blog) — Liafrik products only
 - Content in `src/lib/blog/posts.ts` (FR + EN blocks), pages in
   `src/pages/BlogPages.tsx`, listed in `public/sitemap.xml`. `/legal/blog`
-  redirects to `/blog`. Only write about Liafrik products (Atlas, Libooks,
-  Sellia…) and only claim features that exist; Libooks/Sellia articles stay
-  at "Liafrik product, connects to Atlas by API key" until real product
-  descriptions are provided.
+  redirects to `/blog`. Only write about Liafrik products and only claim
+  what is verifiable: Atlas from this repo; POS, Sukulu, Zanldo from their
+  public pages (liafrik.com/en/products/*, gosukulu.com). Libooks/Sellia
+  stay brief until real product descriptions are provided.
+- The landing page used invented traction numbers (500+ companies, 2.4M
+  contacts, 99.9 %, 4.9/5, 4M+ AI conversations, 66 %, 1.8x), "#1 CRM"
+  claims and three fake testimonials/case study. All replaced by product
+  facts (195 countries, 50+ currencies, 5 languages, 14-day trial, 4 AI
+  engines, 18 workflow actions) and a "check it yourself" section linking to
+  the demo. Don't reintroduce testimonials or numbers that aren't real.
+- `/legal/status` runs live checks (Auth + REST) from the visitor's browser
+  instead of a hardcoded "all systems operational".
 
 ## Branding
 - The company name is written "Liafrik" (not "LiAfrik"). Credit line:
   "Atlas — développé par Liafrik Tech · Dubaï – Yaoundé".
+
+## Production state & launch checklist (verified via Supabase MCP, 2026-11-15)
+- Applied live: `043_revoke_seed_demo_data` (SECURITY FIX: any signed-in
+  user could call seed_demo_data with another org's id and inject records
+  into that tenant) and `044_cron_secret_in_vault` (random cron secret in
+  Vault + service-role-only `get_cron_secret()`).
+- NOT yet applied (the MCP server asked for a confirmation that got no
+  answer): `042_korapay_cinetpay_billing` and
+  `045_reschedule_cron_and_keepalive`. Apply 045 and THEN deploy the new
+  `run-scheduled-workflows` (it reads the Vault secret; the old hardcoded
+  literal is gone from the code). Deploying the function before 045 breaks
+  scheduled workflows until 045 runs.
+- Also deploy `billing-initialize`, `billing-verify`, `billing-webhook`
+  (with `_shared/billing.ts`; `billing-webhook` verify_jwt=false).
+- Migrations 034_index_missing_org_id_fks and 039_enable_cron… existed only
+  in production; reconstructed into the repo from schema_migrations.
+- `stripe-webhook` is deployed in production but not in the repo: it has
+  verify_jwt=true (Stripe can't call it) and writes columns that don't
+  exist (stripe_customer_id…). Dead; delete it from the dashboard or bring
+  it into the repo properly — Stripe is not a supported PSP in the app.
+- Keep-alive: `.github/workflows/supabase-keepalive.yml` (every 2 days) +
+  pg_cron job `supabase-keepalive` (every 6 h, migration 045).
+- Launch blockers that only the owner can do in dashboards:
+  custom SMTP for Auth emails (the built-in mailer is rate-limited and for
+  testing only — signup confirmations and password resets will be dropped
+  under real traffic; Resend is already used by the app), Auth URL config
+  (Site URL + redirect URLs on atlas.liafrik.com), leaked-password
+  protection, PSP secrets for at least one live payment method.

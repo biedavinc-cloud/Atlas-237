@@ -16,20 +16,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-// Dedicated shared secret for the pg_cron job (migration 041) to call this
-// function — NOT the service role key. There's no way to read the real
-// service role key's value or set a new project secret through the tools
-// available in this session, so a purpose-built secret generated once and
-// embedded on both sides (here, and in the matching pg_cron SQL call) is
-// the pragmatic alternative. Low severity if ever exposed: the worst case
-// is a scheduled workflow running a bit early or extra, not a
-// data-isolation breach — every workflow's own org_id (read from its own
-// DB row, never from the caller) still scopes all of its actions
-// correctly regardless of who or what triggered this check.
-// Prefer the CRON_SECRET project secret when it is set (rotate it there and
-// in the pg_cron job together); the literal fallback keeps the job that is
-// already scheduled in production working until that rotation happens.
-const CRON_SECRET = Deno.env.get("CRON_SECRET") || "da73caf38062ff5e07e232f3e5396ad73708ca4b592962e24d1ce07257bc6ec3";
+// The pg_cron job (migration 045) authenticates with a random secret kept in
+// Supabase Vault ("atlas_cron_secret"). This function reads the same value
+// through public.get_cron_secret(), which only the service role may call.
+// No secret is written in the repository any more (the old hardcoded value
+// from migration 041 has been retired). CRON_SECRET (project secret) still
+// works as an override.
+let cachedCronSecret: string | null = null;
+async function cronSecret(admin: ReturnType<typeof createClient>): Promise<string | null> {
+  const fromEnv = Deno.env.get("CRON_SECRET");
+  if (fromEnv) return fromEnv;
+  if (cachedCronSecret) return cachedCronSecret;
+  const { data, error } = await admin.rpc("get_cron_secret");
+  if (error || !data) return null;
+  cachedCronSecret = String(data);
+  return cachedCronSecret;
+}
 
 interface WorkflowAction {
   type: string;
@@ -114,14 +116,14 @@ Deno.serve(async (req: Request) => {
   }
 
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceRoleKey);
   const authHeader = req.headers.get("Authorization") || "";
-  if (authHeader !== `Bearer ${CRON_SECRET}`) {
+  const secret = await cronSecret(admin);
+  if (!secret || authHeader !== `Bearer ${secret}`) {
     return new Response(JSON.stringify({ ok: false, msg: "Forbidden — internal function" }), {
       status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-
-  const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceRoleKey);
   const now = new Date();
 
   const { data: due, error: dueErr } = await admin

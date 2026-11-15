@@ -1,0 +1,36 @@
+# Keeps the Supabase project from being paused for inactivity (free tier
+# pauses a project after ~7 days without API traffic). Runs every 2 days and
+# can be started by hand from the Actions tab.
+#
+# Uses the PUBLIC anon key — the same key shipped in the web app bundle —
+# and reads nothing (RLS returns no rows to anon). Override with repository
+# secrets SUPABASE_URL / SUPABASE_ANON_KEY if the project ever changes.
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: '23 6 */2 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://wmajotxkrbriudqrkuxr.supabase.co' }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndtYWpvdHhrcmJyaXVkcXJrdXhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxNzg5MjAsImV4cCI6MjEwMTc1NDkyMH0.uwmzl9Abpy_q0iuG2uMC-kjKYHYxxMrNPAgvuxGMUf4' }}
+    steps:
+      - name: Ping the REST API
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/rest/v1/organizations?select=id&limit=1")
+          echo "REST API answered HTTP $code"
+          if [ "$code" -ge 500 ] || [ "$code" = "000" ]; then
+            echo "::error::Supabase did not answer correctly (HTTP $code). Check the project status in the dashboard."
+            exit 1
+          fi
+      - name: Ping Auth health
+        run: |
+          curl -s -o /dev/null -w 'Auth health HTTP %{http_code}\n' -H "apikey: $SUPABASE_ANON_KEY" "$SUPABASE_URL/auth/v1/health"

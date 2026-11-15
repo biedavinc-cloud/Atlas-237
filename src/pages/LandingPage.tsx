@@ -2,11 +2,12 @@ import { Fragment, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ShieldCheck, TrendingUp, Bot, BarChart3,
-  CheckCircle2, X, ArrowRight, Cloud, Globe2, Zap, Star,
+  CheckCircle2, X, ArrowRight, Cloud, Globe2, Zap,
   MessageSquare, Database, Workflow, PlayCircle, Building2, Globe,
   Facebook, Instagram, Linkedin, Youtube,
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
+import { POSTS, PRODUCT_LABEL } from '@/lib/blog/posts';
 import { InstagramFeed } from '@/components/InstagramFeed';
 import { useHreflangLinks } from '@/lib/useHreflang';
 
@@ -39,10 +40,10 @@ const INTEGRATION_LOGOS = [
 ];
 
 const cloudProducts = [
-  { icon: MessageSquare, name: { fr: 'Slack', en: 'Slack' }, desc: { fr: 'Connectez workflows et données conversationnelles là où le travail se fait.', en: 'Connect workflows and conversational data where work happens.' } },
+  { icon: MessageSquare, name: { fr: 'Atlas Connect', en: 'Atlas Connect' }, desc: { fr: 'WhatsApp, SMS, e-mail, Telegram et paiements Mobile Money branchés sur vos fiches clients.', en: 'WhatsApp, SMS, email, Telegram and mobile money payments wired into your customer records.' } },
   { icon: BarChart3, name: { fr: 'Atlas Dashboards', en: 'Atlas Dashboards' }, desc: { fr: 'Transformez l’analytique agentique en intelligence actionable.', en: 'Turn agentic analytics into actionable intelligence.' } },
   { icon: Bot, name: { fr: 'Atlas AI Workforce', en: 'Atlas AI Workforce' }, desc: { fr: 'Créez des expériences agentiques de confiance qui agissent avec intention.', en: 'Build trusted agentic experiences that act with intention.' } },
-  { icon: Cloud, name: { fr: 'Atlas 360', en: 'Atlas 360' }, desc: { fr: 'Ancrez chaque décision dans un contexte métier éprouvé.', en: 'Anchor every decision in proven business context.' } },
+  { icon: Cloud, name: { fr: 'Atlas 360', en: 'Atlas 360' }, desc: { fr: 'Une fiche par client : affaires, devis, factures, tickets et historique au même endroit.', en: 'One page per customer: deals, quotes, invoices, tickets and history in one place.' } },
   { icon: Database, name: { fr: 'Atlas Data Hub', en: 'Atlas Data Hub' }, desc: { fr: 'Une fondation de données gouvernée, unifiée et fiable.', en: 'A governed, unified, and trusted data foundation.' } },
 ];
 
@@ -57,11 +58,13 @@ const industries = [
   { icon: Workflow, name: { fr: 'Industrie', en: 'Manufacturing' }, desc: { fr: 'Intégrez toutes vos données sur une chaîne de valeur unifiée.', en: 'Integrate all your data on a unified value chain.' } },
 ];
 
-const reports = [
-  { tag: { fr: 'Guide', en: 'Guide' }, title: { fr: 'Comment l’IA agentique change la manière de vendre en 2026', en: 'How agentic AI is changing the way teams sell in 2026' }, cta: { fr: 'Lire le guide', en: 'Read the guide' } },
-  { tag: { fr: 'Étude de cas', en: 'Case study' }, title: { fr: 'Comment Sahara Logistics a fermé 30% de deals en plus avec Atlas CRM', en: 'How Sahara Logistics closed 30% more deals with Atlas CRM' }, cta: { fr: 'Lire l’étude de cas', en: 'Read the case study' } },
-  { tag: { fr: 'Product tour', en: 'Product tour' }, title: { fr: 'Découvrez les agents IA d’Atlas CRM en action', en: 'See Atlas CRM’s AI agents in action' }, cta: { fr: 'Voir la démo', en: 'Watch the demo' } },
-];
+// Resource cards point to real blog articles (src/lib/blog/posts.ts).
+const reports = POSTS.slice().sort((x, y) => y.date.localeCompare(x.date)).slice(0, 3).map((p) => ({
+  slug: p.slug,
+  tag: { fr: PRODUCT_LABEL[p.product], en: PRODUCT_LABEL[p.product] },
+  title: { fr: p.fr.title, en: p.en.title },
+  cta: { fr: 'Lire l’article', en: 'Read the article' },
+}));
 
 const plans = [
   { name: 'Starter', monthly: 19, annual: 190, tagline: { fr: 'Pour démarrer', en: 'To get started' }, desc: { fr: 'Ventes, service et marketing avec des agents pré-construits.', en: 'Sales, service and marketing with pre-built agents.' }, cta: { fr: 'Commencer', en: 'Get started' }, popular: false },
@@ -73,7 +76,7 @@ const plans = [
 type Row = { label: { fr: string; en: string }; values: (boolean | string)[] };
 
 const faqs = [
-  { q: 'Qu’est-ce qu’Atlas CRM ?', qEn: 'What is Atlas CRM?', a: 'Atlas CRM est la plateforme de gestion de la relation client n°1 propulsée par l’IA agentique. Elle réunit entreprises et clients via un ensemble unifié d’applications — alimentées par l’IA agentique et la donnée — qui aident chaque département (ventes, service, marketing, commerce, IT) à travailler comme un seul.', aEn: 'Atlas CRM is the #1 customer relationship management platform powered by agentic AI. It brings together companies and customers through a unified suite of applications — powered by agentic AI and data — that helps every department (sales, service, marketing, commerce, IT) work as one.' },
+  { q: 'Qu’est-ce qu’Atlas CRM ?', qEn: 'What is Atlas CRM?', a: 'Atlas CRM est la plateforme de gestion de la relation client de Liafrik Tech, propulsée par l’IA agentique. Elle réunit entreprises et clients via un ensemble unifié d’applications — alimentées par l’IA agentique et la donnée — qui aident chaque département (ventes, service, marketing, commerce, IT) à travailler comme un seul.', aEn: 'Atlas CRM is Liafrik Tech’s customer relationship management platform, powered by agentic AI. It brings together companies and customers through a unified suite of applications — powered by agentic AI and data — that helps every department (sales, service, marketing, commerce, IT) work as one.' },
   { q: 'Qu’est-ce qu’un CRM et pourquoi en ai-je besoin ?', qEn: 'What is a CRM and why do I need one?', a: 'Un CRM gère toutes les relations et interactions de votre entreprise avec ses clients. Il vous aide à organiser les contacts, automatiser les tâches (logs d’appels, relances) et analyser les données pour comprendre le comportement client — vous donnant une vue à 360° de chaque client.', aEn: 'A CRM manages all your company’s relationships and interactions with customers. It helps you organize contacts, automate tasks (call logs, follow-ups), and analyze data to understand customer behavior — giving you a 360° view of every customer.' },
   { q: 'Qu’est-ce que l’IA agentique et comment l’utilise Atlas CRM ?', qEn: 'What is agentic AI and how does Atlas CRM use it?', a: 'L’IA agentique désigne des systèmes d’IA capables d’agir de manière autonome pour atteindre un objectif. Dans Atlas CRM (via Atlas AI Workforce), elle automatise des workflows complexes (qualification de leads, résolution de tickets), prédit les résultats et personnalise chaque interaction client.', aEn: 'Agentic AI refers to AI systems capable of acting autonomously to achieve a goal. In Atlas CRM (via Atlas AI Workforce), it automates complex workflows (lead qualification, ticket resolution), predicts outcomes, and personalizes every customer interaction.' },
   { q: 'Comment Atlas CRM aide-t-il ma PME à grandir ?', qEn: 'How does Atlas CRM help my SMB grow?', a: 'Atlas CRM propose des solutions adaptées à toutes les tailles. La plateforme flexible vous permet de démarrer avec l’essentiel (ventes, service, marketing) puis d’ajouter des fonctions à mesure que vous grandissez — vous ne payez que ce que vous utilisez.', aEn: 'Atlas CRM offers solutions for all sizes. The flexible platform lets you start with the essentials (sales, service, marketing) and add capabilities as you grow — you only pay for what you use.' },
@@ -199,7 +202,7 @@ export function LandingPage() {
               <Zap size={13} className="text-primary-600" /> {lang === 'fr' ? 'Propulsé par l’IA agentique' : 'Powered by agentic AI'}
             </span>
             <h1 className="animate-fade-in-up mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-ink-950 sm:text-6xl" style={{ animationDelay: '0.05s' }}>
-              {lang === 'fr' ? <>Commencez avec le <span className="text-primary-600">CRM agentique n°1</span></> : <>Get started with the <span className="text-primary-600">#1 Agentic CRM</span></>}
+              {lang === 'fr' ? <>Le CRM agentique conçu pour <span className="text-primary-600">l’Afrique et le Golfe</span></> : <>The agentic CRM built for <span className="text-primary-600">Africa and the Gulf</span></>}
             </h1>
             <p className="animate-fade-in-up mx-auto mt-6 max-w-2xl text-lg leading-8 text-ink-600" style={{ animationDelay: '0.1s' }}>
               {lang === 'fr'
@@ -219,14 +222,15 @@ export function LandingPage() {
           <div className="reveal relative border-t border-ink-100/80 bg-white/60 py-8 backdrop-blur-sm">
             <div className="mx-auto max-w-5xl px-6 md:px-10">
               <p className="text-center text-xs font-semibold uppercase tracking-wide text-ink-400">
-                {lang === 'fr' ? 'La confiance de plus de 500 entreprises à Dubai, en Afrique et au-delà' : 'Trusted by 500+ businesses across Dubai, Africa, and beyond'}
+                {lang === 'fr' ? 'Prêt pour vos marchés dès le premier jour' : 'Ready for your markets from day one'}
               </p>
               <div className="mt-6 grid grid-cols-2 gap-6 sm:grid-cols-4">
                 {[
-                  { v: '500+', l: { fr: 'Entreprises actives', en: 'Active companies' } },
-                  { v: '2.4M+', l: { fr: 'Contacts gérés', en: 'Contacts managed' } },
-                  { v: '99.9%', l: { fr: 'Disponibilité', en: 'Uptime' } },
-                  { v: '4.9/5', l: { fr: 'Satisfaction client', en: 'Customer rating' } },
+                  // Product facts only (verifiable in the app), no invented traction numbers.
+                  { v: '195', l: { fr: 'Pays pris en charge', en: 'Countries supported' } },
+                  { v: '50+', l: { fr: 'Devises, dont FCFA', en: 'Currencies, incl. CFA' } },
+                  { v: '5', l: { fr: 'Langues, dont l’arabe', en: 'Languages, incl. Arabic' } },
+                  { v: '14 j', l: { fr: 'D’essai, sans carte', en: 'Trial days, no card' } },
                 ].map((stat) => (
                   <div key={stat.v} className="text-center">
                     <p className="text-2xl font-bold text-ink-950 sm:text-3xl">{stat.v}</p>
@@ -266,28 +270,21 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* ───────── Customer trust / testimonials ───────── */}
+        {/* ───────── Proof you can check yourself (no invented testimonials) ───────── */}
         <section className="bg-ink-50 py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-6 md:px-10">
-            <h2 className="reveal text-center text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Découvrez pourquoi les clients nous font confiance' : 'Discover why customers trust us'}</h2>
+            <h2 className="reveal text-center text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Jugez sur pièces, pas sur promesses' : 'Judge for yourself, not by promises'}</h2>
+            <p className="reveal mx-auto mt-4 max-w-2xl text-center text-ink-600">{lang === 'fr' ? 'Tout ce qui est écrit sur cette page se vérifie en quelques minutes dans la démo, sans compte.' : 'Everything on this page can be checked in a few minutes in the demo, without an account.'}</p>
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {[
-                { name: 'Amina Mwangi', role: lang === 'fr' ? 'Directrice Commerciale · Sahara Logistics' : 'Sales Director · Sahara Logistics', quote: lang === 'fr' ? 'Atlas CRM a transformé notre pipeline. L’IA qualifie nos leads la nuit et nos équipes ferment 30% plus vite.' : 'Atlas CRM transformed our pipeline. AI qualifies our leads overnight and our teams close 30% faster.' },
-                { name: 'Karim Ouedraogo', role: 'CTO · Medina Bank', quote: lang === 'fr' ? 'La vue 360° client nous a fait gagner un temps fou. Nos conseillers ont toutes les infos en un coup d’œil.' : 'The 360° customer view saved us enormous time. Our advisors have all the info at a glance.' },
-                { name: 'Reina Diallo', role: lang === 'fr' ? 'VP Service Client · Nile Retail' : 'VP Customer Service · Nile Retail', quote: lang === 'fr' ? 'Les agents IA gèrent 66% de nos tickets en autonomie. Notre satisfaction client n’a jamais été aussi haute.' : 'AI agents handle 66% of our tickets autonomously. Our customer satisfaction has never been higher.' },
-              ].map((t) => (
-                <div key={t.name} className="reveal rounded-2xl border border-ink-100 bg-white p-7 shadow-sm transition hover:shadow-lg">
-                  <div className="flex items-center gap-1 text-warning-400">
-                    {[...Array(5)].map((_, i) => <Star key={i} size={16} fill="currentColor" />)}
-                  </div>
-                  <blockquote className="mt-4 text-base leading-7 text-ink-700">« {t.quote} »</blockquote>
-                  <div className="mt-6 flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700">{t.name.split(' ').map((n) => n[0]).join('')}</div>
-                    <div>
-                      <p className="text-sm font-semibold text-ink-900">{t.name}</p>
-                      <p className="text-xs text-ink-500">{t.role}</p>
-                    </div>
-                  </div>
+                { h: lang === 'fr' ? 'Essayez avant de parler à qui que ce soit' : 'Try it before talking to anyone', d: lang === 'fr' ? 'La démo ouvre une entreprise fictive complète : pipeline, factures, tickets, agents IA. Rien à installer.' : 'The demo opens a complete fictional company: pipeline, invoices, tickets, AI agents. Nothing to install.', cta: lang === 'fr' ? 'Ouvrir la démo' : 'Open the demo', href: lang === 'fr' ? '/demo' : '/en/demo' },
+                { h: lang === 'fr' ? 'Vos données restent les vôtres' : 'Your data stays yours', d: lang === 'fr' ? 'Import CSV / Excel à l’arrivée, export CSV de chaque liste à tout moment. Aucune donnée prise en otage.' : 'CSV / Excel import on the way in, CSV export of every list at any time. No data held hostage.', cta: lang === 'fr' ? 'Voir la sécurité' : 'See security', href: lang === 'fr' ? '/legal/security' : '/en/legal/security' },
+                { h: lang === 'fr' ? 'Un prix clair, sans engagement' : 'Clear pricing, no lock-in', d: lang === 'fr' ? 'Un tarif fixe par entreprise, pas par utilisateur. 14 jours gratuits sans carte, paiement par carte ou Mobile Money.' : 'One flat price per company, not per user. 14 days free with no card, pay by card or mobile money.', cta: lang === 'fr' ? 'Voir les tarifs' : 'See pricing', href: '#matrix' },
+              ].map((c) => (
+                <div key={c.h} className="reveal flex flex-col rounded-2xl border border-ink-100 bg-white p-7 shadow-sm">
+                  <h3 className="text-lg font-bold text-ink-900">{c.h}</h3>
+                  <p className="mt-3 flex-1 text-base leading-7 text-ink-600">{c.d}</p>
+                  <a href={c.href} className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:underline">{c.cta} <ArrowRight size={14} /></a>
                 </div>
               ))}
             </div>
@@ -319,10 +316,11 @@ export function LandingPage() {
               <div className="reveal rounded-2xl bg-white/10 p-8 backdrop-blur-sm">
                 <div className="grid gap-4">
                   {[
-                    [lang === 'fr' ? 'Conversations gérées par l’IA' : 'AI-handled conversations', '4M+'],
-                    [lang === 'fr' ? 'Résolution autonome des cas' : 'Autonomous case resolution', '66%'],
-                    [lang === 'fr' ? 'Pipeline marketing supplémentaire' : 'Additional marketing pipeline', '+15%'],
-                    [lang === 'fr' ? 'Conversion de leads' : 'Lead conversion', '1.8x'],
+                    // What the product actually includes (see src/lib/workflows.ts, ai-assistant).
+                    [lang === 'fr' ? 'Moteurs d’IA au choix' : 'AI engines to choose from', '4'],
+                    [lang === 'fr' ? 'Actions de workflow prêtes à l’emploi' : 'Ready-made workflow actions', '18'],
+                    [lang === 'fr' ? 'Validation humaine des actions sensibles' : 'Human approval for sensitive actions', lang === 'fr' ? 'Oui' : 'Yes'],
+                    [lang === 'fr' ? 'Canaux : WhatsApp, SMS, email, Telegram' : 'Channels: WhatsApp, SMS, email, Telegram', '4'],
                   ].map(([l, v]) => (
                     <div key={l} className="flex items-center justify-between rounded-xl bg-white/10 px-5 py-4 transition hover:bg-white/20">
                       <span className="text-sm text-primary-100">{l}</span>
@@ -429,9 +427,9 @@ export function LandingPage() {
           <div className="mt-14 grid gap-6 md:grid-cols-3">
             {reports.map((r) => (
               <div key={r.title[contentLang]} className="reveal flex flex-col rounded-2xl border border-ink-100 bg-white p-7 shadow-sm transition hover:shadow-lg">
-                <span className="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary-700 self-start">{r.tag[contentLang]}</span>
+                <span className="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700 self-start">{r.tag[contentLang]}</span>
                 <h3 className="mt-4 flex-1 text-lg font-bold leading-7 text-ink-900">{r.title[contentLang]}</h3>
-                <Link to="/auth" className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:underline">{r.cta[contentLang]} <ArrowRight size={14} /></Link>
+                <Link to={`${contentLang === 'en' ? '/en' : ''}/blog/${r.slug}`} className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:underline">{r.cta[contentLang]} <ArrowRight size={14} /></Link>
               </div>
             ))}
           </div>
@@ -612,7 +610,7 @@ export function LandingPage() {
                 <Logo size={36} />
                 <span className="text-lg font-bold text-white">Atlas CRM</span>
               </Link>
-              <p className="mt-4 text-sm leading-6 text-ink-400">{lang === 'fr' ? 'La plateforme CRM agentique n°1. Ventes, service, marketing et IA réunis sur un seul cloud — pour Dubai, l’Afrique et le monde.' : 'The #1 Agentic CRM platform. Sales, service, marketing, and AI united on a single cloud — for Dubai, Africa, and the world.'}</p>
+              <p className="mt-4 text-sm leading-6 text-ink-400">{lang === 'fr' ? 'Le CRM agentique de Liafrik Tech. Ventes, service, marketing et IA réunis sur un seul cloud, pensé à Dubaï et Yaoundé.' : 'Liafrik Tech’s agentic CRM. Sales, service, marketing, and AI united on a single cloud — for Dubai, Africa, and the world.'}</p>
             </div>
             {[
               { h: lang === 'fr' ? 'Produit' : 'Product', links: [

@@ -123,8 +123,8 @@ export function BlogIndexPage({ lang: forced = 'fr' }: { lang?: Language }) {
   const lang = useBlogLang(forced);
   const fr = lang === 'fr';
   useHreflangLinks('/blog');
-  useMeta(fr ? 'Blog Atlas — la tech Liafrik pour les entreprises africaines' : 'Atlas blog — Liafrik technology for African businesses',
-    fr ? 'Articles sur Atlas CRM et les produits Liafrik : vente, paiements Mobile Money, IA et automatisation pour les entreprises d’Afrique et du Golfe.' : 'Articles on Atlas CRM and Liafrik products: sales, mobile money payments, AI and automation for businesses in Africa and the Gulf.');
+  useMeta(fr ? 'Blog Liafrik Tech — Atlas, POS, Sukulu, Zanldo' : 'Liafrik Tech blog — Atlas, POS, Sukulu, Zanldo',
+    fr ? 'Articles sur les produits Liafrik : Atlas CRM, la caisse POS, la plateforme scolaire Sukulu et la marketplace Zanldo, pour l’Afrique et le Golfe.' : 'Articles on Liafrik products: Atlas CRM, the POS till, the Sukulu school platform and the Zanldo marketplace, for Africa and the Gulf.');
   const [featured, ...rest] = [...POSTS].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
@@ -132,10 +132,10 @@ export function BlogIndexPage({ lang: forced = 'fr' }: { lang?: Language }) {
       <main>
         <section className="mx-auto max-w-6xl px-5 pt-14 pb-10 sm:px-8 sm:pt-20">
           <h1 className="max-w-3xl text-4xl font-bold leading-[1.05] tracking-tight text-navy-900 sm:text-6xl">
-            {fr ? 'La tech qui vend, encaisse et automatise en Afrique.' : 'Tech that sells, collects and automates in Africa.'}
+            {fr ? 'La tech africaine qui vend, enseigne, encaisse et automatise.' : 'African tech that sells, teaches, collects and automates.'}
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-ink-600">
-            {fr ? 'Le blog d’Atlas et des produits Liafrik. Ce qu’on construit, pourquoi on le construit, et comment s’en servir.' : 'The blog of Atlas and Liafrik’s products. What we build, why we build it, and how to use it.'}
+            {fr ? 'Le blog de Liafrik Tech : Atlas, POS, Sukulu, Zanldo et toute la suite. Ce qu’on construit, pourquoi, et comment s’en servir.' : 'The Liafrik Tech blog: Atlas, POS, Sukulu, Zanldo and the whole suite. What we build, why, and how to use it.'}
           </p>
         </section>
 
