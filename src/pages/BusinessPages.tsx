@@ -7,6 +7,7 @@ import { CURRENCIES, formatAmount } from '@/lib/i18n-countries';
 import { usePlanAccess } from '@/lib/plans';
 import { UpgradeGate } from '@/components/UpgradeGate';
 import { QuickPaymentLinkButton } from '@/components/QuickPaymentLinkButton';
+import { FreshdeskEscalateButton } from '@/components/FreshdeskEscalateButton';
 import type { Product, Invoice, Ticket, Campaign } from '@/types';
 import { contactRelation, companyRelation, quoteFields, invoiceFields } from '@/lib/entityFields';
 
@@ -162,10 +163,12 @@ export function InvoicesPage() {
       emptyIcon={<Receipt size={26} />}
       emptyTitle={t('empty.noInvoices', language)}
       emptyDescription={t('empty.noInvoicesDesc', language)}
-      relations="*, contact:contacts(first_name,last_name), company:companies(name)"
+      relations="*, contact:contacts(first_name,last_name,email), company:companies(name)"
       orderBy="created_at"
       rowLink={(r) => `/app/invoices/${r.id}`}
-      rowActions={(row) => <QuickPaymentLinkButton amount={row.total} currency={row.currency || orgCurrency} label={row.invoice_number} />}
+      rowActions={(row) => row.payment_status === 'paid' ? null : (
+        <QuickPaymentLinkButton amount={Number(row.amount_due ?? row.total) || 0} currency={row.currency || orgCurrency} email={row.contact?.email} label={row.invoice_number} />
+      )}
     />
   );
 }
@@ -244,6 +247,21 @@ export function SupportPage() {
   const { language } = useAuth();
   const { hasFeature: hasPlanFeature } = usePlanAccess();
   const allowed = hasPlanFeature('tickets');
+  const hasSla = hasPlanFeature('sla');
+  const fr = language === 'fr';
+  const slaCell = (r: Ticket) => {
+    if (!r.sla_due_at) return <span className="text-ink-400">—</span>;
+    const due = new Date(r.sla_due_at).getTime();
+    if (r.status === 'resolved' || r.status === 'closed') {
+      const met = r.resolved_at ? new Date(r.resolved_at).getTime() <= due : true;
+      return <Badge variant={met ? 'success' : 'error'}>{met ? (fr ? 'Respecté' : 'Met') : (fr ? 'Dépassé' : 'Breached')}</Badge>;
+    }
+    const left = due - Date.now();
+    if (left <= 0) return <Badge variant="error">{fr ? 'Dépassé' : 'Breached'}</Badge>;
+    const h = Math.floor(left / 3600e3);
+    const label = h >= 24 ? `${Math.floor(h / 24)} ${fr ? 'j' : 'd'} ${h % 24} h` : h >= 1 ? `${h} h` : `${Math.max(1, Math.round(left / 60e3))} min`;
+    return <Badge variant={h < 4 ? 'warning' : 'neutral'}>{label}</Badge>;
+  };
   const fields: FormField[] = [
     { key: 'ticket_number', label: t('list.ticketNumber', language), type: 'text', required: true },
     { key: 'subject', label: t('list.subject', language), type: 'text', required: true },
@@ -270,6 +288,7 @@ export function SupportPage() {
         { key: 'subject', label: t('list.subject', language), render: (r) => r.subject },
         { key: 'priority', label: t('list.priority', language), render: (r) => <Badge variant={r.priority === 'urgent' ? 'error' : r.priority === 'high' ? 'warning' : 'neutral'}>{tStatus(r.priority, language)}</Badge> },
         { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'resolved' || r.status === 'closed' ? 'success' : 'primary'}>{tStatus(r.status, language)}</Badge> },
+        ...(hasSla ? [{ key: 'sla_due_at', label: 'SLA', render: slaCell }] : []),
       ]}
       formFields={fields}
       emptyIcon={<LifeBuoy size={28} />}
@@ -277,6 +296,12 @@ export function SupportPage() {
       emptyDescription={t('empty.noTicketsDesc', language)}
       relations="*, contact:contacts(*), company:companies(*)"
       orderBy="created_at"
+      rowActions={(row, reload) => (
+        <FreshdeskEscalateButton
+          ticketId={row.id} ticketNumber={row.ticket_number} subject={row.subject} description={row.description}
+          email={row.contact?.email} internalNotes={row.internal_notes} onDone={reload}
+        />
+      )}
     />
   );
 }

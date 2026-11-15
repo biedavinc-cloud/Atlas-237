@@ -373,6 +373,13 @@ export function BrandLogo({ provider, size = 24, className = '' }: BrandLogoProp
           <path d="M12 6l-6 12h3l1.2-2.6h3.6L15 18h3L12 6Zm0 4.2 1.3 2.8h-2.6L12 10.2Z" fill="#fff" />
         </svg>
       );
+    case 'resend':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" style={s} className={className} aria-label="Resend">
+          <rect width="24" height="24" rx="5" fill="#000" />
+          <path d="M8 6.5h5.2c2.3 0 3.8 1.3 3.8 3.3 0 1.6-1 2.8-2.6 3.2L17.5 17.5h-3l-2.8-4.2H10.6v4.2H8V6.5Zm2.6 2.2v2.5h2.4c.9 0 1.4-.5 1.4-1.25S13.9 8.7 13 8.7h-2.4Z" fill="#fff" />
+        </svg>
+      );
     default:
       return (
         <svg viewBox="0 0 24 24" fill="none" style={s} className={className} aria-label={provider}>

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui';
 import { Loading } from '@/components/Loading';
 import { RecordFormModal } from '@/components/ListPage';
 import { QuickPaymentLinkButton } from '@/components/QuickPaymentLinkButton';
+import { QuickEmailButton } from '@/components/QuickEmailButton';
 import { UpgradeGate } from '@/components/UpgradeGate';
 import { usePlanAccess } from '@/lib/plans';
 import { getCountryName, formatAmount } from '@/lib/i18n-countries';
@@ -202,6 +203,23 @@ export function DocumentPage({ kind }: { kind: Kind }) {
     window.print();
   }
 
+  const docEmailBody = [
+    `${fr ? 'Bonjour' : 'Hello'} ${contact?.first_name || ''},`.trim(),
+    '',
+    kind === 'quote'
+      ? (fr ? `Veuillez trouver ci-dessous notre devis ${number}.` : `Please find our quote ${number} below.`)
+      : (fr ? `Voici la facture ${number}.` : `Here is invoice ${number}.`),
+    '',
+    ...items.filter(i => i.name.trim()).map(i => `• ${i.name} × ${i.quantity} — ${money(lineTotal(i))}`),
+    '',
+    `${fr ? 'Total' : 'Total'} : ${money(totals.total)}`,
+    kind === 'invoice' && totals.due > 0 ? `${fr ? 'Reste à payer' : 'Amount due'} : ${money(totals.due)}` : '',
+    kind === 'invoice' && doc.due_date ? `${fr ? 'Échéance' : 'Due date'} : ${new Date(String(doc.due_date)).toLocaleDateString(language)}` : '',
+    '',
+    fr ? 'Cordialement,' : 'Best regards,',
+    organization?.name || '',
+  ].filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n');
+
   const statusKey = kind === 'invoice' ? String(doc.payment_status || 'unpaid') : String(doc.status || 'draft');
   const tone = ['paid', 'accepted'].includes(statusKey) ? 'success' : ['rejected', 'overdue', 'unpaid'].includes(statusKey) ? 'error' : 'warning';
   const billTo = company?.name || (contact ? `${contact.first_name} ${contact.last_name}` : '');
@@ -231,7 +249,15 @@ export function DocumentPage({ kind }: { kind: Kind }) {
             <button onClick={() => setEditing(true)} className="btn-secondary btn-sm"><Edit2 size={14} /> {fr ? 'En-tête' : 'Details'}</button>
             <button onClick={printDoc} className="btn-secondary btn-sm"><Printer size={14} /> {fr ? 'Imprimer / PDF' : 'Print / PDF'}</button>
             {kind === 'quote' && <button onClick={convertToInvoice} disabled={saving} className="btn-secondary btn-sm"><Receipt size={14} /> {fr ? 'Convertir en facture' : 'Convert to invoice'}</button>}
-            {kind === 'invoice' && totals.due > 0 && <QuickPaymentLinkButton amount={totals.due} currency={currency} label={number} />}
+            {contact?.email && <QuickEmailButton
+              to={contact.email}
+              name={`${contact.first_name} ${contact.last_name}`}
+              label={fr ? 'Envoyer' : 'Send'}
+              subject={`${kind === 'quote' ? (fr ? 'Devis' : 'Quote') : (fr ? 'Facture' : 'Invoice')} ${number} — ${organization?.name || ''}`}
+              message={docEmailBody}
+              target={deal ? { fk: 'deal_id', id: deal.id } : { fk: 'contact_id', id: contact.id }}
+            />}
+            {kind === 'invoice' && totals.due > 0 && <QuickPaymentLinkButton amount={totals.due} currency={currency} email={contact?.email} label={number} />}
             {kind === 'invoice' && totals.due > 0 && totals.total > 0 && <button onClick={markPaid} disabled={saving} className="btn-success btn-sm"><CheckCircle2 size={14} /> {fr ? 'Marquer payée' : 'Mark as paid'}</button>}
             <button onClick={save} disabled={saving || !dirty} className="btn-primary btn-sm">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {fr ? 'Enregistrer' : 'Save'}</button>
           </div>

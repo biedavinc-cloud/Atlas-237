@@ -295,6 +295,8 @@ export function buildSeed(): Record<string, Row[]> {
   const ticket = (num: string, subject: string, priority: string, status: string, c: number | null, co: number | null, created: number, description: string) => base({
     id: id('r0'), ticket_number: num, subject, priority, status, contact_id: c === null ? null : K(c), company_id: co === null ? null : C(co), category: 'Livraison', description,
     assigned_to: [junior, patrick, mariam][created % 3 === 0 ? 0 : created % 2 === 0 ? 1 : 2], resolved_at: status === 'resolved' || status === 'closed' ? iso(created + 1) : null,
+    // Same rule as the tickets_apply_sla trigger (migration 047), Pro trial.
+    sla_due_at: new Date(new Date(iso(created)).getTime() + (({ urgent: 4, high: 24, low: 72 } as Record<string, number>)[priority] ?? 48) * 3600e3).toISOString(),
   }, created);
   const tickets = [
     ticket('TCK-1042', 'Livraison en retard — entrepôt Bonabéri', 'high', 'open', 1, 0, -1, '3 palettes attendues hier, toujours pas livrées.'),

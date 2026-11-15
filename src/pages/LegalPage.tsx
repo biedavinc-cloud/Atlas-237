@@ -139,7 +139,7 @@ function Content({ page, lang }: { page: LegalPage; lang: 'en' | 'fr' | 'es' | '
       return (
         <>
           {h2(fr ? 'Notre mission' : 'Our Mission', '')}
-          <p>{fr ? 'Atlas CRM est la plateforme CRM agentique n°1, conçue pour Dubai, l\'Afrique et le monde. Notre mission : unifier les ventes, le service client et l\'IA sur un seul cloud de confiance.' : 'Atlas CRM is the #1 agentic CRM platform, built for Dubai, Africa, and the world. Our mission: unify sales, customer service, and AI on a single trusted cloud.'}</p>
+          <p>{fr ? 'Atlas CRM est un CRM avec IA intégrée, développé par Liafrik Tech entre Dubaï et Yaoundé, pensé pour les entreprises d\'Afrique et du Moyen-Orient. Notre mission : réunir les ventes, le service client et l\'IA dans un seul outil, au prix d\'une entreprise et non par utilisateur.' : 'Atlas CRM is a CRM with built-in AI, built by Liafrik Tech between Dubai and Yaoundé for businesses in Africa and the Middle East. Our mission: bring sales, customer service and AI together in one tool, priced per company rather than per user.'}</p>
           {h2(fr ? 'Nos valeurs' : 'Our Values', '')}
           <ul><li>{fr ? 'Confiance et sécurité' : 'Trust and security'}</li><li>{fr ? 'Réussite client' : 'Customer success'}</li><li>{fr ? 'Innovation par l\'IA' : 'Innovation through AI'}</li><li>{fr ? 'Durabilité (Pledge 1%)' : 'Sustainability (Pledge 1%)'}</li></ul>
         </>

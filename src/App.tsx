@@ -206,9 +206,15 @@ function LegalRoute({ lang }: { lang?: Language }) {
 }
 
 /** /demo: switches this tab to the sample workspace (full reload so the demo client loads). */
+/** /demo?to=/app/pipelines opens the demo straight on one page (landing page "check it yourself" links). */
+function demoTarget(): string {
+  const to = new URLSearchParams(window.location.search).get('to') || '';
+  return /^\/app(\/[a-z0-9-]+)*$/.test(to) ? to : '/app';
+}
+
 function DemoEntry({ lang }: { lang?: Language }) {
   useEffect(() => { if (!IS_DEMO) enterDemo(lang || (window.location.pathname.startsWith('/en') ? 'en' : 'fr')); }, [lang]);
-  if (IS_DEMO) return <Navigate to="/app" replace />;
+  if (IS_DEMO) return <Navigate to={demoTarget()} replace />;
   return <Loading fullPage />;
 }
 

@@ -25,18 +25,32 @@ import { useAuth } from '@/context/AuthContext';
 import { useScrollReveal } from '@/lib/useScrollReveal';
 
 /**
- * Every id here must exist in AVAILABLE_APPS (src/pages/IntegrationPages.tsx)
- * and resolve to a real logo in src/components/BrandLogos.tsx — this section
- * shows actual marketplace apps, not placeholder art. Picked for visual
- * variety across categories (CRM, messaging, automation, payments, AI,
- * commerce) rather than showing all ~70.
+ * The integrations section shows only apps that do something in Atlas,
+ * grouped by the place they are used (src/lib/appUsage.ts is the source of
+ * truth; keep these groups in step with it). No logo wall of apps that
+ * would only store a key.
  */
-const INTEGRATION_LOGOS = [
-  'slack', 'google_drive', 'whatsapp', 'notion', 'hubspot', 'shopify',
-  'zapier', 'make', 'n8n', 'mailchimp', 'calendly', 'zoom',
-  'microsoft_teams', 'twilio', 'asana', 'trello', 'docusign', 'dropbox',
-  'telegram', 'xero', 'quickbooks', 'zendesk', 'intercom', 'freshdesk',
-  'stripe', 'paypal', 'openai',
+const INTEGRATION_GROUPS: { where: { fr: string; en: string }; what: { fr: string; en: string }; apps: { id: string; name: string }[] }[] = [
+  {
+    where: { fr: 'Sur la fiche client', en: 'On the customer record' },
+    what: { fr: 'Écrire, relancer, synchroniser sans quitter le contact. Chaque envoi s’ajoute au fil d’activité.', en: 'Message, follow up and sync without leaving the contact. Every send lands on the timeline.' },
+    apps: [{ id: 'whatsapp', name: 'WhatsApp' }, { id: 'twilio', name: 'SMS Twilio' }, { id: 'resend', name: 'Email Resend' }, { id: 'hubspot', name: 'HubSpot' }, { id: 'mailchimp', name: 'Mailchimp' }, { id: 'shopify', name: 'Shopify' }, { id: 'woocommerce', name: 'WooCommerce' }],
+  },
+  {
+    where: { fr: 'Sur la facture', en: 'On the invoice' },
+    what: { fr: 'Un lien de paiement carte ou Mobile Money généré pour le montant restant dû, prêt à envoyer.', en: 'A card or mobile money payment link for the amount due, ready to send.' },
+    apps: [{ id: 'cinetpay', name: 'CinetPay' }, { id: 'campay', name: 'CamPay' }, { id: 'wave', name: 'Wave' }, { id: 'chapa', name: 'Chapa' }, { id: 'mollie', name: 'Mollie' }],
+  },
+  {
+    where: { fr: 'Dans le support et l’IA', en: 'In support and AI' },
+    what: { fr: 'Escaladez un ticket vers Freshdesk. Faites répondre Ask Atlas avec le modèle de votre choix, sur vos données.', en: 'Escalate a ticket to Freshdesk. Have Ask Atlas answer with the model you choose, on your data.' },
+    apps: [{ id: 'freshdesk', name: 'Freshdesk' }, { id: 'openai', name: 'OpenAI' }, { id: 'anthropic', name: 'Claude' }, { id: 'gemini', name: 'Gemini' }],
+  },
+  {
+    where: { fr: 'Dans vos automatisations', en: 'In your automations' },
+    what: { fr: 'Des workflows qui envoient, créent et encaissent pour vous. Pour le reste : webhooks signés et API REST.', en: 'Workflows that send, create and collect for you. For the rest: signed webhooks and a REST API.' },
+    apps: [{ id: 'telegram', name: 'Telegram' }, { id: 'zapier', name: 'Zapier' }, { id: 'make', name: 'Make' }, { id: 'n8n', name: 'n8n' }],
+  },
 ];
 
 const cloudProducts = [
@@ -70,7 +84,7 @@ const plans = [
   { name: 'Starter', monthly: 19, annual: 190, tagline: { fr: 'Pour démarrer', en: 'To get started' }, desc: { fr: 'Ventes, service et marketing avec des agents pré-construits.', en: 'Sales, service and marketing with pre-built agents.' }, cta: { fr: 'Commencer', en: 'Get started' }, popular: false },
   { name: 'Growth', monthly: 49, annual: 490, tagline: { fr: 'Le plus populaire', en: 'Most popular' }, desc: { fr: 'Automatisation, campagnes et croissance commerciale.', en: 'Automation, campaigns and business growth.' }, cta: { fr: 'Choisir Growth', en: 'Choose Growth' }, popular: true },
   { name: 'Pro', monthly: 119, annual: 1190, tagline: { fr: 'Haute performance', en: 'High performance' }, desc: { fr: 'Analyses IA, support prioritaire et workflows avancés.', en: 'AI analytics, priority support and advanced workflows.' }, cta: { fr: 'Choisir Pro', en: 'Choose Pro' }, popular: false },
-  { name: 'Enterprise', monthly: 219, annual: 2190, tagline: { fr: 'Le plus complet', en: 'Most complete' }, desc: { fr: 'Solution dédiée, API illimitée et accompagnement.', en: 'Dedicated solution, unlimited API and support.' }, cta: { fr: 'Choisir Enterprise', en: 'Choose Enterprise' }, popular: false },
+  { name: 'Enterprise', monthly: 219, annual: 2190, tagline: { fr: 'Le plus complet', en: 'Most complete' }, desc: { fr: 'Utilisateurs illimités, API, webhooks et accompagnement dédié.', en: 'Unlimited users, API, webhooks and dedicated support.' }, cta: { fr: 'Choisir Enterprise', en: 'Choose Enterprise' }, popular: false },
 ];
 
 type Row = { label: { fr: string; en: string }; values: (boolean | string)[] };
@@ -128,7 +142,6 @@ export function LandingPage() {
         { label: { fr: 'Accès API & Webhooks', en: 'API access & Webhooks' }, values: [false, true, true, true] },
         { label: { fr: 'Analyses prédictives', en: 'Predictive analytics' }, values: [false, false, true, true] },
         { label: { fr: 'Tableaux de bord personnalisés', en: 'Custom dashboards' }, values: [false, false, true, true] },
-        { label: { fr: 'IA personnalisée', en: 'Custom AI training' }, values: [false, false, false, true] },
       ],
     },
     {
@@ -136,7 +149,7 @@ export function LandingPage() {
       rows: [
         { label: { fr: 'Tickets clients', en: 'Customer tickets' }, values: [false, true, true, true] },
         { label: { fr: 'Base de connaissances', en: 'Knowledge base' }, values: [false, false, true, true] },
-        { label: { fr: 'SLA & escalade', en: 'SLA & escalation' }, values: [false, false, true, true] },
+        { label: { fr: 'Délais SLA sur les tickets', en: 'Ticket SLA timers' }, values: [false, false, true, true] },
       ],
     },
     {
@@ -273,18 +286,39 @@ export function LandingPage() {
         {/* ───────── Proof you can check yourself (no invented testimonials) ───────── */}
         <section className="bg-ink-50 py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-6 md:px-10">
-            <h2 className="reveal text-center text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Jugez sur pièces, pas sur promesses' : 'Judge for yourself, not by promises'}</h2>
-            <p className="reveal mx-auto mt-4 max-w-2xl text-center text-ink-600">{lang === 'fr' ? 'Tout ce qui est écrit sur cette page se vérifie en quelques minutes dans la démo, sans compte.' : 'Everything on this page can be checked in a few minutes in the demo, without an account.'}</p>
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
+            <div className="reveal mx-auto max-w-2xl text-center">
+              <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Jugez sur pièces, pas sur promesses' : 'Judge for yourself, not by promises'}</h2>
+              <p className="mt-4 text-ink-600">{lang === 'fr' ? 'Aucun chiffre gonflé, aucun avis inventé sur cette page. À la place, six choses à vérifier vous-même dans la démo, en cinq minutes, sans créer de compte.' : 'No inflated numbers, no made-up reviews on this page. Instead, six things to check yourself in the demo, in five minutes, without an account.'}</p>
+            </div>
+            <ol className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[
-                { h: lang === 'fr' ? 'Essayez avant de parler à qui que ce soit' : 'Try it before talking to anyone', d: lang === 'fr' ? 'La démo ouvre une entreprise fictive complète : pipeline, factures, tickets, agents IA. Rien à installer.' : 'The demo opens a complete fictional company: pipeline, invoices, tickets, AI agents. Nothing to install.', cta: lang === 'fr' ? 'Ouvrir la démo' : 'Open the demo', href: lang === 'fr' ? '/demo' : '/en/demo' },
-                { h: lang === 'fr' ? 'Vos données restent les vôtres' : 'Your data stays yours', d: lang === 'fr' ? 'Import CSV / Excel à l’arrivée, export CSV de chaque liste à tout moment. Aucune donnée prise en otage.' : 'CSV / Excel import on the way in, CSV export of every list at any time. No data held hostage.', cta: lang === 'fr' ? 'Voir la sécurité' : 'See security', href: lang === 'fr' ? '/legal/security' : '/en/legal/security' },
-                { h: lang === 'fr' ? 'Un prix clair, sans engagement' : 'Clear pricing, no lock-in', d: lang === 'fr' ? 'Un tarif fixe par entreprise, pas par utilisateur. 14 jours gratuits sans carte, paiement par carte ou Mobile Money.' : 'One flat price per company, not per user. 14 days free with no card, pay by card or mobile money.', cta: lang === 'fr' ? 'Voir les tarifs' : 'See pricing', href: '#matrix' },
+                { to: '/app/pipelines', fr: 'Glissez une affaire d’une étape à l’autre du pipeline', en: 'Drag a deal from one pipeline stage to the next', frD: 'La probabilité et le statut suivent. Gagnée ou perdue en un geste.', enD: 'Probability and status follow. Won or lost in one move.' },
+                { to: '/app/leads', fr: 'Convertissez un lead en client', en: 'Convert a lead into a customer', frD: 'Contact, entreprise et affaire créés d’un coup, sans doublon.', enD: 'Contact, company and deal created at once, no duplicates.' },
+                { to: '/app/invoices', fr: 'Ouvrez une facture en FCFA et imprimez-la', en: 'Open a CFA franc invoice and print it', frD: 'Lignes, taxes, remise, reste à payer, PDF prêt à envoyer.', enD: 'Lines, tax, discount, amount due, a PDF ready to send.' },
+                { to: '/app/ask-atlas', fr: 'Posez une question à Ask Atlas', en: 'Put a question to Ask Atlas', frD: '« Quelles factures sont impayées ? » La réponse vient de vos données.', enD: '"Which invoices are unpaid?" The answer comes from your data.' },
+                { to: '/app/ai-workflows', fr: 'Lancez un workflow et lisez son rapport', en: 'Run a workflow and read its report', frD: 'Chaque étape affiche ce qu’elle a vraiment fait, ou pourquoi elle a échoué.', enD: 'Each step shows what it really did, or why it failed.' },
+                { to: '/app/contacts', fr: 'Exportez vos contacts en CSV', en: 'Export your contacts to CSV', frD: 'Vos données sortent quand vous voulez. Import CSV et Excel à l’arrivée.', enD: 'Your data leaves whenever you want. CSV and Excel import on the way in.' },
               ].map((c) => (
-                <div key={c.h} className="reveal flex flex-col rounded-2xl border border-ink-100 bg-white p-7 shadow-sm">
-                  <h3 className="text-lg font-bold text-ink-900">{c.h}</h3>
-                  <p className="mt-3 flex-1 text-base leading-7 text-ink-600">{c.d}</p>
-                  <a href={c.href} className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:underline">{c.cta} <ArrowRight size={14} /></a>
+                <li key={c.to} className="reveal">
+                  <a href={`${lang === 'fr' ? '/demo' : '/en/demo'}?to=${c.to}`} className="group flex h-full flex-col rounded-2xl border border-ink-100 bg-white p-6 shadow-sm transition hover:border-primary-200 hover:shadow-md">
+                    <CheckCircle2 size={22} className="text-success-600" />
+                    <h3 className="mt-3 text-base font-bold text-ink-900">{lang === 'fr' ? c.fr : c.en}</h3>
+                    <p className="mt-1.5 flex-1 text-sm leading-6 text-ink-600">{lang === 'fr' ? c.frD : c.enD}</p>
+                    <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary-700">{lang === 'fr' ? 'Vérifier dans la démo' : 'Check it in the demo'} <ArrowRight size={14} className="transition group-hover:translate-x-0.5 rtl:rotate-180" /></span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-10 grid gap-4 md:grid-cols-3">
+              {[
+                { h: lang === 'fr' ? 'Un prix clair, sans engagement' : 'Clear pricing, no lock-in', d: lang === 'fr' ? 'Un tarif fixe par entreprise, pas par utilisateur. 14 jours gratuits sans carte, puis carte ou Mobile Money.' : 'One flat price per company, not per user. 14 days free with no card, then card or mobile money.', cta: lang === 'fr' ? 'Voir les tarifs' : 'See pricing', href: '#matrix' },
+                { h: lang === 'fr' ? 'Vos données sont cloisonnées' : 'Your data is isolated', d: lang === 'fr' ? 'Chaque entreprise ne voit que ses propres données, garanti par la base elle-même, pas seulement par l’interface.' : 'Each company only sees its own data, enforced by the database itself, not just the interface.', cta: lang === 'fr' ? 'Voir la sécurité' : 'See security', href: lang === 'fr' ? '/legal/security' : '/en/legal/security' },
+                { h: lang === 'fr' ? 'Des avis réels, plus tard' : 'Real reviews, later', d: lang === 'fr' ? 'Nous publierons les retours de nos premiers clients avec leur nom et leur accord. Pas avant, et pas autrement.' : 'We will publish feedback from our first customers with their name and consent. Not before, and not otherwise.', cta: lang === 'fr' ? 'Nous écrire' : 'Contact us', href: lang === 'fr' ? '/legal/contact' : '/en/legal/contact' },
+              ].map((c) => (
+                <div key={c.h} className="reveal flex flex-col rounded-2xl border border-ink-100 bg-white/70 p-6">
+                  <h3 className="text-base font-bold text-ink-900">{c.h}</h3>
+                  <p className="mt-2 flex-1 text-sm leading-6 text-ink-600">{c.d}</p>
+                  <a href={c.href} className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:underline">{c.cta} <ArrowRight size={14} className="rtl:rotate-180" /></a>
                 </div>
               ))}
             </div>
@@ -333,35 +367,37 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* ───────── Integrations showcase ───────── */}
-        <section id="integrations" className="mx-auto max-w-7xl px-6 py-20 text-center md:px-10 lg:py-24">
-          <div className="reveal mx-auto max-w-2xl">
+        {/* ───────── Integrations: only apps with a real place of use ───────── */}
+        <section id="integrations" className="mx-auto max-w-7xl px-6 py-20 md:px-10 lg:py-24">
+          <div className="reveal mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">
-              {lang === 'fr' ? 'Connectez-vous à des centaines d’apps.' : 'Sync with hundreds of apps.'}
-              <br />
-              {lang === 'fr' ? 'Débloquez des possibilités illimitées.' : 'Unleash limitless possibilities.'}
+              {lang === 'fr' ? 'Des intégrations qui servent, là où vous travaillez' : 'Integrations that do something, where you work'}
             </h2>
             <p className="mt-5 text-lg text-ink-600">
               {lang === 'fr'
-                ? 'Connectez Atlas à vos applications favorites pour ne plus perdre de temps à jongler entre elles. Choisissez dans notre marketplace ou construisez vos propres intégrations avec notre API ouverte.'
-                : 'Connect Atlas to your favorite applications to save time switching between them. Select from our marketplace or build your own integrations with our open API.'}
+                ? 'Pas de mur de logos. Chaque app connectée apparaît à un endroit précis d’Atlas, et chaque action passe par un vrai appel à l’app, avec son résultat affiché.'
+                : 'No logo wall. Each connected app shows up in one precise place in Atlas, and every action is a real call to that app, with its result shown.'}
             </p>
-            <Link to="/auth" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary-600 hover:text-primary-700">
-              {lang === 'fr' ? 'Voir toutes les intégrations' : 'See all integrations'} <ArrowRight size={16} />
-            </Link>
           </div>
-
-          <div className="reveal mx-auto mt-14 grid max-w-5xl grid-cols-4 gap-4 sm:grid-cols-6 sm:gap-5 md:grid-cols-9">
-            {INTEGRATION_LOGOS.map((provider, i) => (
-              <div
-                key={provider}
-                className="flex aspect-square items-center justify-center rounded-2xl border border-ink-100 bg-white p-3 shadow-card animate-dance sm:p-4"
-                style={{ animationDelay: `${(i % 9) * 0.18}s`, animationDuration: `${3.6 + (i % 5) * 0.35}s` }}
-              >
-                <BrandLogo provider={provider} size={32} />
+          <div className="mt-14 grid gap-6 md:grid-cols-2">
+            {INTEGRATION_GROUPS.map((g) => (
+              <div key={g.where.en} className="reveal rounded-2xl border border-ink-100 bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-ink-900">{g.where[contentLang]}</h3>
+                <p className="mt-1.5 text-sm leading-6 text-ink-600">{g.what[contentLang]}</p>
+                <ul className="mt-5 flex flex-wrap gap-2">
+                  {g.apps.map((a) => (
+                    <li key={a.id} className="inline-flex items-center gap-2 rounded-full border border-ink-100 bg-ink-50/60 py-1.5 pe-3 ps-1.5 text-sm font-medium text-ink-800">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white ring-1 ring-ink-100"><BrandLogo provider={a.id} size={18} /></span>
+                      {a.name}
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
+          <p className="reveal mt-8 text-center text-sm text-ink-500">
+            {lang === 'fr' ? 'Votre outil n’est pas dans la liste ? Branchez n’importe quelle API REST comme « app personnalisée » et appelez-la depuis un workflow.' : 'Your tool is not listed? Plug in any REST API as a "custom app" and call it from a workflow.'}
+          </p>
         </section>
 
         {/* ───────── Platform / architecture ───────── */}

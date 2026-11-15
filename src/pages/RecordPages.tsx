@@ -12,6 +12,9 @@ import { Badge } from '@/components/ui';
 import { Loading } from '@/components/Loading';
 import { RecordFormModal, type FormField } from '@/components/ListPage';
 import { QuickMessageButton } from '@/components/QuickMessageButton';
+import { QuickEmailButton } from '@/components/QuickEmailButton';
+import { RecordAppActions } from '@/components/RecordAppActions';
+import { ACTIVITY_EVENT } from '@/lib/activityLog';
 import { ConvertLeadModal } from '@/components/ConvertLeadModal';
 import { getCountryName, formatAmount } from '@/lib/i18n-countries';
 import { triggerWebhooks } from '@/lib/webhooks';
@@ -157,6 +160,12 @@ function Timeline({ fk, id }: { fk: 'contact_id' | 'company_id' | 'deal_id' | 'l
     setText(''); setWhen('');
     reload();
   }
+
+  useEffect(() => {
+    const onLogged = (e: Event) => { const d = (e as CustomEvent).detail; if (d?.fk === fk && d?.id === id) reload(); };
+    window.addEventListener(ACTIVITY_EVENT, onLogged);
+    return () => window.removeEventListener(ACTIVITY_EVENT, onLogged);
+  }, [fk, id, reload]);
 
   async function complete(a: Row) {
     await supabase.from('activities').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', a.id);
@@ -334,7 +343,7 @@ export function ContactDetailPage() {
       subtitle={<>{row.job_title ? `${row.job_title}` : ''}{row.job_title && (company || row.company) ? ' · ' : ''}{company ? <Link className="text-primary-700 hover:underline" to={`/app/companies/${company.id}`}>{company.name}</Link> : (row.company as string) || ''}</>}
       badges={<><Badge variant={statusTone(row.status)}>{tStatus(String(row.status), language)}</Badge>{tags.map(tg => <Badge key={tg} variant="neutral">{tg}</Badge>)}</>}
       actions={<>
-        {row.email ? <a href={`mailto:${row.email}`} className="btn-secondary btn-sm"><Mail size={14} /> Email</a> : null}
+        <QuickEmailButton to={row.email as string} name={name} target={{ fk: 'contact_id', id: row.id }} />
         {row.phone ? <a href={`tel:${String(row.phone).replace(/\s/g, '')}`} className="btn-secondary btn-sm"><Phone size={14} /> {fr ? 'Appeler' : 'Call'}</a> : null}
         <QuickMessageButton phone={row.phone as string} name={name} />
         <button onClick={() => setEditing(true)} className="btn-secondary btn-sm"><Edit2 size={14} /> {t('common.edit', language)}</button>
@@ -350,6 +359,7 @@ export function ContactDetailPage() {
           { label: fr ? 'Créé le' : 'Created', value: new Date(String(row.created_at)).toLocaleDateString(language) },
         ]} />
         {row.notes ? <section className="card p-5"><h2 className="card-title mb-2">{t('list.notes', language)}</h2><p className="whitespace-pre-wrap text-sm text-ink-700">{String(row.notes)}</p></section> : null}
+        <RecordAppActions person={row as { email?: string; first_name?: string; last_name?: string }} target={{ fk: 'contact_id', id: row.id }} />
         <TasksCard relatedType="contact" id={row.id} />
       </>}
     >
@@ -587,7 +597,7 @@ export function LeadDetailPage() {
         {converted && row.converted_contact_id
           ? <Link to={`/app/contacts/${row.converted_contact_id}`} className="btn-secondary btn-sm"><ExternalLink size={14} /> {fr ? 'Voir le contact' : 'Open contact'}</Link>
           : <button onClick={() => setConverting(true)} className="btn-primary btn-sm"><Shuffle size={14} /> {fr ? 'Convertir' : 'Convert'}</button>}
-        {row.email ? <a href={`mailto:${row.email}`} className="btn-secondary btn-sm"><Mail size={14} /> Email</a> : null}
+        <QuickEmailButton to={row.email as string} name={name} target={{ fk: 'lead_id', id: row.id }} />
         <QuickMessageButton phone={row.phone as string} name={name} />
         <button onClick={() => setEditing(true)} className="btn-secondary btn-sm"><Edit2 size={14} /> {t('common.edit', language)}</button>
         <button onClick={() => remove(row.id)} className="btn-icon hover:bg-error-50 hover:text-error-600" aria-label={t('common.delete', language)}><Trash2 size={15} /></button>
@@ -602,6 +612,7 @@ export function LeadDetailPage() {
           { label: fr ? 'Créée le' : 'Created', value: new Date(String(row.created_at)).toLocaleDateString(language) },
           ...(row.converted_at ? [{ label: fr ? 'Convertie le' : 'Converted', value: new Date(String(row.converted_at)).toLocaleDateString(language) }] : []),
         ]} />
+        <RecordAppActions person={row as { email?: string; first_name?: string; last_name?: string }} target={{ fk: 'lead_id', id: row.id }} />
         <TasksCard relatedType="lead" id={row.id} />
       </>}
     >

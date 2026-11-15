@@ -135,7 +135,7 @@ and individual pages. Tables expected: contacts, companies, leads, deals, pipeli
 activities, products, quotes, orders, invoices, payments, campaigns, tickets, ai_agents,
 ai_tasks, approvals, workflows, ai_memory, knowledge_documents, integrations, api_keys,
 webhooks, notifications, audit_logs, profiles, organizations. SQL migrations are at
-`supabase/migrations/` (latest: `20261115120000_042_korapay_cinetpay_billing.sql`).
+`supabase/migrations/` (latest: `20261115190717_047_ticket_sla.sql`).
 - Whenever you add or edit a `ListPage` `formFields` array, or a direct
   `supabase.from(table).insert({...})` / `.update({...})` call anywhere else,
   double-check every key against the table's real columns in
@@ -1030,8 +1030,8 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
 ## Korapay + CinetPay (subscriptions) — needs deploy + secrets
 - Migration `042` (billing_payment_intents + subscription columns) and
   functions `billing-initialize`, `billing-verify`, `billing-webhook`
-  (+ shared `supabase/functions/_shared/billing.ts`). None are live until
-  `supabase db push` + `supabase functions deploy` and the secrets in
+  (+ shared `supabase/functions/_shared/billing.ts`) are applied/deployed
+  live (2026-11-15). They only become usable once the secrets in
   `.env.example` are set. `billing-webhook` has `verify_jwt = false`.
 - Flow: initialize records the expected plan/price (USD converted live to
   `KORAPAY_CURRENCY`/`CINETPAY_CURRENCY`, default XAF; refuses if no FX
@@ -1079,18 +1079,14 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   "Atlas — développé par Liafrik Tech · Dubaï – Yaoundé".
 
 ## Production state & launch checklist (verified via Supabase MCP, 2026-11-15)
-- Applied live: `043_revoke_seed_demo_data` (SECURITY FIX: any signed-in
-  user could call seed_demo_data with another org's id and inject records
-  into that tenant) and `044_cron_secret_in_vault` (random cron secret in
-  Vault + service-role-only `get_cron_secret()`).
-- NOT yet applied (the MCP server asked for a confirmation that got no
-  answer): `042_korapay_cinetpay_billing` and
-  `045_reschedule_cron_and_keepalive`. Apply 045 and THEN deploy the new
-  `run-scheduled-workflows` (it reads the Vault secret; the old hardcoded
-  literal is gone from the code). Deploying the function before 045 breaks
-  scheduled workflows until 045 runs.
-- Also deploy `billing-initialize`, `billing-verify`, `billing-webhook`
-  (with `_shared/billing.ts`; `billing-webhook` verify_jwt=false).
+- Applied live: `042_korapay_cinetpay_billing`, `043_revoke_seed_demo_data`
+  (SECURITY FIX: any signed-in user could call seed_demo_data with another
+  org's id), `044_cron_secret_in_vault`, `045_reschedule_cron_and_keepalive`,
+  `046_api_key_hash`, `047_ticket_sla`. Repo file names use the versions
+  the live project recorded (list_migrations), so the two stay aligned.
+- Deployed live: `run-scheduled-workflows` (reads the Vault secret; cron
+  answers 200 every 5 min), `billing-initialize`, `billing-verify`,
+  `billing-webhook` (verify_jwt=false), `public-api` (verify_jwt=false).
 - Migrations 034_index_missing_org_id_fks and 039_enable_cron… existed only
   in production; reconstructed into the repo from schema_migrations.
 - `stripe-webhook` is deployed in production but not in the repo: it has
@@ -1105,3 +1101,58 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   under real traffic; Resend is already used by the app), Auth URL config
   (Site URL + redirect URLs on atlas.liafrik.com), leaked-password
   protection, PSP secrets for at least one live payment method.
+
+## Integrations: only real ones, placed where they are used (Nov 2026)
+- `src/lib/appUsage.ts` (`APP_USAGE`, `APP_PURPOSE`) is the rule: the
+  marketplace lists an app ONLY if it has a real place of use there.
+  `ALL_APPS` in IntegrationPages.tsx keeps every definition (so an org that
+  connected a now-hidden app still sees it on Connected Apps, flagged
+  "Atlas does not use this app yet", and can disconnect it);
+  `AVAILABLE_APPS = ALL_APPS.filter(isUsableApp)`. The ~45 OAuth apps and the
+  stored-only API-key apps (Stripe, Calendly, Libooks, Sellia, PrestaShop…)
+  are therefore not offered. To add one: implement the call in
+  integration-action, add a quick action where the user needs it, then an
+  APP_USAGE entry — never the other way round.
+- Places of use: contact/lead header `QuickEmailButton` (Resend, falls back
+  to mailto) + `QuickMessageButton` (WhatsApp/Twilio); contact/lead aside
+  `RecordAppActions` (HubSpot, Mailchimp — audience id remembered locally —,
+  Shopify, WooCommerce); quote/invoice "Send" (Resend, prefilled summary)
+  and invoice payment link (CinetPay/CamPay/Wave/Chapa/Mollie, amount due,
+  hidden on paid invoices); ticket row `FreshdeskEscalateButton` (note in
+  internal_notes, status → in_progress); Ask Atlas (OpenAI/Anthropic/
+  Gemini); Workflows (all of them + Telegram + custom apps). Successful
+  record actions are written to the timeline via `src/lib/activityLog.ts`
+  (`ACTIVITY_EVENT` makes the open Timeline reload).
+- Zapier/Make/n8n are not "connect with a key" apps: the marketplace points
+  them to API & Webhooks.
+
+## Public REST API (`public-api` edge function) — real since Nov 2026
+- API keys used to be generated in the browser with only a display prefix
+  stored and no endpoint accepting them (a fake feature). Now the SHA-256
+  of the key is stored in `api_keys.key_hash` (046) and `public-api`
+  authenticates `Authorization: Bearer atlas_sk_…` by hash lookup with the
+  service role. Resources: contacts, companies, leads, deals — GET list
+  (limit ≤ 200, offset, q, updated_since), GET one, POST, PATCH, with a
+  per-resource column whitelist; scopes read / read+write; plan must have
+  `apiAccess` and `org_billing_ok`; creates/updates fire the org's webhooks
+  (`contact.created`…). Keys created before 046 show "Legacy key, recreate
+  it". Smoke-tested live (401 without/invalid key, 200 read, 403 write on a
+  read-only key; the temporary test key was deleted).
+
+## Ticket SLA (047) — the "SLA" matrix row is real
+- Trigger `tickets_apply_sla`: on Pro/Enterprise orgs, `sla_due_at` = created
+  + 4 h urgent / 24 h high / 48 h medium / 72 h low (recomputed when the
+  priority changes on an open ticket); every plan gets `resolved_at`
+  stamped/cleared on resolve/reopen. Support page shows an SLA column
+  (time left, breached, met) when `hasFeature('sla')`. The demo seed sets
+  `sla_due_at` with the same rule.
+- Removed from the pricing matrix and Billing cards: "Custom AI training" /
+  "IA personnalisée" (no code behind it). The About page no longer says
+  "#1 agentic CRM".
+
+## Landing page proof section
+- "Jugez sur pièces": six concrete checks, each a deep link into the demo
+  (`/demo?to=/app/pipelines`, validated against `^/app(/[a-z0-9-]+)*$` in
+  App.tsx `demoTarget()`), plus pricing / data isolation / "real reviews
+  later". The integrations section lists only the apps from APP_USAGE,
+  grouped by where they are used — no "hundreds of apps" logo wall.

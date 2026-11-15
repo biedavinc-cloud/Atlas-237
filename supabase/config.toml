@@ -28,3 +28,8 @@ verify_jwt = false
 # the reference and re-verifies with the provider's API before activating.
 [functions.billing-webhook]
 verify_jwt = false
+
+# Atlas public REST API: callers authenticate with an Atlas API key
+# (hashed lookup in api_keys), not a Supabase JWT.
+[functions.public-api]
+verify_jwt = false

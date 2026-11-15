@@ -477,6 +477,7 @@ export interface ApiKey {
   org_id: string;
   name: string;
   key_prefix: string | null;
+  key_hash?: string | null;
   permissions: Record<string, unknown>;
   last_used_at: string | null;
   expires_at: string | null;

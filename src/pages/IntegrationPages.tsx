@@ -14,6 +14,8 @@ import { usePlanAccess } from '@/lib/plans';
 import type { Integration, ApiKey, Webhook as WebhookType } from '@/types';
 import { validateKeyFormat, LIVE_VERIFIABLE_PROVIDERS } from '@/lib/integrationValidation';
 import { WEBHOOK_EVENTS } from '@/lib/webhooks';
+import { APP_USAGE, APP_PURPOSE, isUsableApp } from '@/lib/appUsage';
+import { Link } from 'react-router-dom';
 
 interface AppDef {
   provider: string;
@@ -26,7 +28,11 @@ interface AppDef {
   paymentType?: 'cards' | 'mobile_money' | 'transfers';
 }
 
-const AVAILABLE_APPS: AppDef[] = [
+// Every app Atlas knows how to store credentials for. Only the ones with a
+// real place of use in src/lib/appUsage.ts are offered in the marketplace
+// (MARKETPLACE_APPS below); the others stay defined so an org that connected
+// one earlier still sees it on Connected Apps and can disconnect it.
+const ALL_APPS: AppDef[] = [
   { provider: 'openai', name: 'OpenAI (ChatGPT)', category: 'AI', authType: 'api_key', configFields: [{ key: 'api_key', label: 'API Key', placeholder: 'sk-xxx', type: 'password' }], docsUrl: 'https://platform.openai.com/api-keys' },
   { provider: 'anthropic', name: 'Anthropic (Claude)', category: 'AI', authType: 'api_key', configFields: [{ key: 'api_key', label: 'API Key', placeholder: 'sk-ant-xxx', type: 'password' }], docsUrl: 'https://console.anthropic.com/settings/keys' },
   { provider: 'gemini', name: 'Google Gemini', category: 'AI', authType: 'api_key', configFields: [{ key: 'api_key', label: 'API Key', placeholder: 'AIzaSy...', type: 'password' }], docsUrl: 'https://aistudio.google.com/apikey' },
@@ -122,6 +128,54 @@ const AVAILABLE_APPS: AppDef[] = [
   { provider: 'asana', name: 'Asana', category: 'Project Management', authType: 'oauth', docsUrl: 'https://developers.asana.com' },
   { provider: 'trello', name: 'Trello', category: 'Project Management', authType: 'oauth', docsUrl: 'https://developer.atlassian.com/cloud/trello' },
 ];
+
+const AVAILABLE_APPS: AppDef[] = ALL_APPS.filter(a => isUsableApp(a.provider));
+
+function UsageList({ provider, lang }: { provider: string; lang: string }) {
+  const uses = APP_USAGE[provider] || [];
+  if (!uses.length) return null;
+  return (
+    <div className="mt-3">
+      <p className="text-xs font-semibold text-ink-500">{lang === 'fr' ? 'Utilisé dans' : 'Used in'}</p>
+      <ul className="mt-1 flex flex-wrap gap-1.5">
+        {uses.map(u => (
+          <li key={u.to + u.en}>
+            <Link to={u.to} className="inline-flex rounded-md bg-ink-50 px-2 py-0.5 text-xs text-ink-700 ring-1 ring-ink-100 hover:bg-primary-50 hover:text-primary-700">
+              {lang === 'fr' ? u.fr : u.en}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ApiDocsCard({ lang }: { lang: string }) {
+  const fr = lang === 'fr';
+  const base = `${import.meta.env.VITE_SUPABASE_URL || 'https://<project>.supabase.co'}/functions/v1/public-api`;
+  const examples = [
+    `curl ${base}/contacts?limit=20 \\\n  -H "Authorization: Bearer atlas_sk_…"`,
+    `curl -X POST ${base}/leads \\\n  -H "Authorization: Bearer atlas_sk_…" \\\n  -H "Content-Type: application/json" \\\n  -d '{"first_name":"Awa","last_name":"Ndiaye","email":"awa@exemple.com","source":"website"}'`,
+  ];
+  return (
+    <div className="card p-5">
+      <h3 className="card-title">{fr ? 'API REST Atlas' : 'Atlas REST API'}</h3>
+      <p className="mt-1 text-sm text-ink-600">
+        {fr
+          ? 'Lisez et créez des contacts, entreprises, leads et affaires depuis votre site, votre ERP, Zapier, Make ou n8n (étape « HTTP request »). Les fiches créées par l’API déclenchent les mêmes webhooks que l’app.'
+          : 'Read and create contacts, companies, leads and deals from your website, your ERP, Zapier, Make or n8n (an "HTTP request" step). Records created through the API fire the same webhooks as the app.'}
+      </p>
+      <dl className="mt-3 grid gap-1 text-sm">
+        <div><dt className="inline font-semibold text-ink-700">URL : </dt><dd className="inline break-all font-mono text-xs text-ink-700">{base}</dd> <CopyButton text={base} /></div>
+        <div><dt className="inline font-semibold text-ink-700">{fr ? 'Ressources : ' : 'Resources: '}</dt><dd className="inline font-mono text-xs">contacts · companies · leads · deals</dd></div>
+        <div><dt className="inline font-semibold text-ink-700">{fr ? 'Méthodes : ' : 'Methods: '}</dt><dd className="inline font-mono text-xs">GET /{'{resource}'}?limit&amp;offset&amp;q&amp;updated_since · GET /{'{resource}'}/{'{id}'} · POST /{'{resource}'} · PATCH /{'{resource}'}/{'{id}'}</dd></div>
+      </dl>
+      {examples.map(ex => (
+        <pre key={ex} className="mt-3 overflow-x-auto rounded-lg bg-navy-950 p-3 text-xs leading-5 text-ink-100"><code>{ex}</code></pre>
+      ))}
+    </div>
+  );
+}
 
 export function MarketplacePage() {
   const { language } = useAuth();
@@ -367,7 +421,9 @@ export function MarketplacePage() {
     Email: 'Email',
     Payments: lang === 'fr' ? 'Paiements' : 'Payments',
     Communication: lang === 'fr' ? 'Communication' : 'Communication',
-    Messaging: 'Messaging',
+    Messaging: lang === 'fr' ? 'Messagerie' : 'Messaging',
+    'SMS / Voice': 'SMS',
+    CRM: 'CRM',
     Video: lang === 'fr' ? 'Vidéo' : 'Video',
     Scheduling: 'Scheduling',
     'CRM Sync': 'CRM Sync',
@@ -384,13 +440,28 @@ export function MarketplacePage() {
     <div className="animate-fade-in">
       <PageHeader
         title={t('nav.appMarketplace', lang)}
-        subtitle=""
+        subtitle={lang === 'fr'
+          ? 'Uniquement des apps qui font quelque chose dans Atlas : chaque carte indique où vous l’utiliserez.'
+          : 'Only apps that do something in Atlas: each card shows where you will use it.'}
         actions={
           <button onClick={() => setCustomAppOpen(true)} className="btn-secondary btn-sm">
             <Plug size={16} /> {lang === 'fr' ? 'Connecter une app personnalisée' : 'Connect a custom app'}
           </button>
         }
       />
+      <div className="mb-5 flex flex-col gap-3 rounded-xl border border-ink-100 bg-white p-4 sm:flex-row sm:items-center">
+        <div className="flex -space-x-2">
+          {['zapier', 'make', 'n8n'].map(p => (
+            <span key={p} className="flex h-9 w-9 items-center justify-center rounded-full bg-white ring-2 ring-white shadow-sm"><BrandLogo provider={p} size={22} /></span>
+          ))}
+        </div>
+        <p className="flex-1 text-sm text-ink-700">
+          {lang === 'fr'
+            ? 'Zapier, Make, n8n ou votre propre outil : branchez-les avec les webhooks Atlas (Atlas prévient votre outil) et l’API REST (votre outil écrit dans Atlas). Pas besoin de clé à coller ici.'
+            : 'Zapier, Make, n8n or your own tool: plug them in with Atlas webhooks (Atlas notifies your tool) and the REST API (your tool writes into Atlas). No key to paste here.'}
+        </p>
+        <Link to="/app/api-webhooks" className="btn-secondary btn-sm flex-none">{lang === 'fr' ? 'API et webhooks' : 'API & webhooks'}</Link>
+      </div>
       <div className="mb-4 relative max-w-md">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
         <input
@@ -429,18 +500,20 @@ export function MarketplacePage() {
         {filtered.map(app => {
           const isConnected = connected.includes(app.provider);
           return (
-            <div key={app.provider} className="card-hover p-5">
+            <div key={app.provider} className="card-hover flex flex-col p-5">
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white ring-1 ring-ink-100 shadow-sm flex-shrink-0">
                   <BrandLogo provider={app.provider} size={32} />
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-bold text-ink-800 truncate">{app.name}</h3>
-                  <p className="text-xs text-ink-500">{app.category}</p>
+                  <p className="text-xs text-ink-500">{categoryLabels[app.category] || app.category}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 mb-3">
-                <Badge variant="neutral">{app.authType === 'oauth' ? 'OAuth' : 'API Key'}</Badge>
+              {APP_PURPOSE[app.provider] && <p className="text-sm text-ink-700">{APP_PURPOSE[app.provider][lang === 'fr' ? 'fr' : 'en']}</p>}
+              <UsageList provider={app.provider} lang={lang} />
+              <div className="mt-3 mb-3 flex items-center gap-2">
+                {LIVE_VERIFIABLE_PROVIDERS.has(app.provider) && <Badge variant="success">{lang === 'fr' ? 'Clé vérifiée en direct' : 'Key live-checked'}</Badge>}
                 <a href={app.docsUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary-600 hover:underline flex items-center gap-1">
                   Docs <ExternalLink size={10} />
                 </a>
@@ -448,7 +521,7 @@ export function MarketplacePage() {
               <button
                 onClick={() => toggleConnect(app)}
                 disabled={busy === app.provider}
-                className={`btn-sm w-full ${isConnected ? 'bg-success-600 text-white hover:bg-success-700' : 'btn-secondary'}`}
+                className={`btn-sm mt-auto w-full ${isConnected ? 'bg-success-600 text-white hover:bg-success-700' : 'btn-secondary'}`}
               >
                 {busy === app.provider ? '...' : isConnected ? <><Check size={14} /> {lang === 'fr' ? 'Connecté' : 'Connected'}</> : <><Plus size={14} /> {lang === 'fr' ? 'Connecter' : 'Connect'}</>}
               </button>
@@ -644,12 +717,13 @@ export function ConnectedAppsPage() {
     <div className="animate-fade-in">
       <PageHeader title={t('nav.connectedApps', lang)} subtitle="" />
       {integrations.length === 0 ? (
-        <div className="card"><EmptyState icon={<Plug size={28} />} title={lang === 'fr' ? 'Aucune app connectée' : 'No connected apps'} description={lang === 'fr' ? 'Connectez des apps depuis le marketplace.' : 'Connect apps from the marketplace to sync your data.'} /></div>
+        <div className="card"><EmptyState icon={<Plug size={28} />} title={lang === 'fr' ? 'Aucune app connectée' : 'No connected apps'} description={lang === 'fr' ? 'Connectez une app depuis le marketplace : chaque carte indique où elle sert dans Atlas.' : 'Connect an app from the marketplace: each card shows where it is used in Atlas.'} /></div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {integrations.map(intg => {
-            const appDef = AVAILABLE_APPS.find(a => a.provider === intg.provider);
+            const appDef = ALL_APPS.find(a => a.provider === intg.provider);
             const isCustom = intg.provider.startsWith('custom_');
+            const usable = isCustom || isUsableApp(intg.provider);
             const displayName = appDef?.name || (intg.config as { display_name?: string } | null)?.display_name || intg.provider;
             return (
               <div key={intg.id} className="card p-5">
@@ -665,8 +739,13 @@ export function ConnectedAppsPage() {
                   </div>
                   <Badge variant={intg.status === 'connected' ? 'success' : 'neutral'}>{intg.status}</Badge>
                 </div>
+                {isCustom
+                  ? <p className="mb-3 text-xs text-ink-600">{lang === 'fr' ? 'Utilisée dans les Workflows (action « Appeler une app personnalisée »).' : 'Used in Workflows ("Call a Custom App" action).'} <Link to="/app/ai-workflows" className="font-semibold text-primary-700 hover:underline">{lang === 'fr' ? 'Ouvrir' : 'Open'}</Link></p>
+                  : usable
+                    ? <div className="mb-3 -mt-1"><UsageList provider={intg.provider} lang={lang} /></div>
+                    : <p className="mb-3 rounded-lg bg-warning-50 px-3 py-2 text-xs text-warning-800">{lang === 'fr' ? 'Atlas n’utilise pas encore cette app : la connexion est enregistrée mais ne sert à rien pour l’instant. Vous pouvez la déconnecter.' : 'Atlas does not use this app yet: the connection is stored but does nothing for now. You can disconnect it.'}</p>}
                 {intg.last_sync_at && (
-                  <p className="text-xs text-ink-400 mb-3">{lang === 'fr' ? 'Dernière sync: ' : 'Last sync: '}{new Date(intg.last_sync_at).toLocaleString(lang)}</p>
+                  <p className="text-xs text-ink-400 mb-3">{lang === 'fr' ? 'Dernier test : ' : 'Last checked: '}{new Date(intg.last_sync_at).toLocaleString(lang)}</p>
                 )}
                 <div className="flex items-center gap-2">
                   {(appDef?.authType === 'api_key' || isCustom) && (
@@ -674,9 +753,11 @@ export function ConnectedAppsPage() {
                       <SettingsIcon size={14} /> {lang === 'fr' ? 'Config' : 'Config'}
                     </button>
                   )}
-                  <button onClick={() => syncApp(intg)} disabled={busy === intg.id} className="btn-ghost btn-sm flex-1" title={LIVE_VERIFIABLE_PROVIDERS.has(intg.provider) ? (lang === 'fr' ? 'Retester la connexion en direct' : 'Re-test the live connection') : (lang === 'fr' ? 'Aucune vérification en direct disponible' : 'No live check available')}>
-                    {busy === intg.id ? <Loader2 size={14} className="animate-spin" /> : <Plug size={14} />} {LIVE_VERIFIABLE_PROVIDERS.has(intg.provider) ? (lang === 'fr' ? 'Tester' : 'Test') : (lang === 'fr' ? 'Sync' : 'Sync')}
-                  </button>
+                  {LIVE_VERIFIABLE_PROVIDERS.has(intg.provider) && (
+                    <button onClick={() => syncApp(intg)} disabled={busy === intg.id} className="btn-ghost btn-sm flex-1" title={lang === 'fr' ? 'Retester la connexion en direct' : 'Re-test the live connection'}>
+                      {busy === intg.id ? <Loader2 size={14} className="animate-spin" /> : <Plug size={14} />} {lang === 'fr' ? 'Tester' : 'Test'}
+                    </button>
+                  )}
                   <button onClick={() => disconnect(intg.id)} disabled={busy === intg.id} className="btn-secondary btn-sm flex-1">
                     {lang === 'fr' ? 'Déconnecter' : 'Disconnect'}
                   </button>
@@ -741,6 +822,7 @@ export function APIWebhooksPage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [keyName, setKeyName] = useState('');
+  const [keyWrite, setKeyWrite] = useState(true);
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
   const [showKeyMap, setShowKeyMap] = useState<Record<string, boolean>>({});
   const [whUrl, setWhUrl] = useState('');
@@ -765,16 +847,23 @@ export function APIWebhooksPage() {
     const rand = () => crypto.getRandomValues(new Uint8Array(24)).reduce((s, b) => s + b.toString(16).padStart(2, '0'), '');
     const fullKey = 'atlas_sk_' + rand();
     const keyPrefix = fullKey.substring(0, 18) + '••••';
+    // Only the SHA-256 of the key is stored; public-api hashes the presented key and looks it up.
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(fullKey));
+    const keyHash = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
     const { data, error } = await supabase.from('api_keys').insert({
       name: keyName.trim(),
       key_prefix: keyPrefix,
-      permissions: { scopes: ['read', 'write'] },
+      key_hash: keyHash,
+      active: true,
+      permissions: { scopes: keyWrite ? ['read', 'write'] : ['read'] },
     }).select().single();
-    if (!error && data) {
+    if (error) { alert(error.message); return; }
+    if (data) {
       setNewlyCreatedKey(fullKey);
       setApiKeys(prev => [data as ApiKey, ...prev]);
     }
     setKeyName('');
+    setKeyWrite(true);
     setModalOpen(false);
   }
 
@@ -904,7 +993,12 @@ export function APIWebhooksPage() {
                             <CopyButton text={k.key_prefix || ''} />
                           </div>
                         </td>
-                        <td className="px-4 py-3"><Badge variant={k.active ? 'success' : 'neutral'}>{k.active ? (lang === 'fr' ? 'Active' : 'Active') : (lang === 'fr' ? 'Révoquée' : 'Revoked')}</Badge></td>
+                        <td className="px-4 py-3">
+                          {!k.active ? <Badge variant="neutral">{lang === 'fr' ? 'Révoquée' : 'Revoked'}</Badge>
+                            : !k.key_hash ? <Badge variant="warning">{lang === 'fr' ? 'Ancienne clé, à recréer' : 'Legacy key, recreate it'}</Badge>
+                            : <Badge variant="success">{((k.permissions as { scopes?: string[] })?.scopes || []).includes('write') ? (lang === 'fr' ? 'Lecture + écriture' : 'Read + write') : (lang === 'fr' ? 'Lecture' : 'Read')}</Badge>}
+                          {k.last_used_at && <p className="mt-1 text-xs text-ink-400">{lang === 'fr' ? 'Utilisée le ' : 'Used '}{new Date(k.last_used_at).toLocaleDateString(lang)}</p>}
+                        </td>
                         <td className="px-4 py-3 text-sm text-ink-500 hidden sm:table-cell">{new Date(k.created_at).toLocaleDateString(lang)}</td>
                         <td className="px-4 py-3">
                           {k.active && (
@@ -920,12 +1014,7 @@ export function APIWebhooksPage() {
               </div>
             </div>
           )}
-          <div className="card p-4 bg-primary-50/50 border border-primary-100">
-            <p className="text-xs text-ink-600">
-              <span className="font-semibold">{lang === 'fr' ? 'Comment l\'utiliser : ' : 'How to use: '}</span>
-              {lang === 'fr' ? 'Ajoutez l\'en-tête `Authorization: Bearer atlas_sk_...` à vos requêtes API.' : 'Add the `Authorization: Bearer atlas_sk_...` header to your API requests.'}
-            </p>
-          </div>
+          <ApiDocsCard lang={lang} />
         </div>
       ) : (
         <div className="space-y-4">
@@ -986,7 +1075,7 @@ export function APIWebhooksPage() {
           <div className="card p-4 bg-primary-50/50 border border-primary-100">
             <p className="text-xs text-ink-600">
               <span className="font-semibold">{lang === 'fr' ? 'Comment ça marche : ' : 'How it works: '}</span>
-              {lang === 'fr' ? 'Atlas CRM envoie un POST JSON à votre URL avec l\'en-tête `X-Atlas-Signature` contenant le secret. Vérifiez le secret pour confirmer l\'origine.' : 'Atlas CRM sends a JSON POST to your URL with an `X-Atlas-Signature` header containing the secret. Verify the secret to confirm authenticity.'}
+              {lang === 'fr' ? 'Atlas envoie un POST JSON à votre URL. L\'en-tête `X-Atlas-Signature` contient la signature HMAC-SHA256 du corps, calculée avec le secret du webhook (le secret lui-même n\'est jamais envoyé) : recalculez-la pour vérifier l\'origine. Les fiches créées via l\'API REST déclenchent aussi ces événements.' : 'Atlas sends a JSON POST to your URL. The `X-Atlas-Signature` header holds the HMAC-SHA256 of the body, computed with the webhook secret (the secret itself is never sent): recompute it to verify the origin. Records created through the REST API fire these events too.'}
             </p>
           </div>
         </div>
@@ -997,6 +1086,10 @@ export function APIWebhooksPage() {
           <div>
             <label className="label">{lang === 'fr' ? 'Nom de la clé' : 'Key Name'}</label>
             <input className="input" value={keyName} onChange={e => setKeyName(e.target.value)} placeholder={lang === 'fr' ? 'ex: Production API' : 'e.g. Production API'} autoFocus />
+            <label className="mt-3 flex items-center gap-2 text-sm text-ink-700">
+              <input type="checkbox" checked={keyWrite} onChange={e => setKeyWrite(e.target.checked)} />
+              {lang === 'fr' ? 'Autoriser l’écriture (créer et modifier des fiches)' : 'Allow writes (create and update records)'}
+            </label>
             <p className="text-xs text-ink-400 mt-2">{lang === 'fr' ? 'La clé complète sera affichée une seule fois après création.' : 'The full key will be shown once after creation.'}</p>
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={() => setModalOpen(false)} className="btn-secondary btn-sm">{t('common.cancel', lang)}</button>
