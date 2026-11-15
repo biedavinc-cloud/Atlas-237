@@ -15,3 +15,10 @@
 # NOT listed here and must keep verify_jwt = true.
 [functions.payunit-webhook]
 verify_jwt = false
+
+# Called every 5 minutes by the pg_cron job in migration 041 with a
+# dedicated shared secret (not a Supabase user JWT), so the platform
+# gateway must not reject it before the function's own secret check runs.
+# The function itself refuses any request without that exact secret.
+[functions.run-scheduled-workflows]
+verify_jwt = false

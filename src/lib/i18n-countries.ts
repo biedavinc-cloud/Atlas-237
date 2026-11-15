@@ -71,7 +71,6 @@ export const CURRENCIES: Currency[] = [
   { code: 'TZS', name: 'Tanzanian Shilling', symbol: 'TSh', decimals: 0 },
   { code: 'UGX', name: 'Ugandan Shilling', symbol: 'USh', decimals: 0 },
   { code: 'RWF', name: 'Rwandan Franc', symbol: 'RF', decimals: 0 },
-  { code: 'XOF', name: 'CFA Franc BCEAO', symbol: 'CFA', decimals: 0 },
 ];
 
 // Full country list (ISO 3166-1 alpha-2) — 195 countries

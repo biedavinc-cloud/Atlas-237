@@ -33,7 +33,7 @@ export function ReportsPage() {
           <button
             key={r.name}
             onClick={() => navigate(reportRoutes[r.name] || '/app/dashboards')}
-            className="card-hover p-5 cursor-pointer text-left"
+            className="card-hover p-5 cursor-pointer text-start"
           >
             <div className="flex items-center gap-3">
               <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${r.color === 'success' ? 'bg-success-50 text-success-600' : r.color === 'primary' ? 'bg-primary-50 text-primary-600' : r.color === 'accent' ? 'bg-accent-50 text-accent-600' : 'bg-warning-50 text-warning-600'}`}>

@@ -1,5 +1,8 @@
 import { type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { t } from '@/lib/i18n';
 
 interface ErrorStateProps {
   message: string;
@@ -7,15 +10,16 @@ interface ErrorStateProps {
 }
 
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
+  const { language } = useAuth();
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center animate-fade-in">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-error-50 text-error-500">
-        <AlertCircle size={24} />
+    <div role="alert" className="flex flex-col items-center justify-center py-16 px-4 text-center animate-fade-in">
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-error-50 text-error-600 ring-1 ring-inset ring-error-100">
+        <AlertCircle size={22} />
       </div>
-      <h3 className="text-base font-bold text-ink-800 mb-1">Something went wrong</h3>
+      <h3 className="text-base font-bold text-ink-900 mb-1">{t('common.errorTitle', language)}</h3>
       <p className="text-sm text-ink-500 max-w-sm mb-4">{message}</p>
       {onRetry && (
-        <button onClick={onRetry} className="btn-secondary btn-sm">Retry</button>
+        <button onClick={onRetry} className="btn-secondary btn-sm">{t('common.retry', language)}</button>
       )}
     </div>
   );
@@ -29,12 +33,12 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-      <div>
-        <h1 className="text-xl font-bold text-ink-900">{title}</h1>
-        {subtitle && <p className="text-sm text-ink-500 mt-0.5">{subtitle}</p>}
+    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
+      <div className="min-w-0">
+        <h1 className="text-2xl font-bold text-ink-900 leading-tight">{title}</h1>
+        {subtitle && <p className="text-sm text-ink-500 mt-1 max-w-2xl">{subtitle}</p>}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
   );
 }
@@ -45,35 +49,42 @@ interface StatCardProps {
   icon: ReactNode;
   trend?: { value: string; positive: boolean };
   color?: 'primary' | 'success' | 'warning' | 'error' | 'accent';
+  /** Short supporting line under the value (e.g. "last 7 days"). */
+  hint?: string;
+  /** Makes the whole tile a link to the module the number comes from. */
+  to?: string;
 }
 
-export function StatCard({ label, value, icon, trend, color = 'primary' }: StatCardProps) {
-  const colorClasses = {
-    primary: 'bg-primary-50 text-primary-600',
-    success: 'bg-success-50 text-success-600',
-    warning: 'bg-warning-50 text-warning-600',
-    error: 'bg-error-50 text-error-600',
-    accent: 'bg-accent-50 text-accent-600',
-  };
+const STAT_COLORS = {
+  primary: 'text-primary-600 bg-primary-50',
+  success: 'text-success-600 bg-success-50',
+  warning: 'text-warning-600 bg-warning-50',
+  error: 'text-error-600 bg-error-50',
+  accent: 'text-accent-600 bg-accent-50',
+};
 
-  return (
-    <div className="card p-5 animate-slide-up">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-semibold text-ink-500 uppercase tracking-wide">{label}</p>
-          <p className="text-2xl font-bold text-ink-900 mt-1">{value}</p>
-          {trend && (
-            <p className={`text-xs font-medium mt-1 ${trend.positive ? 'text-success-600' : 'text-error-600'}`}>
-              {trend.positive ? '+' : ''}{trend.value}
-            </p>
-          )}
-        </div>
-        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${colorClasses[color]}`}>
-          {icon}
-        </div>
+export function StatCard({ label, value, icon, trend, color = 'primary', hint, to }: StatCardProps) {
+  const body = (
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-[13px] font-semibold text-ink-500 truncate">{label}</p>
+        <p className="text-[26px] leading-8 font-bold text-ink-900 mt-1 tabular truncate">{value}</p>
+        {trend && (
+          <p className={`text-xs font-semibold mt-1 ${trend.positive ? 'text-success-600' : 'text-error-600'}`}>
+            {trend.positive ? '+' : ''}{trend.value}
+          </p>
+        )}
+        {hint && !trend && <p className="text-xs text-ink-400 mt-1 truncate">{hint}</p>}
+      </div>
+      <div className={`flex h-9 w-9 flex-none items-center justify-center rounded-lg ${STAT_COLORS[color]}`}>
+        {icon}
       </div>
     </div>
   );
+  if (to) {
+    return <Link to={to} className="card-hover block p-5">{body}</Link>;
+  }
+  return <div className="card p-5">{body}</div>;
 }
 
 interface BadgeProps {

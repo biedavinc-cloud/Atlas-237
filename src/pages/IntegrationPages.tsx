@@ -885,10 +885,10 @@ export function APIWebhooksPage() {
               <div className="overflow-x-auto scrollbar-thin">
                 <table className="w-full">
                   <thead><tr className="border-b border-ink-100 bg-ink-50/50">
-                    <th className="text-left text-xs font-semibold text-ink-500 uppercase tracking-wide px-4 py-3">{lang === 'fr' ? 'Nom' : 'Name'}</th>
-                    <th className="text-left text-xs font-semibold text-ink-500 uppercase tracking-wide px-4 py-3">{lang === 'fr' ? 'Clé' : 'Key'}</th>
-                    <th className="text-left text-xs font-semibold text-ink-500 uppercase tracking-wide px-4 py-3">{lang === 'fr' ? 'Statut' : 'Status'}</th>
-                    <th className="text-left text-xs font-semibold text-ink-500 uppercase tracking-wide px-4 py-3 hidden sm:table-cell">{lang === 'fr' ? 'Créée le' : 'Created'}</th>
+                    <th className="th text-start">{lang === 'fr' ? 'Nom' : 'Name'}</th>
+                    <th className="th text-start">{lang === 'fr' ? 'Clé' : 'Key'}</th>
+                    <th className="th text-start">{lang === 'fr' ? 'Statut' : 'Status'}</th>
+                    <th className="th text-start hidden sm:table-cell">{lang === 'fr' ? 'Créée le' : 'Created'}</th>
                     <th className="w-28 px-4 py-3" />
                   </tr></thead>
                   <tbody>

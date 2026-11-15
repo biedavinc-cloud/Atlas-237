@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Search, Edit2, Trash2, Upload, FileSpreadsheet, CheckCircle2, Loader2, AlertCircle, Download } from 'lucide-react';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
@@ -79,7 +80,7 @@ interface ListPageProps<T extends { id: string }> {
   maxRows?: number | null;
   maxRowsMessage?: string;
   /** Extra per-row action buttons rendered before Edit/Delete (e.g. "Send WhatsApp", "Create payment link"). */
-  rowActions?: (row: T) => React.ReactNode;
+  rowActions?: (row: T, reload: () => void) => React.ReactNode;
 }
 
 export interface FormField {
@@ -270,7 +271,7 @@ function ImportModal({ table, fields, onClose, onDone, language }: {
             <div className="overflow-x-auto scrollbar-thin max-h-64">
               <table className="w-full text-xs">
                 <thead className="bg-ink-50 sticky top-0">
-                  <tr>{fields.filter(f => fieldMap[f.key]).map(f => <th key={f.key} className="px-3 py-2 text-left font-semibold text-ink-600">{f.label}</th>)}</tr>
+                  <tr>{fields.filter(f => fieldMap[f.key]).map(f => <th key={f.key} className="px-3 py-2 text-start font-semibold text-ink-600">{f.label}</th>)}</tr>
                 </thead>
                 <tbody>
                   {mapped.slice(0, 50).map((row, i) => (
@@ -333,7 +334,24 @@ export function ListPage<T extends { id: string }>({
 
   useEffect(() => { load(); }, [load]);
 
+  // Quick-create deep link (command palette / "New contact" shortcuts):
+  // /app/contacts?new=1 opens the create form once, then cleans the URL so
+  // a refresh or back-navigation doesn't reopen it.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const handledNewParam = useRef(false);
+  useEffect(() => {
+    if (handledNewParam.current || searchParams.get('new') !== '1') return;
+    if (maxRows != null && rows.length >= maxRows && !loading) return;
+    handledNewParam.current = true;
+    openCreate();
+    const next = new URLSearchParams(searchParams);
+    next.delete('new');
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, loading]);
+
   function openCreate() {
+    setError('');
     setEditing(null);
     const defaults: Record<string, unknown> = {};
     formFields.forEach(f => { if (f.defaultValue !== undefined) defaults[f.key] = f.defaultValue; });
@@ -356,13 +374,26 @@ export function ListPage<T extends { id: string }>({
   }
 
   async function handleSave() {
+    const missing = formFields.filter(f => {
+      if (!f.required) return false;
+      const v = formData[f.key];
+      return v === undefined || v === null || String(v).trim() === '';
+    });
+    if (missing.length) {
+      setError(`${language === 'fr' ? 'Champs obligatoires' : 'Required fields'}: ${missing.map(f => f.label).join(', ')}`);
+      return;
+    }
     setSaving(true);
     setError('');
     try {
       // Strip UI-only companion keys (e.g. "country__mode") added by
       // special field renderers (country/phone) — never real columns.
       const payload = Object.fromEntries(
-        Object.entries(formData).filter(([k]) => !k.includes('__mode') && !k.endsWith('__other'))
+        Object.entries(formData).filter(([k, v]) =>
+          !k.includes('__mode') && !k.endsWith('__other') &&
+          // On create, let column defaults apply instead of sending blanks.
+          (editing || (v !== null && v !== ''))
+        )
       );
       // Array-type columns (e.g. contacts.tags text[]) need a real array,
       // not the comma-separated string the 'tags' input works with —
@@ -451,7 +482,7 @@ export function ListPage<T extends { id: string }>({
           <div className="flex items-center gap-2">
             {importable && (
               <button onClick={() => setImportOpen(true)} className="btn-secondary btn-sm">
-                <Upload size={16} /> {language === 'fr' ? 'Importer' : 'Import'}
+                <Upload size={16} /> {t('common.import', language)}
               </button>
             )}
             <button
@@ -470,14 +501,23 @@ export function ListPage<T extends { id: string }>({
         <p className="mb-4 text-xs text-warning-700 bg-warning-50 rounded-lg px-3 py-2">{maxRowsMessage}</p>
       )}
 
-      <div className="mb-4 relative max-w-sm">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
-        <input
-          className="input pl-9"
-          placeholder={t('common.search', language)}
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="relative w-full sm:max-w-sm">
+          <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-400" />
+          <input
+            className="input ps-9"
+            type="search"
+            aria-label={t('common.search', language)}
+            placeholder={t('common.search', language)}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        {!loading && rows.length > 0 && (
+          <p className="text-xs text-ink-500 tabular">
+            {search ? `${filtered.length} / ${rows.length}` : rows.length} {t('common.results', language)}
+          </p>
+        )}
       </div>
 
       {loading ? (
@@ -496,30 +536,30 @@ export function ListPage<T extends { id: string }>({
           <div className="overflow-x-auto scrollbar-thin">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-ink-100 bg-ink-50/50">
+                <tr className="border-b border-ink-200/70 bg-ink-50/70">
                   {columns.map(col => (
-                    <th key={col.key} className={`text-left text-xs font-semibold text-ink-500 uppercase tracking-wide px-4 py-3 ${col.className || ''}`}>
+                    <th key={col.key} scope="col" className={`th text-start ${col.className || ''}`}>
                       {col.label}
                     </th>
                   ))}
-                  <th className="w-20 px-4 py-3" />
+                  <th scope="col" className="w-20 px-4 py-2.5"><span className="sr-only">{t('common.actions', language)}</span></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(row => (
-                  <tr key={row.id} className="group border-b border-ink-50 last:border-0 table-row-hover">
+                  <tr key={row.id} className="group border-b border-ink-100 last:border-0 table-row-hover">
                     {columns.map(col => (
                       <td key={col.key} className={`px-4 py-3 text-sm text-ink-700 ${col.className || ''}`}>
                         {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? '—')}
                       </td>
                     ))}
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        {rowActions?.(row)}
-                        <button onClick={() => openEdit(row)} className="p-1.5 rounded text-ink-400 hover:bg-ink-100 hover:text-ink-700 transition-colors">
+                      <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
+                        {rowActions?.(row, load)}
+                        <button onClick={() => openEdit(row)} aria-label={t('common.edit', language)} title={t('common.edit', language)} className="btn-icon h-7 w-7">
                           <Edit2 size={14} />
                         </button>
-                        <button onClick={() => handleDelete(row)} className="p-1.5 rounded text-ink-400 hover:bg-error-50 hover:text-error-600 transition-colors">
+                        <button onClick={() => handleDelete(row)} aria-label={t('common.delete', language)} title={t('common.delete', language)} className="btn-icon h-7 w-7 hover:bg-error-50 hover:text-error-600">
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -536,15 +576,19 @@ export function ListPage<T extends { id: string }>({
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title={editing ? t('common.edit', language) : t('common.add', language)}
+        description={title}
         size="lg"
       >
-        {error && <div className="mb-4 rounded-lg bg-error-50 border border-error-200 px-4 py-2 text-sm text-error-700">{error}</div>}
+        {error && <div role="alert" className="mb-4 flex items-start gap-2 rounded-lg bg-error-50 border border-error-200 px-4 py-2.5 text-sm text-error-700"><AlertCircle size={16} className="mt-0.5 flex-none" />{error}</div>}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {formFields.map(field => (
-            <div key={field.key} className={field.type === 'textarea' ? 'col-span-2' : ''}>
-              <label className="label">{field.label}</label>
+            <div key={field.key} className={field.type === 'textarea' ? 'sm:col-span-2' : ''}>
+              <label className="label" htmlFor={`f-${table}-${field.key}`}>
+                {field.label}{field.required && <span className="text-error-600 ms-0.5" aria-hidden>*</span>}
+              </label>
               {field.type === 'select' ? (
                 <select
+                  id={`f-${table}-${field.key}`}
                   className="input"
                   value={String(formData[field.key] ?? '')}
                   onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
@@ -626,18 +670,21 @@ export function ListPage<T extends { id: string }>({
                 />
               ) : field.type === 'textarea' ? (
                 <textarea
-                  className="input min-h-[80px]"
+                  id={`f-${table}-${field.key}`}
+                  className="input min-h-[96px]"
                   value={String(formData[field.key] ?? '')}
                   onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
                 />
               ) : (
                 <input
+                  id={`f-${table}-${field.key}`}
                   type={field.type}
                   className="input"
                   value={String(formData[field.key] ?? '')}
                   onChange={e => setFormData({
                     ...formData,
-                    [field.key]: field.type === 'number' ? Number(e.target.value) : e.target.value,
+                    // An emptied number field is "no value", not 0.
+                    [field.key]: field.type === 'number' ? (e.target.value === '' ? null : Number(e.target.value)) : e.target.value,
                   })}
                   required={field.required}
                 />
@@ -645,9 +692,12 @@ export function ListPage<T extends { id: string }>({
             </div>
           ))}
         </div>
-        <div className="flex justify-end gap-2 mt-6">
+        <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-ink-100">
           <button onClick={() => setModalOpen(false)} className="btn-secondary btn-sm">{t('common.cancel', language)}</button>
-          <button onClick={handleSave} disabled={saving} className="btn-primary btn-sm">{t('common.save', language)}</button>
+          <button onClick={handleSave} disabled={saving} className="btn-primary btn-sm">
+            {saving && <Loader2 size={14} className="animate-spin" />}
+            {editing ? t('common.save', language) : t('common.create', language)}
+          </button>
         </div>
       </Modal>
 

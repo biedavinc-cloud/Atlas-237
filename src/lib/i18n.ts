@@ -49,8 +49,10 @@ export const translations: Translation = {
   'nav.deals': { en: 'Deals', fr: 'Affaires', es: 'Ofertas', pt: 'Negócios', ar: 'الصفقات' },
   'nav.pipelines': { en: 'Pipelines', fr: 'Pipelines', es: 'Pipelines', pt: 'Pipelines', ar: 'خطوط الأنابيب' },
   'nav.activities': { en: 'Activities', fr: 'Activités', es: 'Actividades', pt: 'Atividades', ar: 'الأنشطة' },
+  'nav.tasks': { en: 'Tasks', fr: 'Tâches', es: 'Tareas', pt: 'Tarefas', ar: 'المهام' },
+  'shell.newTask': { en: 'New task', fr: 'Nouvelle tâche', es: 'Nueva tarea', pt: 'Nova tarefa', ar: 'مهمة جديدة' },
   'nav.calendar': { en: 'Calendar', fr: 'Calendrier', es: 'Calendario', pt: 'Calendário', ar: 'التقويم' },
-  'nav.business': { en: 'Business', fr: 'Affaires', es: 'Negocios', pt: 'Negócios', ar: 'الأعمال' },
+  'nav.business': { en: 'Business', fr: 'Commerce', es: 'Negocios', pt: 'Comercial', ar: 'الأعمال' },
   'nav.products': { en: 'Products', fr: 'Produits', es: 'Productos', pt: 'Produtos', ar: 'المنتجات' },
   'nav.quotes': { en: 'Quotes', fr: 'Devis', es: 'Cotizaciones', pt: 'Cotações', ar: 'عروض الأسعار' },
   'nav.orders': { en: 'Orders', fr: 'Commandes', es: 'Pedidos', pt: 'Pedidos', ar: 'الطلبات' },
@@ -401,10 +403,66 @@ export const translations: Translation = {
   'superAdmin.remove': { en: 'Remove', fr: 'Supprimer', es: 'Eliminar', pt: 'Remover', ar: 'إزالة' },
   'superAdmin.cannotRemove': { en: 'Cannot remove: minimum 2 active super admins required.', fr: 'Suppression impossible : minimum 2 super admins actifs requis.', es: 'No se puede eliminar: mínimo 2 super admins activos.', pt: 'Não é possível remover: mínimo 2 super admins ativos.', ar: 'لا يمكن الإزالة: الحد الأدنى 2 مسؤولين نشطين.' },
   'superAdmin.alreadyAdmin': { en: 'Already a super admin', fr: 'Déjà super admin', es: 'Ya es super admin', pt: 'Já é super admin', ar: 'هو بالفعل مسؤول عام' },
+  'shell.openMenu': { en: 'Open menu', fr: 'Ouvrir le menu', es: 'Abrir menú', pt: 'Abrir menu', ar: 'فتح القائمة' },
+  'shell.closeMenu': { en: 'Close menu', fr: 'Fermer le menu', es: 'Cerrar menú', pt: 'Fechar menu', ar: 'إغلاق القائمة' },
+  'shell.jumpTo': { en: 'Search or jump to…', fr: 'Rechercher ou aller à…', es: 'Buscar o ir a…', pt: 'Pesquisar ou ir para…', ar: 'ابحث أو انتقل إلى…' },
+  'shell.noResults': { en: 'No page matches this search.', fr: 'Aucune page ne correspond à cette recherche.', es: 'Ninguna página coincide con esta búsqueda.', pt: 'Nenhuma página corresponde a esta pesquisa.', ar: 'لا توجد صفحة مطابقة لهذا البحث.' },
+  'shell.pages': { en: 'Pages', fr: 'Pages', es: 'Páginas', pt: 'Páginas', ar: 'الصفحات' },
+  'shell.create': { en: 'Create', fr: 'Créer', es: 'Crear', pt: 'Criar', ar: 'إنشاء' },
+  'shell.askAtlasAbout': { en: 'Ask Atlas', fr: 'Demander à Atlas', es: 'Preguntar a Atlas', pt: 'Perguntar ao Atlas', ar: 'اسأل أطلس' },
+  'shell.toNavigate': { en: 'to navigate', fr: 'pour naviguer', es: 'para navegar', pt: 'para navegar', ar: 'للتنقل' },
+  'shell.toOpen': { en: 'to open', fr: 'pour ouvrir', es: 'para abrir', pt: 'para abrir', ar: 'للفتح' },
+  'shell.profile': { en: 'My profile', fr: 'Mon profil', es: 'Mi perfil', pt: 'Meu perfil', ar: 'ملفي الشخصي' },
+  'shell.signOut': { en: 'Sign out', fr: 'Se déconnecter', es: 'Cerrar sesión', pt: 'Sair', ar: 'تسجيل الخروج' },
+  'shell.language': { en: 'Language', fr: 'Langue', es: 'Idioma', pt: 'Idioma', ar: 'اللغة' },
+  'shell.collapse': { en: 'Collapse sidebar', fr: 'Réduire la barre latérale', es: 'Contraer barra lateral', pt: 'Recolher barra lateral', ar: 'طي الشريط الجانبي' },
+  'shell.expand': { en: 'Expand sidebar', fr: 'Déplier la barre latérale', es: 'Expandir barra lateral', pt: 'Expandir barra lateral', ar: 'توسيع الشريط الجانبي' },
+  'shell.unread': { en: 'unread', fr: 'non lues', es: 'sin leer', pt: 'não lidas', ar: 'غير مقروءة' },
+  'shell.newContact': { en: 'New contact', fr: 'Nouveau contact', es: 'Nuevo contacto', pt: 'Novo contato', ar: 'جهة اتصال جديدة' },
+  'shell.newLead': { en: 'New lead', fr: 'Nouvelle piste', es: 'Nuevo prospecto', pt: 'Novo lead', ar: 'عميل محتمل جديد' },
+  'shell.newDeal': { en: 'New deal', fr: 'Nouvelle affaire', es: 'Nueva oferta', pt: 'Novo negócio', ar: 'صفقة جديدة' },
+  'shell.newInvoice': { en: 'New invoice', fr: 'Nouvelle facture', es: 'Nueva factura', pt: 'Nova fatura', ar: 'فاتورة جديدة' },
+  'shell.newTicket': { en: 'New ticket', fr: 'Nouveau ticket', es: 'Nuevo ticket', pt: 'Novo ticket', ar: 'تذكرة جديدة' },
+  'shell.platform': { en: 'Platform', fr: 'Plateforme', es: 'Plataforma', pt: 'Plataforma', ar: 'المنصة' },
+  'common.retry': { en: 'Try again', fr: 'Réessayer', es: 'Reintentar', pt: 'Tentar novamente', ar: 'حاول مرة أخرى' },
+  'common.errorTitle': { en: "This page couldn't load", fr: "Cette page n'a pas pu se charger", es: 'Esta página no pudo cargarse', pt: 'Esta página não pôde ser carregada', ar: 'تعذر تحميل هذه الصفحة' },
+  'common.viewAll': { en: 'View all', fr: 'Tout voir', es: 'Ver todo', pt: 'Ver tudo', ar: 'عرض الكل' },
+  'common.import': { en: 'Import', fr: 'Importer', es: 'Importar', pt: 'Importar', ar: 'استيراد' },
+  'common.results': { en: 'results', fr: 'résultats', es: 'resultados', pt: 'resultados', ar: 'نتائج' },
+  'dash.greetingMorning': { en: 'Good morning', fr: 'Bonjour', es: 'Buenos días', pt: 'Bom dia', ar: 'صباح الخير' },
+  'dash.greetingAfternoon': { en: 'Good afternoon', fr: 'Bon après-midi', es: 'Buenas tardes', pt: 'Boa tarde', ar: 'مساء الخير' },
+  'dash.greetingEvening': { en: 'Good evening', fr: 'Bonsoir', es: 'Buenas noches', pt: 'Boa noite', ar: 'مساء الخير' },
+  'dash.todaySub': { en: 'Here is where your business stands right now.', fr: 'Voici où en est votre entreprise en ce moment.', es: 'Así está tu negocio ahora mismo.', pt: 'Veja como está o seu negócio agora.', ar: 'هذا هو وضع عملك الآن.' },
+  'dash.run': { en: 'Ask', fr: 'Demander', es: 'Preguntar', pt: 'Perguntar', ar: 'اسأل' },
+  'dash.thinking': { en: 'Atlas is reading your data…', fr: 'Atlas analyse vos données…', es: 'Atlas está leyendo tus datos…', pt: 'Atlas está lendo seus dados…', ar: 'أطلس يقرأ بياناتك…' },
+  'dash.askFailed': { en: "Atlas couldn't reach your data. Check your connection and try again.", fr: "Atlas n'a pas pu accéder à vos données. Vérifiez votre connexion et réessayez.", es: 'Atlas no pudo acceder a tus datos. Revisa tu conexión e inténtalo de nuevo.', pt: 'O Atlas não conseguiu acessar seus dados. Verifique sua conexão e tente novamente.', ar: 'تعذر على أطلس الوصول إلى بياناتك. تحقق من اتصالك وحاول مرة أخرى.' },
+  'dash.needsAttention': { en: 'Needs your attention', fr: 'À traiter en priorité', es: 'Requiere tu atención', pt: 'Precisa da sua atenção', ar: 'يتطلب انتباهك' },
+  'dash.allClear': { en: 'Nothing is overdue or at risk. Nice work.', fr: 'Rien en retard ni à risque. Beau travail.', es: 'Nada atrasado ni en riesgo. Buen trabajo.', pt: 'Nada atrasado ou em risco. Bom trabalho.', ar: 'لا شيء متأخر أو معرض للخطر. عمل رائع.' },
+  'dash.pipeline': { en: 'Sales', fr: 'Ventes', es: 'Ventas', pt: 'Vendas', ar: 'المبيعات' },
+  'dash.last7days': { en: 'last 7 days', fr: '7 derniers jours', es: 'últimos 7 días', pt: 'últimos 7 dias', ar: 'آخر 7 أيام' },
+  'dash.allTime': { en: 'all payments recorded', fr: 'tous paiements enregistrés', es: 'todos los pagos registrados', pt: 'todos os pagamentos registrados', ar: 'جميع المدفوعات المسجلة' },
+  'dash.ofWhichHot': { en: 'hot', fr: 'chaudes', es: 'calientes', pt: 'quentes', ar: 'ساخنة' },
+  'dash.aiWorkforce': { en: 'AI workforce', fr: 'Équipe IA', es: 'Equipo IA', pt: 'Equipe de IA', ar: 'فريق الذكاء الاصطناعي' },
+  'dash.recentActivity': { en: 'Recent activity', fr: 'Activité récente', es: 'Actividad reciente', pt: 'Atividade recente', ar: 'النشاط الأخير' },
+  'dash.noActivity': { en: 'Activities you log on contacts and deals will appear here.', fr: 'Les activités saisies sur vos contacts et affaires apparaîtront ici.', es: 'Las actividades que registres en contactos y ofertas aparecerán aquí.', pt: 'As atividades registradas em contatos e negócios aparecerão aqui.', ar: 'ستظهر هنا الأنشطة التي تسجلها على جهات الاتصال والصفقات.' },
+  'dash.noApprovals': { en: 'No AI action is waiting for your decision.', fr: "Aucune action IA n'attend votre décision.", es: 'Ninguna acción de IA espera tu decisión.', pt: 'Nenhuma ação de IA aguarda sua decisão.', ar: 'لا يوجد إجراء ذكاء اصطناعي ينتظر قرارك.' },
+  'dash.meetingsAhead': { en: 'meetings ahead', fr: 'réunions à venir', es: 'reuniones próximas', pt: 'reuniões futuras', ar: 'اجتماعات قادمة' },
 };
 
 export function t(key: string, lang: Language): string {
   const entry = translations[key];
   if (!entry) return key;
   return entry[lang] || entry.en;
+}
+
+/**
+ * Human label for a stored enum value ("in_progress", "bank_transfer",
+ * "won"...) using the status.* keys above. Falls back to the raw value
+ * for anything not translated, so nothing ever renders as "status.x".
+ */
+export function tStatus(value: string | null | undefined, lang: Language): string {
+  if (!value) return '—';
+  const camel = value.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+  const entry = translations[`status.${camel}`];
+  return entry ? (entry[lang] || entry.en) : value;
 }

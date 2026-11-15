@@ -953,3 +953,42 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   should include the real production domain (`https://atlas.liafrik.com`)
   as a good practice/defense-in-depth, even though the code no longer
   depends on it for these two flows specifically.
+
+## App shell & design system refresh (Nov 2026)
+- `src/lib/navigation.ts` is now the single source of truth for app
+  navigation: `NAV_SECTIONS` (sidebar), `SUPER_ADMIN_ITEMS`, `QUICK_CREATE`.
+  The sidebar and the ⌘K/Ctrl+K `CommandPalette` both read it — add a page
+  there (and its `<Route>` in App.tsx), never in only one place.
+- `QUICK_CREATE` links use `?new=1`; `ListPage` opens its create form on
+  load when it sees that param, then strips it from the URL.
+- `/super-admin/*` now renders inside the same `AppLayout` as the tenant app
+  (it had its own non-responsive shell whose active state read
+  `window.location` and went stale).
+- Header: the account menu (profile, settings, billing, language, sign out)
+  replaces the old avatar button that signed the user out on a single click.
+  The bell shows a real unread count (same filter as NotificationsPage);
+  NotificationsPage fires `atlas:notifications-changed` after marking read.
+- Arabic: `AppLayout` sets `dir="rtl"` on the app shell only (public pages
+  have no Arabic content yet). Prefer logical utilities (`ms-/me-`,
+  `ps-/pe-`, `start-/end-`, `text-start`) in app code.
+- Design tokens: `navy` palette + `canvas` background, `shadow-pop`,
+  `animate-scale-in`; component classes `.th`, `.kbd`, `.btn-icon`,
+  `.btn-success`, `.card-header`, `.card-title`; `.contour` /
+  `.contour-ink` is the single signature texture (sidebar brand strip,
+  Command Center header, empty states) — keep it rare. Labels are sentence
+  case (no `uppercase tracking-wide`). Don't set `color` on headings in the
+  base layer: several dark panels rely on headings inheriting `text-white`.
+- `tStatus(value, lang)` (i18n.ts) renders stored enum values
+  (`in_progress`, `won`, `bank_transfer`…) through the `status.*` keys;
+  use it in list badges instead of printing the raw value.
+- New Tasks page (`/app/tasks`, `TasksPage` in CRMPages.tsx) over the
+  `tasks` table. Workflows' `create_task` action (manual and scheduled)
+  always wrote there, but no page listed it, so those tasks were invisible.
+- BillingPage plan cards now take prices from `PLAN_PRICES` and bullets that
+  match `PLAN_FEATURES` (it advertised "Advanced analytics" on Growth while
+  the gate unlocks it from Pro).
+- `supabase/config.toml` also lists `run-scheduled-workflows` with
+  `verify_jwt = false` (pg_cron calls it with a shared secret, not a JWT).
+  The function now prefers a `CRON_SECRET` project secret; the hardcoded
+  fallback is still committed in a public repo and in migration 041 —
+  rotate it (set the secret + reschedule the cron job with the new value).

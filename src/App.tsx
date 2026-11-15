@@ -26,6 +26,7 @@ const DealsPage = lazy(() => import('@/pages/CRMPages').then(m => ({ default: m.
 const PipelinesPage = lazy(() => import('@/pages/CRMPages').then(m => ({ default: m.PipelinesPage })));
 const ActivitiesPage = lazy(() => import('@/pages/CRMPages').then(m => ({ default: m.ActivitiesPage })));
 const CalendarPage = lazy(() => import('@/pages/CRMPages').then(m => ({ default: m.CalendarPage })));
+const TasksPage = lazy(() => import('@/pages/CRMPages').then(m => ({ default: m.TasksPage })));
 const ProductsPage = lazy(() => import('@/pages/BusinessPages').then(m => ({ default: m.ProductsPage })));
 const QuotesPage = lazy(() => import('@/pages/BusinessPages').then(m => ({ default: m.QuotesPage })));
 const OrdersPage = lazy(() => import('@/pages/BusinessPages').then(m => ({ default: m.OrdersPage })));
@@ -84,6 +85,7 @@ function ProtectedRoutes() {
         <Route path="pipelines" element={<PipelinesPage />} />
         <Route path="activities" element={<ActivitiesPage />} />
         <Route path="calendar" element={<CalendarPage />} />
+        <Route path="tasks" element={<TasksPage />} />
         {/* Business */}
         <Route path="products" element={<ProductsPage />} />
         <Route path="quotes" element={<QuotesPage />} />

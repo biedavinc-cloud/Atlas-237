@@ -527,7 +527,7 @@ export function PermissionsPage() {
               <div key={r.id} className="flex items-center group">
                 <button
                   onClick={() => selectRole(r)}
-                  className={`flex-1 text-left px-3 py-2 rounded-lg transition ${selectedRole?.id === r.id ? 'bg-primary-50 text-primary-700' : 'hover:bg-ink-50 text-ink-700'}`}
+                  className={`flex-1 text-start px-3 py-2 rounded-lg transition ${selectedRole?.id === r.id ? 'bg-primary-50 text-primary-700' : 'hover:bg-ink-50 text-ink-700'}`}
                 >
                   <p className="font-medium text-sm">{r.name}</p>
                   <p className="text-xs text-ink-400">{r.is_system ? (language === 'fr' ? 'Système' : 'System') : (language === 'fr' ? 'Personnalisé' : 'Custom')}</p>
@@ -559,7 +559,7 @@ export function PermissionsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-ink-100">
-                      <th className="text-left py-2 font-semibold text-ink-700">{language === 'fr' ? 'Module' : 'Module'}</th>
+                      <th className="text-start py-2 font-semibold text-ink-700">{language === 'fr' ? 'Module' : 'Module'}</th>
                       {ACTIONS.map((a) => <th key={a.key} className="px-3 py-2 text-center font-semibold text-ink-700">{a.label[language === 'fr' ? 'fr' : 'en']}</th>)}
                     </tr>
                   </thead>

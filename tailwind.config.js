@@ -42,6 +42,14 @@ export default {
           400: '#c084fc', 500: '#a855f7', 600: '#9333ea', 700: '#7e22ce',
           800: '#6b21a8', 900: '#581c87',
         },
+        // Atlas navy — the app shell (sidebar, command palette). A deep,
+        // slightly blue "chart-room" navy rather than a neutral near-black.
+        navy: {
+          50: '#eef3fa', 100: '#d5e1f1', 200: '#a9c1e0', 300: '#7698c7',
+          400: '#4c74ab', 500: '#30578f', 600: '#234473', 700: '#1a345b',
+          800: '#132745', 900: '#0d1c33', 950: '#081224',
+        },
+        canvas: '#f4f6f9',
         salesforce: {
           blue: { DEFAULT: '#0176d3', light: '#e0f0fd', dark: '#005fb2', hover: '#014486' },
           dark: '#032d60',
@@ -52,8 +60,9 @@ export default {
         glacial: ['"Glacial Indifference"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
       },
       boxShadow: {
-        card: '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06)',
-        'card-hover': '0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.05)',
+        card: '0 1px 2px 0 rgb(13 28 51 / 0.04)',
+        'card-hover': '0 6px 18px -6px rgb(13 28 51 / 0.14), 0 2px 4px -2px rgb(13 28 51 / 0.06)',
+        pop: '0 18px 48px -12px rgb(13 28 51 / 0.28), 0 4px 12px -4px rgb(13 28 51 / 0.10)',
         sidebar: '4px 0 12px -2px rgb(0 0 0 / 0.15)',
       },
       keyframes: {
@@ -61,6 +70,10 @@ export default {
         'slide-up': {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'scale-in': {
+          '0%': { opacity: '0', transform: 'scale(0.97) translateY(-4px)' },
+          '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
         },
         'fade-in-up': {
           '0%': { opacity: '0', transform: 'translateY(24px)' },
@@ -89,6 +102,7 @@ export default {
         'fade-in': 'fade-in 0.2s ease-out',
         'slide-up': 'slide-up 0.25s ease-out',
         'fade-in-up': 'fade-in-up 0.6s ease-out both',
+        'scale-in': 'scale-in 0.16s cubic-bezier(0.2, 0.8, 0.2, 1)',
         'pulse-slow': 'pulse-slow 6s ease-in-out infinite',
         'float': 'float 4s ease-in-out infinite',
         'dance': 'dance 4.5s ease-in-out infinite',

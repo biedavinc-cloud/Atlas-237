@@ -26,7 +26,10 @@ const corsHeaders = {
 // data-isolation breach — every workflow's own org_id (read from its own
 // DB row, never from the caller) still scopes all of its actions
 // correctly regardless of who or what triggered this check.
-const CRON_SECRET = "da73caf38062ff5e07e232f3e5396ad73708ca4b592962e24d1ce07257bc6ec3";
+// Prefer the CRON_SECRET project secret when it is set (rotate it there and
+// in the pg_cron job together); the literal fallback keeps the job that is
+// already scheduled in production working until that rotation happens.
+const CRON_SECRET = Deno.env.get("CRON_SECRET") || "da73caf38062ff5e07e232f3e5396ad73708ca4b592962e24d1ce07257bc6ec3";
 
 interface WorkflowAction {
   type: string;

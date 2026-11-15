@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import type { Factor } from '@supabase/supabase-js';
 import { Bell, ScrollText, CreditCard, Gauge, Sparkles, ArrowRight, CheckCircle2, Loader2, Upload, ShieldCheck, Building2, User, Lock, Image as ImageIcon, Smartphone, Monitor } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -17,7 +17,7 @@ import { BrandLogo } from '@/components/BrandLogos';
 import { Loading } from '@/components/Loading';
 import { COUNTRIES, CURRENCIES, TIMEZONES } from '@/lib/i18n-countries';
 import { fetchRoles, createRole, deleteRole, setRolePermissions, fetchPermissions, MODULES, ACTIONS, type RbacRole, type PermissionModule, type PermissionAction } from '@/lib/rbac';
-import { usePlanAccess } from '@/lib/plans';
+import { usePlanAccess, PLAN_PRICES } from '@/lib/plans';
 import type { Notification, AuditLog, Organization, Profile } from '@/types';
 import type { Language } from '@/lib/i18n';
 
@@ -42,6 +42,7 @@ export function NotificationsPage() {
   async function markRead(id: string) {
     const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id);
     if (error) { console.error('markRead failed:', error.message); return; }
+    window.dispatchEvent(new Event('atlas:notifications-changed'));
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   }
 
@@ -50,6 +51,7 @@ export function NotificationsPage() {
     if (unread.length === 0) return;
     const { error } = await supabase.from('notifications').update({ read: true }).in('id', unread.map(n => n.id));
     if (error) { console.error('markAllRead failed:', error.message); return; }
+    window.dispatchEvent(new Event('atlas:notifications-changed'));
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   }
 
@@ -123,10 +125,10 @@ export function AuditLogPage() {
         <div className="card overflow-hidden">
           <table className="w-full">
             <thead><tr className="border-b border-ink-100 bg-ink-50/50">
-              <th className="text-left text-xs font-semibold text-ink-500 uppercase px-4 py-3">{t('audit.actor', language)}</th>
-              <th className="text-left text-xs font-semibold text-ink-500 uppercase px-4 py-3">{t('audit.action', language)}</th>
-              <th className="text-left text-xs font-semibold text-ink-500 uppercase px-4 py-3">{t('audit.entity', language)}</th>
-              <th className="text-left text-xs font-semibold text-ink-500 uppercase px-4 py-3">{t('audit.date', language)}</th>
+              <th className="th">{t('audit.actor', language)}</th>
+              <th className="th">{t('audit.action', language)}</th>
+              <th className="th">{t('audit.entity', language)}</th>
+              <th className="th">{t('audit.date', language)}</th>
             </tr></thead>
             <tbody>
               {logs.map(log => (
@@ -152,7 +154,12 @@ export function AuditLogPage() {
 
 export function SettingsPage() {
   const { language, organization, profile, refreshOrg } = useAuth();
-  const [activeTab, setActiveTab] = useState<'account' | 'profile' | 'branding' | 'roles' | 'security' | 'ai'>('account');
+  // ?tab=profile (account menu → "My profile") opens a specific tab directly.
+  const [settingsParams] = useSearchParams();
+  const initialTab = settingsParams.get('tab');
+  const [activeTab, setActiveTab] = useState<'account' | 'profile' | 'branding' | 'roles' | 'security' | 'ai'>(
+    initialTab === 'profile' || initialTab === 'branding' || initialTab === 'roles' || initialTab === 'security' || initialTab === 'ai' ? initialTab : 'account'
+  );
 
   const tabs = [
     { key: 'account' as const, label: language === 'fr' ? 'Compte' : 'Account', icon: Building2 },
@@ -623,7 +630,7 @@ function RolesPermissionsTab({ language, organization }: { language: Language; o
             <div key={r.id} className="flex items-center group">
               <button
                 onClick={() => selectRole(r)}
-                className={`flex-1 text-left px-3 py-2 rounded-lg transition ${selectedRole?.id === r.id ? 'bg-primary-50 text-primary-700' : 'hover:bg-ink-50 text-ink-700'}`}
+                className={`flex-1 text-start px-3 py-2 rounded-lg transition ${selectedRole?.id === r.id ? 'bg-primary-50 text-primary-700' : 'hover:bg-ink-50 text-ink-700'}`}
               >
                 <p className="font-medium text-sm">{r.name}</p>
                 <p className="text-xs text-ink-400">{r.is_system ? (language === 'fr' ? 'Système' : 'System') : (language === 'fr' ? 'Personnalisé' : 'Custom')}</p>
@@ -650,7 +657,7 @@ function RolesPermissionsTab({ language, organization }: { language: Language; o
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-ink-100">
-                    <th className="text-left py-2 font-semibold text-ink-700">{language === 'fr' ? 'Module' : 'Module'}</th>
+                    <th className="text-start py-2 font-semibold text-ink-700">{language === 'fr' ? 'Module' : 'Module'}</th>
                     {ACTIONS.map((a) => <th key={a.key} className="px-3 py-2 text-center font-semibold text-ink-700">{a.label[language === 'fr' ? 'fr' : 'en']}</th>)}
                   </tr>
                 </thead>
@@ -970,16 +977,23 @@ export function BillingPage() {
         alert(res.msg || (lang === 'fr' ? 'Impossible de confirmer le paiement.' : 'Could not confirm payment.'));
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  // Prices come from PLAN_PRICES and every bullet maps to a real flag in
+  // PLAN_FEATURES (src/lib/plans.ts) — this card used to sell "Advanced
+  // analytics" on Growth while the code only unlocks it from Pro.
+  const L = (fr: string, en: string) => (lang === 'fr' ? fr : en);
   const plans = [
-    { name: 'Starter', key: 'starter', price: 19, annualPrice: 190, features: [lang === 'fr' ? '5 employés IA' : '5 AI employees', lang === 'fr' ? '3 utilisateurs' : '3 users', lang === 'fr' ? 'Contacts illimités' : 'Unlimited contacts', lang === 'fr' ? 'Pipelines de ventes' : 'Sales pipelines', lang === 'fr' ? 'Support e-mail' : 'Email support'] },
-    { name: 'Growth', key: 'growth', price: 49, annualPrice: 490, features: [lang === 'fr' ? '15 employés IA' : '15 AI employees', lang === 'fr' ? '10 utilisateurs' : '10 users', lang === 'fr' ? 'Analytique avancée' : 'Advanced analytics', lang === 'fr' ? 'Support prioritaire' : 'Priority support', lang === 'fr' ? 'Accès API & Webhooks' : 'API access & Webhooks'] },
-    { name: 'Pro', key: 'pro', price: 119, annualPrice: 1190, features: [lang === 'fr' ? 'Employés IA illimités' : 'Unlimited AI employees', lang === 'fr' ? '25 utilisateurs' : '25 users', lang === 'fr' ? 'Tableaux de bord personnalisés' : 'Custom dashboards', lang === 'fr' ? 'SSO & SAML' : 'SSO & SAML', lang === 'fr' ? 'Support 24/7 + SLA' : '24/7 support + SLA'] },
-    { name: 'Enterprise', key: 'enterprise', price: 219, annualPrice: 2190, features: [lang === 'fr' ? 'Tout Pro inclus' : 'Everything in Pro', lang === 'fr' ? 'IA personnalisée' : 'Custom AI training', lang === 'fr' ? 'Utilisateurs illimités' : 'Unlimited users', lang === 'fr' ? 'Gestionnaire dédié' : 'Dedicated manager', lang === 'fr' ? 'Garantie SLA' : 'SLA guarantee'] },
+    { name: PLAN_PRICES.starter.label, key: 'starter', price: PLAN_PRICES.starter.monthly, annualPrice: PLAN_PRICES.starter.annual, features: [L('5 employés IA', '5 AI employees'), L('3 utilisateurs', '3 users'), L('Contacts illimités', 'Unlimited contacts'), L('Pipelines de ventes', 'Sales pipelines'), L('Export de données', 'Data export')] },
+    { name: PLAN_PRICES.growth.label, key: 'growth', price: PLAN_PRICES.growth.monthly, annualPrice: PLAN_PRICES.growth.annual, features: [L('15 employés IA', '15 AI employees'), L('10 utilisateurs', '10 users'), L('Devis, factures & tickets', 'Quotes, invoices & tickets'), L('Workflows automatisés', 'Workflow automation'), L('API, webhooks & support prioritaire', 'API, webhooks & priority support')] },
+    { name: PLAN_PRICES.pro.label, key: 'pro', price: PLAN_PRICES.pro.monthly, annualPrice: PLAN_PRICES.pro.annual, features: [L('Employés IA illimités', 'Unlimited AI employees'), L('25 utilisateurs', '25 users'), L('Analytique avancée & insights IA', 'Advanced analytics & AI insights'), L('Tableaux de bord & base de connaissances', 'Custom dashboards & knowledge base'), L('SSO / SAML + SLA', 'SSO / SAML + SLA')] },
+    { name: PLAN_PRICES.enterprise.label, key: 'enterprise', price: PLAN_PRICES.enterprise.monthly, annualPrice: PLAN_PRICES.enterprise.annual, features: [L('Tout Pro inclus', 'Everything in Pro'), L('Utilisateurs illimités', 'Unlimited users'), L('IA personnalisée', 'Custom AI training'), L('Gestionnaire dédié', 'Dedicated manager'), L('Garantie SLA', 'SLA guarantee')] },
   ] as const;
 
+  // refreshOrg isn't memoised in AuthContext; run once on mount only.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { refreshOrg(); }, []);
 
   async function pay(plan: { key: string }) {
@@ -1201,85 +1215,129 @@ export function UsagePage() {
 }
 
 export function AskAtlasPage() {
-  const { language } = useAuth();
+  const { language, profile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const lang = language;
   const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string; route?: string }[]>([]);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const suggestions = lang === 'fr'
-    ? ['Combien de deals ouverts ?', 'Quels sont mes leads chauds ?', 'Quel est mon revenu ?', 'Factures impayées ?']
-    : ['How many open deals?', 'Show my hot leads', 'What is my revenue?', 'Unpaid invoices?'];
+    ? ['Combien d’affaires ouvertes ?', 'Quels sont mes leads chauds ?', 'Quel est mon chiffre d’affaires ?', 'Factures impayées ?', 'Tâches en retard ?']
+    : ['How many open deals?', 'Show my hot leads', 'What is my revenue?', 'Unpaid invoices?', 'Overdue tasks?'];
+
+  // Keep the latest message in view.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+  }, [messages, thinking]);
+
+  // A question handed over from the command palette (?q=...) is asked once.
+  const askedFromUrl = useRef(false);
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q && !askedFromUrl.current) {
+      askedFromUrl.current = true;
+      setSearchParams({}, { replace: true });
+      send(q);
+    } else {
+      inputRef.current?.focus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function send(text?: string) {
     const value = (text ?? input).trim();
     if (!value || thinking) return;
-    const userMsg = { role: 'user' as const, text: value };
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => [...prev, { role: 'user', text: value }]);
     setInput('');
     setThinking(true);
     try {
       const answer = await askAtlas(value, lang);
       setMessages((prev) => [...prev, { role: 'ai', text: answer.text, route: answer.route }]);
     } catch {
-      setMessages((prev) => [...prev, { role: 'ai', text: lang === 'fr' ? 'Désolé, je n\'ai pas pu récupérer les données.' : 'Sorry, I couldn\'t fetch the data.' }]);
+      setMessages((prev) => [...prev, { role: 'ai', text: t('dash.askFailed', lang) }]);
     } finally {
       setThinking(false);
     }
   }
 
+  const initial = (profile?.first_name?.[0] || profile?.email?.[0] || 'U').toUpperCase();
+
   return (
-    <div className="animate-fade-in">
-      <PageHeader title={t('nav.askAtlas', lang)} subtitle={lang === 'fr' ? 'Posez une question sur votre entreprise — les réponses viennent de vos données réelles.' : 'Ask a question about your business — answers come from your real data.'} />
-      <div className="card p-0 h-[60vh] flex flex-col">
-        <div className="flex-1 overflow-y-auto scrollbar-thin p-6 space-y-4">
+    <div className="animate-fade-in flex flex-col h-[calc(100dvh-8.5rem)] min-h-[480px]">
+      <PageHeader
+        title={t('nav.askAtlas', lang)}
+        subtitle={lang === 'fr' ? 'Posez une question sur votre entreprise. Les réponses viennent de vos données réelles.' : 'Ask a question about your business. Answers come from your real data.'}
+        actions={messages.length > 0 ? (
+          <button onClick={() => setMessages([])} className="btn-secondary btn-sm">{lang === 'fr' ? 'Nouvelle conversation' : 'New conversation'}</button>
+        ) : undefined}
+      />
+      <div className="card flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin px-4 sm:px-6 py-6 space-y-5" aria-live="polite">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 mb-4">
-                <Sparkles size={28} />
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="relative mb-5">
+                <div className="absolute -inset-4 rounded-full contour-ink" aria-hidden />
+                <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-navy-900 text-white shadow-card">
+                  <Sparkles size={24} />
+                </div>
               </div>
-              <h3 className="font-bold text-ink-800">{t('dash.askAtlas', lang)}</h3>
-              <p className="text-sm text-ink-500 mt-1 max-w-md text-center">{t('dash.askPlaceholder', lang)}</p>
-              <div className="mt-6 flex flex-wrap gap-2 justify-center max-w-lg">
+              <h2 className="text-lg font-bold text-ink-900">{t('dash.askAtlas', lang)}</h2>
+              <p className="text-sm text-ink-500 mt-1 max-w-md">{t('dash.askPlaceholder', lang)}</p>
+              <div className="mt-6 flex flex-wrap gap-2 justify-center max-w-xl">
                 {suggestions.map((s) => (
-                  <button key={s} onClick={() => send(s)} className="rounded-full border border-ink-200 bg-white px-4 py-2 text-sm text-ink-700 transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700">
+                  <button key={s} onClick={() => send(s)} className="rounded-full border border-ink-200 bg-white px-3.5 py-1.5 text-sm text-ink-700 transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700">
                     {s}
                   </button>
                 ))}
               </div>
             </div>
           ) : messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-md px-4 py-2 rounded-xl text-sm ${msg.role === 'user' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-800'}`}>
+            <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+              <div className={`flex h-8 w-8 flex-none items-center justify-center rounded-full text-xs font-bold ${msg.role === 'user' ? 'bg-primary-600 text-white' : 'bg-navy-900 text-white'}`}>
+                {msg.role === 'user' ? initial : <Sparkles size={14} />}
+              </div>
+              <div className={`max-w-[80%] sm:max-w-xl rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'bg-primary-600 text-white rounded-se-md' : 'bg-ink-50 text-ink-800 ring-1 ring-inset ring-ink-200/70 rounded-ss-md'}`}>
                 {msg.text}
                 {msg.route && (
-                  <button onClick={() => navigate(msg.route!)} className="mt-1.5 flex items-center gap-1 text-xs font-semibold text-primary-600 hover:underline">
-                    {lang === 'fr' ? 'Voir' : 'View'} <ArrowRight size={12} />
+                  <button onClick={() => navigate(msg.route!)} className="mt-2 flex items-center gap-1 text-xs font-semibold text-primary-600 hover:underline">
+                    {t('common.view', lang)} <ArrowRight size={12} className="rtl:rotate-180" />
                   </button>
                 )}
               </div>
             </div>
           ))}
           {thinking && (
-            <div className="flex justify-start">
-              <div className="max-w-md px-4 py-2 rounded-xl text-sm bg-ink-100 text-ink-400 flex items-center gap-2">
-                <Sparkles size={14} className="animate-pulse" /> {lang === 'fr' ? 'Atlas analyse vos données…' : 'Atlas is analysing your data…'}
+            <div className="flex gap-3">
+              <div className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-navy-900 text-white"><Sparkles size={14} className="animate-pulse" /></div>
+              <div className="rounded-2xl rounded-ss-md px-4 py-2.5 text-sm bg-ink-50 text-ink-500 ring-1 ring-inset ring-ink-200/70">
+                {t('dash.thinking', lang)}
               </div>
             </div>
           )}
         </div>
-        <div className="border-t border-ink-100 p-4 flex gap-2">
-          <input
-            className="input flex-1"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && send()}
-            placeholder={t('dash.askPlaceholder', lang)}
-            disabled={thinking}
-          />
-          <button onClick={() => send()} disabled={thinking} className="btn-primary btn-sm">{lang === 'fr' ? 'Envoyer' : 'Send'}</button>
-        </div>
+        <form onSubmit={e => { e.preventDefault(); send(); }} className="border-t border-ink-100 bg-ink-50/50 p-3 sm:p-4">
+          <div className="flex items-end gap-2 rounded-xl border border-ink-200 bg-white p-1.5 focus-within:border-primary-500 focus-within:ring-[3px] focus-within:ring-primary-100 transition-[border-color,box-shadow]">
+            <textarea
+              ref={inputRef}
+              rows={1}
+              className="flex-1 resize-none bg-transparent px-2.5 py-1.5 text-sm text-ink-900 placeholder-ink-400 focus:outline-none max-h-32"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+              placeholder={t('dash.askPlaceholder', lang)}
+              aria-label={t('dash.askPlaceholder', lang)}
+              disabled={thinking}
+            />
+            <button type="submit" disabled={thinking || !input.trim()} className="btn-primary btn-sm">
+              {thinking ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} className="rtl:rotate-180" />}
+              {lang === 'fr' ? 'Envoyer' : 'Send'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

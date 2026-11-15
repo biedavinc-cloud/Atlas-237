@@ -56,7 +56,7 @@ export function PspCheckoutModal({
               <button
                 key={psp.key}
                 onClick={() => onSelect(psp.key)}
-                className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition ${selectedPsp === psp.key ? 'border-primary-400 bg-primary-50' : 'border-ink-200 hover:bg-ink-50'}`}
+                className={`flex w-full items-center justify-between rounded-xl border p-3 text-start transition ${selectedPsp === psp.key ? 'border-primary-400 bg-primary-50' : 'border-ink-200 hover:bg-ink-50'}`}
               >
                 <span className="text-sm text-ink-800">{psp.method}</span>
                 {selectedPsp === psp.key && <CheckCircle2 size={16} className="text-primary-600" />}

@@ -1,7 +1,7 @@
 import { Package, FileText, ShoppingCart, Receipt, CreditCard, Megaphone, LifeBuoy } from 'lucide-react';
 import { ListPage, type FormField } from '@/components/ListPage';
 import { useAuth } from '@/context/AuthContext';
-import { t } from '@/lib/i18n';
+import { t, tStatus } from '@/lib/i18n';
 import { Badge } from '@/components/ui';
 import { CURRENCIES, formatMoney } from '@/lib/i18n-countries';
 import { usePlanAccess } from '@/lib/plans';
@@ -51,7 +51,7 @@ export function ProductsPage() {
         { key: 'category', label: t('list.category', language), render: (r) => r.category || '—' },
         { key: 'price', label: t('list.price', language), render: (r) => <span className="font-semibold">{formatMoney((r.price || 0) * 100, r.currency || orgCurrency, language)}</span> },
         { key: 'stock', label: t('list.stock', language), render: (r) => r.stock ?? '—' },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'active' ? 'success' : 'neutral'}>{r.status}</Badge> },
+        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'active' ? 'success' : 'neutral'}>{tStatus(r.status, language)}</Badge> },
       ]}
       formFields={fields}
       emptyIcon={<Package size={28} />}
@@ -87,7 +87,7 @@ export function QuotesPage() {
       title={t('nav.quotes', language)}
       columns={[
         { key: 'quote_number', label: t('list.quoteNumber', language), render: (r) => <span className="font-medium text-ink-800">{r.quote_number}</span> },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'accepted' ? 'success' : r.status === 'rejected' ? 'error' : 'warning'}>{r.status}</Badge> },
+        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'accepted' ? 'success' : r.status === 'rejected' ? 'error' : 'warning'}>{tStatus(r.status, language)}</Badge> },
         { key: 'total', label: t('common.total', language), render: (r) => formatMoney((r.total || 0) * 100, (r.currency as string) || orgCurrency, language) },
         { key: 'expiration_date', label: t('list.expires', language), render: (r) => r.expiration_date ? new Date(r.expiration_date).toLocaleDateString(language) : '—' },
       ]}
@@ -122,8 +122,8 @@ export function OrdersPage() {
       title={t('nav.orders', language)}
       columns={[
         { key: 'order_number', label: t('list.orderNumber', language), render: (r) => <span className="font-medium text-ink-800">{r.order_number}</span> },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant="primary">{r.status}</Badge> },
-        { key: 'payment_status', label: t('list.payment', language), render: (r) => <Badge variant={r.payment_status === 'paid' ? 'success' : r.payment_status === 'partial' ? 'warning' : 'error'}>{r.payment_status}</Badge> },
+        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant="primary">{tStatus(r.status, language)}</Badge> },
+        { key: 'payment_status', label: t('list.payment', language), render: (r) => <Badge variant={r.payment_status === 'paid' ? 'success' : r.payment_status === 'partial' ? 'warning' : 'error'}>{tStatus(r.payment_status, language)}</Badge> },
         { key: 'total', label: t('common.total', language), render: (r) => formatMoney((r.total || 0) * 100, (r.currency as string) || orgCurrency, language) },
       ]}
       formFields={fields}
@@ -163,8 +163,8 @@ export function InvoicesPage() {
       title={t('nav.invoices', language)}
       columns={[
         { key: 'invoice_number', label: t('list.invoiceNumber', language), render: (r) => <span className="font-medium text-ink-800">{r.invoice_number}</span> },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'paid' ? 'success' : r.status === 'overdue' ? 'error' : 'warning'}>{r.status}</Badge> },
-        { key: 'payment_status', label: t('list.payment', language), render: (r) => <Badge variant={r.payment_status === 'paid' ? 'success' : r.payment_status === 'partial' ? 'warning' : 'error'}>{r.payment_status}</Badge> },
+        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'paid' ? 'success' : r.status === 'overdue' ? 'error' : 'warning'}>{tStatus(r.status, language)}</Badge> },
+        { key: 'payment_status', label: t('list.payment', language), render: (r) => <Badge variant={r.payment_status === 'paid' ? 'success' : r.payment_status === 'partial' ? 'warning' : 'error'}>{tStatus(r.payment_status, language)}</Badge> },
         { key: 'total', label: t('common.total', language), render: (r) => <span className="font-semibold">{formatMoney((r.total || 0) * 100, r.currency || orgCurrency, language)}</span> },
         { key: 'due_date', label: t('list.due', language), render: (r) => r.due_date ? new Date(r.due_date).toLocaleDateString(language) : '—' },
       ]}
@@ -201,7 +201,7 @@ export function PaymentsPage() {
       columns={[
         { key: 'amount', label: t('superAdmin.amount', language), render: (r) => <span className="font-semibold">{formatMoney((r.amount || 0) * 100, (r.currency as string) || orgCurrency, language)}</span> },
         { key: 'method', label: t('list.method', language), render: (r) => r.method || '—' },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'completed' ? 'success' : r.status === 'failed' ? 'error' : 'warning'}>{r.status}</Badge> },
+        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'completed' ? 'success' : r.status === 'failed' ? 'error' : 'warning'}>{tStatus(r.status, language)}</Badge> },
         { key: 'reference', label: t('list.reference', language), render: (r) => r.reference || '—' },
       ]}
       formFields={fields}
@@ -236,8 +236,8 @@ export function MarketingPage() {
       title={t('nav.marketing', language)}
       columns={[
         { key: 'name', label: t('common.name', language), render: (r) => <span className="font-medium text-ink-800">{r.name}</span> },
-        { key: 'type', label: t('list.type', language), render: (r) => <Badge variant="primary">{r.type}</Badge> },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'active' ? 'success' : r.status === 'completed' ? 'neutral' : 'warning'}>{r.status}</Badge> },
+        { key: 'type', label: t('list.type', language), render: (r) => <Badge variant="primary">{tStatus(r.type, language)}</Badge> },
+        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'active' ? 'success' : r.status === 'completed' ? 'neutral' : 'warning'}>{tStatus(r.status, language)}</Badge> },
         { key: 'budget', label: t('list.budget', language), render: (r) => formatMoney((r.budget || 0) * 100, r.currency || orgCurrency, language) },
       ]}
       formFields={fields}
@@ -275,8 +275,8 @@ export function SupportPage() {
       columns={[
         { key: 'ticket_number', label: t('list.ticketNumber', language), render: (r) => <span className="font-medium text-ink-800">{r.ticket_number}</span> },
         { key: 'subject', label: t('list.subject', language), render: (r) => r.subject },
-        { key: 'priority', label: t('list.priority', language), render: (r) => <Badge variant={r.priority === 'urgent' ? 'error' : r.priority === 'high' ? 'warning' : 'neutral'}>{r.priority}</Badge> },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'resolved' || r.status === 'closed' ? 'success' : 'primary'}>{r.status}</Badge> },
+        { key: 'priority', label: t('list.priority', language), render: (r) => <Badge variant={r.priority === 'urgent' ? 'error' : r.priority === 'high' ? 'warning' : 'neutral'}>{tStatus(r.priority, language)}</Badge> },
+        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'resolved' || r.status === 'closed' ? 'success' : 'primary'}>{tStatus(r.status, language)}</Badge> },
       ]}
       formFields={fields}
       emptyIcon={<LifeBuoy size={28} />}

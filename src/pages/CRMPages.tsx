@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Users, Building2, UserPlus, Handshake, KanbanSquare, Activity, Calendar } from 'lucide-react';
+import { Users, Building2, UserPlus, Handshake, KanbanSquare, Activity, Calendar, ListChecks, Check, RotateCcw } from 'lucide-react';
 import { ListPage, type FormField } from '@/components/ListPage';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { t } from '@/lib/i18n';
+import { t, tStatus } from '@/lib/i18n';
 import { Badge, PageHeader } from '@/components/ui';
 import { EmptyState } from '@/components/EmptyState';
 import { Loading } from '@/components/Loading';
@@ -51,7 +51,7 @@ export function ContactsPage() {
         { key: 'email', label: t('common.email', language), render: (r) => r.email || '—' },
         { key: 'phone', label: t('common.phone', language), render: (r) => r.phone || '—' },
         { key: 'job_title', label: t('list.title', language), render: (r) => r.job_title || '—' },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'active' ? 'success' : 'neutral'}>{r.status}</Badge> },
+        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'active' ? 'success' : 'neutral'}>{tStatus(r.status, language)}</Badge> },
         { key: 'lead_score', label: t('list.leadScore', language), render: (r) => <span className="font-semibold">{r.lead_score}</span> },
       ]}
       formFields={fields}
@@ -95,7 +95,7 @@ export function CompaniesPage() {
         { key: 'website', label: t('list.website', language), render: (r) => r.website ? <a href={r.website} target="_blank" rel="noopener" className="text-primary-600 hover:underline">{r.website}</a> : '—' },
         { key: 'size', label: t('list.size', language), render: (r) => r.size || '—' },
         { key: 'revenue', label: t('list.revenue', language), render: (r) => r.revenue ? formatMoney(r.revenue * 100, r.currency || orgCurrency, language) : '—' },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'active' ? 'success' : 'neutral'}>{r.status}</Badge> },
+        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'active' ? 'success' : 'neutral'}>{tStatus(r.status, language)}</Badge> },
       ]}
       formFields={fields}
       emptyIcon={<Building2 size={28} />}
@@ -136,8 +136,8 @@ export function LeadsPage() {
         { key: 'first_name', label: t('common.name', language), render: (r) => <span className="font-medium text-ink-800">{r.first_name} {r.last_name}</span> },
         { key: 'company_name', label: t('common.company', language), render: (r) => r.company_name || '—' },
         { key: 'source', label: t('list.source', language), render: (r) => r.source || '—' },
-        { key: 'temperature', label: t('list.temperature', language), render: (r) => <Badge variant={r.temperature === 'hot' ? 'error' : r.temperature === 'warm' ? 'warning' : 'neutral'}>{r.temperature}</Badge> },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'converted' ? 'success' : r.status === 'lost' ? 'error' : 'primary'}>{r.status}</Badge> },
+        { key: 'temperature', label: t('list.temperature', language), render: (r) => <Badge variant={r.temperature === 'hot' ? 'error' : r.temperature === 'warm' ? 'warning' : 'neutral'}>{tStatus(r.temperature, language)}</Badge> },
+        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'converted' ? 'success' : r.status === 'lost' ? 'error' : 'primary'}>{tStatus(r.status, language)}</Badge> },
         { key: 'potential_value', label: t('common.value', language), render: (r) => `$${(r.potential_value || 0).toLocaleString()}` },
       ]}
       formFields={fields}
@@ -175,7 +175,7 @@ export function DealsPage() {
         { key: 'value', label: t('common.value', language), render: (r) => <span className="font-semibold">{formatMoney((r.value || 0) * 100, r.currency || orgCurrency, language)}</span> },
         { key: 'probability', label: t('list.probability', language), render: (r) => `${r.probability}%` },
         { key: 'closing_date', label: t('list.closeDate', language), render: (r) => r.closing_date ? new Date(r.closing_date).toLocaleDateString(language) : '—' },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'won' ? 'success' : r.status === 'lost' ? 'error' : 'primary'}>{r.status}</Badge> },
+        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'won' ? 'success' : r.status === 'lost' ? 'error' : 'primary'}>{tStatus(r.status, language)}</Badge> },
       ]}
       formFields={fields}
       emptyIcon={<Handshake size={28} />}
@@ -232,8 +232,8 @@ export function ActivitiesPage() {
       title={t('nav.activities', language)}
       columns={[
         { key: 'title', label: t('list.title', language), render: (r) => <span className="font-medium text-ink-800">{r.title}</span> },
-        { key: 'type', label: t('list.type', language), render: (r) => <Badge variant="primary">{r.type}</Badge> },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'completed' ? 'success' : 'warning'}>{r.status}</Badge> },
+        { key: 'type', label: t('list.type', language), render: (r) => <Badge variant="primary">{tStatus(r.type, language)}</Badge> },
+        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'completed' ? 'success' : 'warning'}>{tStatus(r.status, language)}</Badge> },
         { key: 'scheduled_at', label: t('list.scheduled', language), render: (r) => r.scheduled_at ? new Date(r.scheduled_at).toLocaleDateString(language) : '—' },
       ]}
       formFields={fields}
@@ -241,6 +241,96 @@ export function ActivitiesPage() {
       emptyTitle={t('empty.noActivities', language)}
       emptyDescription={t('empty.noActivitiesDesc', language)}
       orderBy="created_at"
+    />
+  );
+}
+
+interface TaskRow {
+  id: string;
+  title: string;
+  description: string | null;
+  priority: string | null;
+  status: string | null;
+  due_date: string | null;
+  related_type: string | null;
+  [key: string]: unknown;
+}
+
+/**
+ * Tasks — the `tasks` table. Workflows' "Create task" action (manual and
+ * scheduled runs) writes here, and the Command Center counts overdue ones,
+ * but until now no page ever listed them, so automated tasks were invisible.
+ */
+export function TasksPage() {
+  const { language } = useAuth();
+  const fr = language === 'fr';
+  const priorityLabel: Record<string, string> = fr
+    ? { low: 'Basse', medium: 'Moyenne', high: 'Haute', urgent: 'Urgente' }
+    : { low: 'Low', medium: 'Medium', high: 'High', urgent: 'Urgent' };
+  const statusLabel: Record<string, string> = fr
+    ? { pending: 'À faire', in_progress: 'En cours', completed: 'Terminée', cancelled: 'Annulée' }
+    : { pending: 'To do', in_progress: 'In progress', completed: 'Done', cancelled: 'Cancelled' };
+
+  const fields: FormField[] = [
+    { key: 'title', label: t('list.title', language), type: 'text', required: true },
+    { key: 'priority', label: fr ? 'Priorité' : 'Priority', type: 'select', defaultValue: 'medium', options: Object.entries(priorityLabel).map(([value, label]) => ({ value, label })) },
+    { key: 'status', label: t('common.status', language), type: 'select', defaultValue: 'pending', options: Object.entries(statusLabel).map(([value, label]) => ({ value, label })) },
+    { key: 'due_date', label: fr ? 'Échéance' : 'Due date', type: 'date' },
+    { key: 'description', label: t('list.description', language), type: 'textarea' },
+  ];
+
+  async function toggleDone(row: TaskRow, reload: () => void) {
+    const done = row.status === 'completed';
+    const { error } = await supabase.from('tasks').update({
+      status: done ? 'pending' : 'completed',
+      completed_at: done ? null : new Date().toISOString(),
+    }).eq('id', row.id);
+    if (error) { alert(error.message); return; }
+    reload();
+  }
+
+  const now = Date.now();
+  return (
+    <ListPage<TaskRow>
+      table="tasks"
+      title={t('nav.tasks', language)}
+      subtitle={fr ? 'Vos tâches et celles créées par vos workflows.' : 'Your to-dos, including the ones your workflows create.'}
+      columns={[
+        { key: 'title', label: t('list.title', language), render: (r) => (
+          <div className="min-w-0">
+            <p className={`font-medium ${r.status === 'completed' ? 'text-ink-400 line-through' : 'text-ink-800'}`}>{r.title}</p>
+            {r.related_type === 'workflow' && <p className="text-xs text-ink-400">{fr ? 'Créée par un workflow' : 'Created by a workflow'}</p>}
+          </div>
+        ) },
+        { key: 'priority', label: fr ? 'Priorité' : 'Priority', render: (r) => {
+          const p = r.priority || 'medium';
+          return <Badge variant={p === 'urgent' || p === 'high' ? 'error' : p === 'low' ? 'neutral' : 'warning'}>{priorityLabel[p] || p}</Badge>;
+        } },
+        { key: 'status', label: t('common.status', language), render: (r) => {
+          const st = r.status || 'pending';
+          return <Badge variant={st === 'completed' ? 'success' : st === 'in_progress' ? 'primary' : st === 'cancelled' ? 'neutral' : 'warning'}>{statusLabel[st] || st}</Badge>;
+        } },
+        { key: 'due_date', label: fr ? 'Échéance' : 'Due', render: (r) => {
+          if (!r.due_date) return <span className="text-ink-400">—</span>;
+          const overdue = r.status !== 'completed' && new Date(r.due_date).getTime() < now;
+          return <span className={overdue ? 'font-semibold text-error-600' : ''}>{new Date(r.due_date).toLocaleDateString(language)}{overdue ? (fr ? ' · en retard' : ' · overdue') : ''}</span>;
+        } },
+      ]}
+      formFields={fields}
+      emptyIcon={<ListChecks size={26} />}
+      emptyTitle={fr ? 'Aucune tâche' : 'No tasks yet'}
+      emptyDescription={fr ? 'Ajoutez une tâche, ou laissez un workflow en créer automatiquement.' : 'Add a task, or let a workflow create them for you.'}
+      orderBy="created_at"
+      rowActions={(row, reload) => (
+        <button
+          onClick={() => toggleDone(row, reload)}
+          className={`btn-icon h-7 w-7 ${row.status === 'completed' ? '' : 'hover:bg-success-50 hover:text-success-600'}`}
+          aria-label={row.status === 'completed' ? (fr ? 'Rouvrir' : 'Reopen') : (fr ? 'Marquer terminée' : 'Mark as done')}
+          title={row.status === 'completed' ? (fr ? 'Rouvrir' : 'Reopen') : (fr ? 'Marquer terminée' : 'Mark as done')}
+        >
+          {row.status === 'completed' ? <RotateCcw size={14} /> : <Check size={14} />}
+        </button>
+      )}
     />
   );
 }
@@ -286,7 +376,7 @@ export function CalendarPage() {
                       <p className="text-sm font-medium text-ink-800">{a.title}</p>
                       <p className="text-xs text-ink-500">{a.scheduled_at ? new Date(a.scheduled_at).toLocaleString(lang) : '—'} · {a.type}</p>
                     </div>
-                    <Badge variant={a.status === 'completed' ? 'success' : 'warning'}>{a.status}</Badge>
+                    <Badge variant={a.status === 'completed' ? 'success' : 'warning'}>{tStatus(a.status, language)}</Badge>
                   </div>
                 ))}
               </div>
@@ -307,7 +397,7 @@ export function CalendarPage() {
                       <p className="text-sm font-medium text-ink-800">{a.title}</p>
                       <p className="text-xs text-ink-500">{a.scheduled_at ? new Date(a.scheduled_at).toLocaleString(lang) : '—'} · {a.type}</p>
                     </div>
-                    <Badge variant={a.status === 'completed' ? 'success' : 'warning'}>{a.status}</Badge>
+                    <Badge variant={a.status === 'completed' ? 'success' : 'warning'}>{tStatus(a.status, language)}</Badge>
                   </div>
                 ))}
               </div>

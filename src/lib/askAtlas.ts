@@ -116,10 +116,10 @@ export async function askAtlas(question: string, lang: 'en' | 'fr' | 'es' | 'pt'
   if (has(q, 'task', 'tâche', 'tache', 'todo', 'à faire')) {
     if (has(q, 'overdue', 'en retard', 'retard', 'late')) {
       const { count } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'pending').lt('due_date', new Date().toISOString());
-      return { text: pick(`${count ?? 0} tâches en retard.`, `${count ?? 0} overdue tasks.`) };
+      return { text: pick(`${count ?? 0} tâches en retard.`, `${count ?? 0} overdue tasks.`), route: '/app/tasks' };
     }
     const { count } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-    return { text: pick(`Il vous reste ${count ?? 0} tâches en cours.`, `You have ${count ?? 0} pending tasks.`) };
+    return { text: pick(`Il vous reste ${count ?? 0} tâches en cours.`, `You have ${count ?? 0} pending tasks.`), route: '/app/tasks' };
   }
 
   // ---- Meetings / calendar ----

@@ -3,7 +3,7 @@ import { Bot, ListTodo, Workflow, Brain, BookOpen, CheckSquare, Zap, Check, X, P
 import { ListPage, type FormField } from '@/components/ListPage';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { t } from '@/lib/i18n';
+import { t, tStatus } from '@/lib/i18n';
 import { PageHeader, Badge } from '@/components/ui';
 import { EmptyState } from '@/components/EmptyState';
 import { Loading } from '@/components/Loading';
@@ -76,8 +76,8 @@ export function AITasksPage() {
       title={t('nav.aiTasks', language)}
       columns={[
         { key: 'title', label: t('list.title', language), render: (r) => <span className="font-medium text-ink-800">{r.title}</span> },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'completed' ? 'success' : r.status === 'failed' ? 'error' : r.status === 'in_progress' ? 'primary' : 'warning'}>{r.status}</Badge> },
-        { key: 'priority', label: t('list.priority', language), render: (r) => <Badge variant={r.priority === 'high' ? 'error' : 'neutral'}>{r.priority}</Badge> },
+        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'completed' ? 'success' : r.status === 'failed' ? 'error' : r.status === 'in_progress' ? 'primary' : 'warning'}>{tStatus(r.status, language)}</Badge> },
+        { key: 'priority', label: t('list.priority', language), render: (r) => <Badge variant={r.priority === 'high' ? 'error' : 'neutral'}>{tStatus(r.priority, language)}</Badge> },
         { key: 'progress', label: t('list.progress', language), render: (r) => (
           <div className="w-24 h-1.5 bg-ink-100 rounded-full overflow-hidden">
             <div className="h-full bg-primary-500 rounded-full" style={{ width: `${r.progress}%` }} />
@@ -522,7 +522,7 @@ export function KnowledgeBasePage() {
         { key: 'title', label: t('list.title', language), render: (r) => <span className="font-medium text-ink-800">{r.title}</span> },
         { key: 'type', label: t('list.type', language), render: (r) => <Badge variant="primary">{r.type || 'document'}</Badge> },
         { key: 'category', label: t('list.category', language), render: (r) => r.category || '—' },
-        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant="success">{r.status}</Badge> },
+        { key: 'status', label: t('common.status', language), render: (r) => <Badge variant="success">{tStatus(r.status, language)}</Badge> },
       ]}
       formFields={fields}
       emptyIcon={<BookOpen size={28} />}

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
 import {
-  ShieldCheck, Users, Building2, CreditCard, BarChart3, UserCog,
+  ShieldCheck, Users, Building2, CreditCard,
   Receipt, ScrollText, Plus, Trash2, Ban, CheckCircle2, Loader2,
   AlertTriangle, TrendingUp, DollarSign, Activity, Search, CalendarPlus,
   Briefcase, Wallet, PiggyBank, ArrowUpRight, ArrowDownRight,
   UserPlus, Pencil, X, Calendar,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { AppLayout } from '@/components/AppLayout';
 import { supabase } from '@/lib/supabase';
 import { t } from '@/lib/i18n';
 import { formatMoney } from '@/lib/i18n-countries';
@@ -21,7 +22,7 @@ import type { Organization, Profile } from '@/types';
    Super Admin Layout (separate from tenant AppLayout)
    ═══════════════════════════════════════════════════════════ */
 export function SuperAdminLayout() {
-  const { isSuperAdmin, loading, profile, signOut, language } = useAuth();
+  const { isSuperAdmin, loading, profile, language } = useAuth();
   const navigate = useNavigate();
 
   if (loading) return <Loading fullPage />;
@@ -38,60 +39,17 @@ export function SuperAdminLayout() {
     );
   }
 
-  const navItems = [
-    { to: '/super-admin', label: t('superAdmin.dashboard', language), icon: ShieldCheck, end: true },
-    { to: '/super-admin/users', label: t('superAdmin.usersTenants', language), icon: Users },
-    { to: '/super-admin/subscriptions', label: t('superAdmin.subscriptions', language), icon: CreditCard },
-    { to: '/super-admin/accounting', label: language === 'fr' ? 'Comptabilité' : 'Accounting', icon: Wallet },
-    { to: '/super-admin/analytics', label: t('superAdmin.analytics', language), icon: BarChart3 },
-    { to: '/super-admin/employees', label: t('superAdmin.employeeKpis', language), icon: UserCog },
-    { to: '/super-admin/staff', label: language === 'fr' ? 'Personnel' : 'Staff', icon: Briefcase },
-    { to: '/super-admin/sales-codes', label: t('superAdmin.salesCodes', language), icon: Receipt },
-    { to: '/super-admin/permissions', label: t('superAdmin.permissions', language), icon: ShieldCheck },
-    { to: '/super-admin/audit', label: t('superAdmin.auditLog', language), icon: ScrollText },
-  ];
-
+  // Same shell as the tenant app (sidebar, ⌘K palette, account menu,
+  // mobile drawer); the platform pages live in its Super Admin section.
   return (
-    <div className="flex h-screen overflow-hidden bg-ink-50">
-      <aside className="w-60 flex-shrink-0 bg-ink-950 text-white flex flex-col">
-        <div className="flex items-center gap-2.5 px-4 h-14 border-b border-white/10">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600">
-            <ShieldCheck size={18} />
-          </div>
-          <span className="font-bold text-lg">{t('superAdmin.title', language)}</span>
-        </div>
-        <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
-          {navItems.map((item) => (
-            <button
-              key={item.to}
-              onClick={() => navigate(item.to)}
-              className={`sidebar-item w-full text-left ${window.location.pathname === item.to ? 'sidebar-item-active' : ''}`}
-            >
-              <item.icon size={18} />
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-        <div className="border-t border-white/10 p-3">
-          <button onClick={() => navigate('/app')} className="sidebar-item w-full text-left">
-            <Building2 size={18} /><span>{t('superAdmin.backToApp', language)}</span>
-          </button>
-          <button onClick={() => { signOut(); navigate('/'); }} className="sidebar-item w-full text-left text-ink-400">
-            <span>← {t('auth.login', language)}</span>
-          </button>
-        </div>
-      </aside>
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-14 bg-white border-b border-ink-100 flex items-center justify-between px-6">
-          <h2 className="font-bold text-ink-900">{t('superAdmin.platformControl', language)}</h2>
-          <div className="flex items-center gap-2 text-sm text-ink-500">
-            <ShieldCheck size={16} className="text-primary-600" />
-            <span>{profile?.email}</span>
-          </div>
-        </header>
-        <main className="flex-1 overflow-y-auto p-6"><Outlet /></main>
+    <AppLayout>
+      <div className="mb-5 flex items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-sm text-primary-800">
+        <ShieldCheck size={16} className="flex-none" />
+        <span className="font-semibold">{t('superAdmin.platformControl', language)}</span>
+        <span className="ms-auto hidden sm:inline text-primary-700/80 truncate">{profile?.email}</span>
       </div>
-    </div>
+      <Outlet />
+    </AppLayout>
   );
 }
 
@@ -180,21 +138,21 @@ export function SuperAdminDashboard() {
       {/* Finance summary row */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="card p-5">
-          <div className="flex items-center gap-2 text-success-600"><ArrowUpRight size={18} /><span className="text-xs font-semibold uppercase tracking-wide">{language === 'fr' ? 'Revenus Mois' : 'Revenue MTD'}</span></div>
+          <div className="flex items-center gap-2 text-success-600"><ArrowUpRight size={18} /><span className="text-[13px] font-semibold">{language === 'fr' ? 'Revenus Mois' : 'Revenue MTD'}</span></div>
           <p className="mt-2 text-2xl font-bold text-ink-900">{formatMoney(finance?.revenue_mtd ?? 0, 'USD', language)}</p>
           <p className="text-xs text-ink-400">{finance?.revenue_count_mtd ?? 0} {language === 'fr' ? 'entrées' : 'entries'}</p>
         </div>
         <div className="card p-5">
-          <div className="flex items-center gap-2 text-error-600"><ArrowDownRight size={18} /><span className="text-xs font-semibold uppercase tracking-wide">{language === 'fr' ? 'Dépenses Mois' : 'Expenses MTD'}</span></div>
+          <div className="flex items-center gap-2 text-error-600"><ArrowDownRight size={18} /><span className="text-[13px] font-semibold">{language === 'fr' ? 'Dépenses Mois' : 'Expenses MTD'}</span></div>
           <p className="mt-2 text-2xl font-bold text-ink-900">{formatMoney(finance?.expenses_mtd ?? 0, 'USD', language)}</p>
           <p className="text-xs text-ink-400">{finance?.expense_count_mtd ?? 0} {language === 'fr' ? 'entrées' : 'entries'}</p>
         </div>
         <div className="card p-5">
-          <div className="flex items-center gap-2 text-primary-600"><PiggyBank size={18} /><span className="text-xs font-semibold uppercase tracking-wide">{language === 'fr' ? 'Profit Net Mois' : 'Net Profit MTD'}</span></div>
+          <div className="flex items-center gap-2 text-primary-600"><PiggyBank size={18} /><span className="text-[13px] font-semibold">{language === 'fr' ? 'Profit Net Mois' : 'Net Profit MTD'}</span></div>
           <p className={`mt-2 text-2xl font-bold ${netProfit >= 0 ? 'text-success-700' : 'text-error-700'}`}>{formatMoney(netProfit, 'USD', language)}</p>
         </div>
         <div className="card p-5">
-          <div className="flex items-center gap-2 text-warning-600"><Wallet size={18} /><span className="text-xs font-semibold uppercase tracking-wide">MRR</span></div>
+          <div className="flex items-center gap-2 text-warning-600"><Wallet size={18} /><span className="text-[13px] font-semibold">MRR</span></div>
           <p className="mt-2 text-2xl font-bold text-ink-900">{formatMoney(finance?.subscription_mrr ?? 0, 'USD', language)}</p>
           <p className="text-xs text-ink-400">{language === 'fr' ? 'Abonnements actifs' : 'Active subscriptions'}</p>
         </div>
@@ -233,7 +191,7 @@ export function SuperAdminDashboard() {
           { label: t('superAdmin.salesCodes', language), icon: Receipt, to: '/super-admin/sales-codes' },
           { label: t('superAdmin.auditLog', language), icon: ScrollText, to: '/super-admin/audit' },
         ].map((q) => (
-          <button key={q.to} onClick={() => window.location.assign(q.to)} className="card p-4 text-left hover:shadow-card-hover transition-shadow">
+          <button key={q.to} onClick={() => window.location.assign(q.to)} className="card p-4 text-start hover:shadow-card-hover transition-shadow">
             <q.icon size={20} className="text-primary-600" />
             <p className="mt-2 font-semibold text-ink-800">{q.label}</p>
             {q.count !== undefined && <p className="text-xs text-ink-400">{q.count} {language === 'fr' ? 'actifs' : 'active'}</p>}
@@ -476,13 +434,13 @@ export function SuperAdminUsersPage() {
         <table className="w-full text-sm">
           <thead className="bg-ink-50">
             <tr>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.organization', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.plan', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.currency', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.country', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.trialEnds', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.created', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.status', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.organization', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.plan', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.currency', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.country', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.trialEnds', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.created', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.status', language)}</th>
               <th className="px-4 py-3 text-right font-semibold text-ink-700">{t('superAdmin.actions', language)}</th>
             </tr>
           </thead>
@@ -530,10 +488,10 @@ export function SuperAdminUsersPage() {
         <table className="w-full text-sm">
           <thead className="bg-ink-50">
             <tr>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.name', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.email', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.role', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.active', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.name', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.email', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.role', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.active', language)}</th>
             </tr>
           </thead>
           <tbody>
@@ -633,13 +591,13 @@ export function SuperAdminSubscriptionsPage() {
         <table className="w-full text-sm">
           <thead className="bg-ink-50">
             <tr>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.tenant', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.plan', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.status', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.amount', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.cycle', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.periodEnd', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.txRef', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.tenant', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.plan', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.status', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.amount', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.cycle', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.periodEnd', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.txRef', language)}</th>
             </tr>
           </thead>
           <tbody>
@@ -787,12 +745,12 @@ export function SuperAdminEmployeesPage() {
         <table className="w-full text-sm">
           <thead className="bg-ink-50">
             <tr>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.employee', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.period', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.targetRev', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.actualRev', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.targetDeals', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.activityScore', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.employee', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.period', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.targetRev', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.actualRev', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.targetDeals', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.activityScore', language)}</th>
             </tr>
           </thead>
           <tbody>
@@ -885,11 +843,11 @@ export function SuperAdminSalesCodesPage() {
         <table className="w-full text-sm">
           <thead className="bg-ink-50">
             <tr>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{language === 'fr' ? 'Code' : 'Code'}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.salesperson', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.uses', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.status', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.created', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{language === 'fr' ? 'Code' : 'Code'}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.salesperson', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.uses', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.status', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.created', language)}</th>
             </tr>
           </thead>
           <tbody>
@@ -961,7 +919,7 @@ export function SuperAdminPermissionsPage() {
               <button
                 key={r.id}
                 onClick={() => selectRole(r)}
-                className={`w-full text-left px-3 py-2 rounded-lg transition ${selectedRole?.id === r.id ? 'bg-primary-50 text-primary-700' : 'hover:bg-ink-50 text-ink-700'}`}
+                className={`w-full text-start px-3 py-2 rounded-lg transition ${selectedRole?.id === r.id ? 'bg-primary-50 text-primary-700' : 'hover:bg-ink-50 text-ink-700'}`}
               >
                 <p className="font-medium text-sm">{r.name}</p>
                 <p className="text-xs text-ink-400 capitalize">{r.scope} · {r.is_system ? (language === 'fr' ? 'Système' : 'System') : (language === 'fr' ? 'Personnalisé' : 'Custom')}</p>
@@ -981,7 +939,7 @@ export function SuperAdminPermissionsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-ink-100">
-                      <th className="text-left py-2 font-semibold text-ink-700">{language === 'fr' ? 'Module' : 'Module'}</th>
+                      <th className="text-start py-2 font-semibold text-ink-700">{language === 'fr' ? 'Module' : 'Module'}</th>
                       {ACTIONS.map((a) => <th key={a.key} className="px-3 py-2 text-center font-semibold text-ink-700">{a.label[language === 'fr' ? 'fr' : 'en']}</th>)}
                     </tr>
                   </thead>
@@ -1070,10 +1028,10 @@ export function SuperAdminAuditPage() {
         <table className="w-full text-sm">
           <thead className="bg-ink-50">
             <tr>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.timestamp', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.actor', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.action', language)}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{t('superAdmin.target', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.timestamp', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.actor', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.action', language)}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{t('superAdmin.target', language)}</th>
             </tr>
           </thead>
           <tbody>
@@ -1270,12 +1228,12 @@ export function SuperAdminStaffPage() {
         <table className="w-full text-sm">
           <thead className="bg-ink-50">
             <tr>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{fr ? 'Nom' : 'Name'}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{fr ? 'Email' : 'Email'}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{fr ? 'Rôle' : 'Role'}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{fr ? 'Département' : 'Department'}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{fr ? 'Statut' : 'Status'}</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-700">{fr ? 'Facturation' : 'Billing'}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{fr ? 'Nom' : 'Name'}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{fr ? 'Email' : 'Email'}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{fr ? 'Rôle' : 'Role'}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{fr ? 'Département' : 'Department'}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{fr ? 'Statut' : 'Status'}</th>
+              <th className="px-4 py-3 text-start font-semibold text-ink-700">{fr ? 'Facturation' : 'Billing'}</th>
               <th className="px-4 py-3 text-right font-semibold text-ink-700">{fr ? 'Actions' : 'Actions'}</th>
             </tr>
           </thead>
@@ -1450,21 +1408,21 @@ export function SuperAdminAccountingPage() {
       {/* Finance summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-5">
-          <div className="flex items-center gap-2 text-success-600"><ArrowUpRight size={20} /><span className="text-xs font-semibold uppercase tracking-wide">{fr ? 'Revenus du Mois' : 'Revenue MTD'}</span></div>
+          <div className="flex items-center gap-2 text-success-600"><ArrowUpRight size={20} /><span className="text-[13px] font-semibold">{fr ? 'Revenus du Mois' : 'Revenue MTD'}</span></div>
           <p className="mt-2 text-2xl font-bold text-ink-900">{formatMoney(finance?.revenue_mtd ?? 0, 'USD', language)}</p>
           <p className="text-xs text-ink-400">{finance?.revenue_count_mtd ?? 0} {fr ? 'entrées' : 'entries'}</p>
         </div>
         <div className="card p-5">
-          <div className="flex items-center gap-2 text-error-600"><ArrowDownRight size={20} /><span className="text-xs font-semibold uppercase tracking-wide">{fr ? 'Dépenses du Mois' : 'Expenses MTD'}</span></div>
+          <div className="flex items-center gap-2 text-error-600"><ArrowDownRight size={20} /><span className="text-[13px] font-semibold">{fr ? 'Dépenses du Mois' : 'Expenses MTD'}</span></div>
           <p className="mt-2 text-2xl font-bold text-ink-900">{formatMoney(finance?.expenses_mtd ?? 0, 'USD', language)}</p>
           <p className="text-xs text-ink-400">{finance?.expense_count_mtd ?? 0} {fr ? 'entrées' : 'entries'}</p>
         </div>
         <div className="card p-5">
-          <div className="flex items-center gap-2 text-primary-600"><PiggyBank size={20} /><span className="text-xs font-semibold uppercase tracking-wide">{fr ? 'Profit Net du Mois' : 'Net Profit MTD'}</span></div>
+          <div className="flex items-center gap-2 text-primary-600"><PiggyBank size={20} /><span className="text-[13px] font-semibold">{fr ? 'Profit Net du Mois' : 'Net Profit MTD'}</span></div>
           <p className={`mt-2 text-2xl font-bold ${netProfit >= 0 ? 'text-success-700' : 'text-error-700'}`}>{formatMoney(netProfit, 'USD', language)}</p>
         </div>
         <div className="card p-5">
-          <div className="flex items-center gap-2 text-accent-600"><Wallet size={20} /><span className="text-xs font-semibold uppercase tracking-wide">{fr ? 'Profit Net Total' : 'Total Net Profit'}</span></div>
+          <div className="flex items-center gap-2 text-accent-600"><Wallet size={20} /><span className="text-[13px] font-semibold">{fr ? 'Profit Net Total' : 'Total Net Profit'}</span></div>
           <p className={`mt-2 text-2xl font-bold ${netTotal >= 0 ? 'text-success-700' : 'text-error-700'}`}>{formatMoney(netTotal, 'USD', language)}</p>
         </div>
       </div>
@@ -1473,7 +1431,7 @@ export function SuperAdminAccountingPage() {
       <div className="card p-5 bg-gradient-to-r from-primary-50 to-accent-50 border-primary-200">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary-700">{fr ? 'Revenu Mensuel Récurrent (MRR)' : 'Monthly Recurring Revenue (MRR)'}</p>
+            <p className="text-[13px] font-semibold text-primary-700">{fr ? 'Revenu Mensuel Récurrent (MRR)' : 'Monthly Recurring Revenue (MRR)'}</p>
             <p className="mt-1 text-3xl font-bold text-primary-900">{formatMoney(finance?.subscription_mrr ?? 0, 'USD', language)}</p>
           </div>
           <div className="text-right">
@@ -1538,9 +1496,9 @@ export function SuperAdminAccountingPage() {
           <table className="w-full text-sm">
             <thead className="bg-ink-50">
               <tr>
-                <th className="px-3 py-2 text-left font-semibold text-ink-700">{fr ? 'Source' : 'Source'}</th>
-                <th className="px-3 py-2 text-left font-semibold text-ink-700">{fr ? 'Montant' : 'Amount'}</th>
-                <th className="px-3 py-2 text-left font-semibold text-ink-700">{fr ? 'Date' : 'Date'}</th>
+                <th className="px-3 py-2 text-start font-semibold text-ink-700">{fr ? 'Source' : 'Source'}</th>
+                <th className="px-3 py-2 text-start font-semibold text-ink-700">{fr ? 'Montant' : 'Amount'}</th>
+                <th className="px-3 py-2 text-start font-semibold text-ink-700">{fr ? 'Date' : 'Date'}</th>
                 <th className="px-3 py-2"></th>
               </tr>
             </thead>
@@ -1564,9 +1522,9 @@ export function SuperAdminAccountingPage() {
           <table className="w-full text-sm">
             <thead className="bg-ink-50">
               <tr>
-                <th className="px-3 py-2 text-left font-semibold text-ink-700">{fr ? 'Catégorie' : 'Category'}</th>
-                <th className="px-3 py-2 text-left font-semibold text-ink-700">{fr ? 'Montant' : 'Amount'}</th>
-                <th className="px-3 py-2 text-left font-semibold text-ink-700">{fr ? 'Date' : 'Date'}</th>
+                <th className="px-3 py-2 text-start font-semibold text-ink-700">{fr ? 'Catégorie' : 'Category'}</th>
+                <th className="px-3 py-2 text-start font-semibold text-ink-700">{fr ? 'Montant' : 'Amount'}</th>
+                <th className="px-3 py-2 text-start font-semibold text-ink-700">{fr ? 'Date' : 'Date'}</th>
                 <th className="px-3 py-2"></th>
               </tr>
             </thead>

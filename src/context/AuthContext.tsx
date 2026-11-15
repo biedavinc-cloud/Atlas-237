@@ -34,6 +34,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return (stored as Language) || 'en';
   });
 
+  // Keep <html lang> in sync so screen readers, hyphenation and the
+  // browser's translate prompt all match the language actually shown.
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
