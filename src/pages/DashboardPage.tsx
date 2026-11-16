@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   DollarSign, UserPlus, Handshake, AlertTriangle, Calendar, Receipt,
-  LifeBuoy, Bot, Clock, Sparkles, X, Activity as ActivityIcon, ArrowRight,
+  LifeBuoy, Bot, Clock, X, Activity as ActivityIcon, ArrowRight,
   CheckCircle2, Loader2, ChevronRight,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { t } from '@/lib/i18n';
 import { StatCard } from '@/components/ui';
 import { Loading } from '@/components/Loading';
+import { AtlasMark } from '@/components/AtlasMark';
 import type { AITask, Approval, Activity } from '@/types';
 
 interface DashboardStats {
@@ -128,7 +129,7 @@ export function DashboardPage() {
     setAiThinking(true);
     setAiReply(null);
     try {
-      const answer = await askAtlas(q, lang);
+      const answer = await askAtlas(q, lang, (soFar) => { setAiReply({ text: soFar }); setAiThinking(false); });
       setAiReply({ text: answer.text, route: answer.route });
     } catch {
       setAiReply({ text: t('dash.askFailed', lang) });
@@ -188,7 +189,7 @@ export function DashboardPage() {
               onSubmit={e => { e.preventDefault(); runCommand(); }}
               className="flex items-center gap-2 rounded-xl bg-white/[0.08] p-1.5 ring-1 ring-inset ring-white/15 focus-within:ring-white/40 transition-shadow"
             >
-              <Sparkles size={16} className="ms-2 flex-none text-primary-300" />
+              <AtlasMark size={26} busy={aiThinking} className="ms-1" />
               <input
                 className="min-w-0 flex-1 bg-transparent px-1 py-1.5 text-sm text-white placeholder-navy-300 focus:outline-none"
                 placeholder={t('dash.askPlaceholder', lang)}
@@ -210,10 +211,11 @@ export function DashboardPage() {
                 ))}
               </div>
             )}
-            {aiThinking && <p className="mt-2.5 text-sm text-navy-200" aria-live="polite">{t('dash.thinking', lang)}</p>}
+            {aiThinking && <p className="mt-2.5 flex items-center gap-2 text-sm text-navy-200" aria-live="polite"><span className="atlas-dots inline-flex gap-1" aria-hidden><span /><span /><span /></span>{t('dash.thinking', lang)}</p>}
             {aiReply && !aiThinking && (
               <div className="mt-2.5 flex items-start gap-3 rounded-xl bg-white px-4 py-3 text-sm text-ink-800 shadow-pop animate-scale-in" aria-live="polite">
-                <p className="flex-1 whitespace-pre-wrap">{aiReply.text}</p>
+                <AtlasMark size={26} label="Atlas" />
+                <p className="flex-1 whitespace-pre-wrap pt-0.5">{aiReply.text}</p>
                 <div className="flex flex-none items-center gap-1">
                   {aiReply.route && (
                     <Link to={aiReply.route} className="btn-ghost btn-sm text-primary-700">{t('common.view', lang)}</Link>

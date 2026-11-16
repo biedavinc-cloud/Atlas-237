@@ -25,7 +25,7 @@ const has = (q: string, ...keys: string[]) => keys.some((k) => q.includes(k));
  * UI. Prefixed with an explicit warning so it's never mistaken for either
  * a real AI answer or a keyword-matched one.
  */
-async function tryRealAI(question: string, lang: string): Promise<Answer | null> {
+async function tryRealAI(question: string, lang: string, onDelta?: (soFar: string) => void): Promise<Answer | null> {
   try {
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData.session) return null;
@@ -35,8 +35,38 @@ async function tryRealAI(question: string, lang: string): Promise<Answer | null>
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${sessionData.session.access_token}`,
       },
-      body: JSON.stringify({ question, language: lang }),
+      body: JSON.stringify({ question, language: lang, stream: Boolean(onDelta) }),
     });
+
+    // Streamed answer: words appear as the model writes them.
+    if (res.ok && onDelta && res.body && (res.headers.get('content-type') || '').includes('text/event-stream')) {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      let text = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx;
+        while ((idx = buf.indexOf('\n\n')) >= 0) {
+          const chunk = buf.slice(0, idx);
+          buf = buf.slice(idx + 2);
+          const line = chunk.split('\n').find((l) => l.startsWith('data:'));
+          if (!line) continue;
+          try {
+            const evt = JSON.parse(line.slice(5).trim());
+            if (evt.t) { text += evt.t; onDelta(text); }
+            if (evt.error) {
+              console.error('[askAtlas] stream error:', evt.error);
+              if (!text) return { text: lang === 'fr' ? `⚠️ IA indisponible : ${evt.error}` : `⚠️ AI unavailable: ${evt.error}` };
+            }
+          } catch { /* partial line */ }
+        }
+      }
+      return text ? { text } : null;
+    }
+
     const result = await res.json().catch(() => null);
     if (res.ok && result?.ok && result.text) {
       return { text: result.text };
@@ -52,8 +82,8 @@ async function tryRealAI(question: string, lang: string): Promise<Answer | null>
   }
 }
 
-export async function askAtlas(question: string, lang: 'en' | 'fr' | 'es' | 'pt' | 'ar' = 'fr'): Promise<Answer> {
-  const aiAnswer = await tryRealAI(question, lang);
+export async function askAtlas(question: string, lang: 'en' | 'fr' | 'es' | 'pt' | 'ar' = 'fr', onDelta?: (soFar: string) => void): Promise<Answer> {
+  const aiAnswer = await tryRealAI(question, lang, onDelta);
   if (aiAnswer) return aiAnswer;
 
   const q = norm(question);

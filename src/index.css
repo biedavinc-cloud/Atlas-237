@@ -500,3 +500,37 @@
   .lp-cta { translate: none; }
   .lp-cta:hover::after { transition: none; transform: translateX(-120%); }
 }
+
+/* Atlas logo mark: avatar + loader (ring turns around the logo) */
+.atlas-mark { position: relative; display: inline-flex; flex: none; align-items: center; justify-content: center; border-radius: 9999px; background: #fff; box-shadow: 0 0 0 1px rgb(13 28 51 / 0.08), 0 2px 6px -2px rgb(13 28 51 / 0.18); }
+.atlas-mark > img { width: 72%; height: 72%; object-fit: contain; position: relative; }
+.atlas-mark-ring { position: absolute; inset: -3px; border-radius: inherit; padding: 2px; opacity: 0; background: conic-gradient(from 0deg, transparent 0 55%, #1b96ff 75%, #4bca81 90%, transparent 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; transition: opacity .2s; }
+.atlas-mark.is-busy .atlas-mark-ring { opacity: 1; animation: atlas-spin .9s linear infinite; }
+@keyframes atlas-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .atlas-mark.is-busy .atlas-mark-ring { animation: none; background: conic-gradient(#1b96ff, #4bca81, #1b96ff); }
+}
+/* Ask Atlas: dots while waiting for the first words */
+.atlas-dots span { display: inline-block; width: 6px; height: 6px; border-radius: 9999px; background: currentColor; opacity: .35; animation: atlas-dot 1s ease-in-out infinite; }
+.atlas-dots span:nth-child(2) { animation-delay: .15s; }
+.atlas-dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes atlas-dot { 0%, 100% { opacity: .25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .atlas-dots span { animation: none; opacity: .6; } }
+
+/* Rolling word in the hero (WordRotator) */
+.lp-rotator { position: relative; display: inline-block; vertical-align: bottom; height: 1.12em; overflow: hidden; transition: width .5s cubic-bezier(.16, 1, .3, 1); white-space: nowrap; text-align: start; }
+.lp-rotator-measure { position: absolute; visibility: hidden; white-space: nowrap; pointer-events: none; }
+.lp-rotator-measure > span { position: absolute; left: 0; top: 0; padding-inline-end: .02em; }
+.lp-rotator-word { position: absolute; left: 0; top: 0; line-height: 1.12em; padding-inline-end: .02em;
+  background: linear-gradient(100deg, #0176d3 0%, #1b96ff 45%, #2bb673 85%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+[dir='rtl'] .lp-rotator-word, [dir='rtl'] .lp-rotator-measure > span { left: auto; right: 0; }
+.lp-rotator-word.is-in { animation: lp-rot-in .7s cubic-bezier(.16, 1, .3, 1) both; }
+.lp-rotator-word.is-out { animation: lp-rot-out .55s cubic-bezier(.7, 0, .84, 0) both; }
+@keyframes lp-rot-in { from { transform: translateY(105%); opacity: 0; filter: blur(4px); } to { transform: none; opacity: 1; filter: none; } }
+@keyframes lp-rot-out { to { transform: translateY(-105%); opacity: 0; filter: blur(4px); } }
+@media (prefers-reduced-motion: reduce) {
+  .lp-rotator { transition: none; }
+  .lp-rotator-word.is-in, .lp-rotator-word.is-out { animation: none; }
+  .lp-rotator-word.is-out { display: none; }
+}

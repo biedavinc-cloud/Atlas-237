@@ -17,6 +17,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { UpgradeGate } from '@/components/UpgradeGate';
 import { BrandLogo } from '@/components/BrandLogos';
 import { Loading } from '@/components/Loading';
+import { AtlasMark } from '@/components/AtlasMark';
 import { COUNTRIES, CURRENCIES, TIMEZONES } from '@/lib/i18n-countries';
 import { fetchRoles, createRole, deleteRole, setRolePermissions, fetchPermissions, MODULES, ACTIONS, type RbacRole, type PermissionModule, type PermissionAction } from '@/lib/rbac';
 import { usePlanAccess, PLAN_PRICES } from '@/lib/plans';
@@ -1236,9 +1237,10 @@ export function AskAtlasPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const lang = language;
-  const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string; route?: string }[]>([]);
+  const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string; route?: string; live?: boolean }[]>([]);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
+  const [streaming, setStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -1271,13 +1273,28 @@ export function AskAtlasPage() {
     setMessages((prev) => [...prev, { role: 'user', text: value }]);
     setInput('');
     setThinking(true);
+    setStreaming(false);
+    // Words are shown as the model writes them (streamed answer).
+    const onDelta = (soFar: string) => {
+      setStreaming(true);
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === 'ai' && last.live) return [...prev.slice(0, -1), { ...last, text: soFar }];
+        return [...prev, { role: 'ai', text: soFar, live: true }];
+      });
+    };
     try {
-      const answer = await askAtlas(value, lang);
-      setMessages((prev) => [...prev, { role: 'ai', text: answer.text, route: answer.route }]);
+      const answer = await askAtlas(value, lang, onDelta);
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        const final = { role: 'ai' as const, text: answer.text, route: answer.route };
+        return last?.role === 'ai' && last.live ? [...prev.slice(0, -1), final] : [...prev, final];
+      });
     } catch {
-      setMessages((prev) => [...prev, { role: 'ai', text: t('dash.askFailed', lang) }]);
+      setMessages((prev) => [...prev.filter((m) => !m.live), { role: 'ai', text: t('dash.askFailed', lang) }]);
     } finally {
       setThinking(false);
+      setStreaming(false);
     }
   }
 
@@ -1298,9 +1315,7 @@ export function AskAtlasPage() {
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="relative mb-5">
                 <div className="absolute -inset-4 rounded-full contour-ink" aria-hidden />
-                <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-navy-900 text-white shadow-card">
-                  <Sparkles size={24} />
-                </div>
+                <AtlasMark size={60} className="relative" label="Atlas" />
               </div>
               <h2 className="text-lg font-bold text-ink-900">{t('dash.askAtlas', lang)}</h2>
               <p className="text-sm text-ink-500 mt-1 max-w-md">{t('dash.askPlaceholder', lang)}</p>
@@ -1314,9 +1329,11 @@ export function AskAtlasPage() {
             </div>
           ) : messages.map((msg, i) => (
             <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-              <div className={`flex h-8 w-8 flex-none items-center justify-center rounded-full text-xs font-bold ${msg.role === 'user' ? 'bg-primary-600 text-white' : 'bg-navy-900 text-white'}`}>
-                {msg.role === 'user' ? initial : <Sparkles size={14} />}
-              </div>
+              {msg.role === 'user' ? (
+                <div className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-primary-600 text-xs font-bold text-white">{initial}</div>
+              ) : (
+                <AtlasMark size={32} busy={Boolean(msg.live)} label="Atlas" />
+              )}
               <div className={`max-w-[80%] sm:max-w-xl rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'bg-primary-600 text-white rounded-se-md' : 'bg-ink-50 text-ink-800 ring-1 ring-inset ring-ink-200/70 rounded-ss-md'}`}>
                 {msg.text}
                 {msg.route && (
@@ -1327,10 +1344,11 @@ export function AskAtlasPage() {
               </div>
             </div>
           ))}
-          {thinking && (
+          {thinking && !streaming && (
             <div className="flex gap-3">
-              <div className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-navy-900 text-white"><Sparkles size={14} className="animate-pulse" /></div>
-              <div className="rounded-2xl rounded-ss-md px-4 py-2.5 text-sm bg-ink-50 text-ink-500 ring-1 ring-inset ring-ink-200/70">
+              <AtlasMark size={32} busy label="Atlas" />
+              <div className="flex items-center gap-2.5 rounded-2xl rounded-ss-md bg-ink-50 px-4 py-2.5 text-sm text-ink-500 ring-1 ring-inset ring-ink-200/70">
+                <span className="atlas-dots inline-flex gap-1 text-primary-600" aria-hidden><span /><span /><span /></span>
                 {t('dash.thinking', lang)}
               </div>
             </div>

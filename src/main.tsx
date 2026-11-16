@@ -30,3 +30,11 @@ createRoot(document.getElementById('root')!).render(
     </Sentry.ErrorBoundary>
   </StrictMode>
 );
+
+// Hide the logo boot screen (index.html) once React has painted.
+requestAnimationFrame(() => {
+  const boot = document.getElementById('boot');
+  if (!boot) return;
+  boot.classList.add('done');
+  window.setTimeout(() => boot.remove(), 300);
+});

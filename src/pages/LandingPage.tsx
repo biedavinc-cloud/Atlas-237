@@ -26,6 +26,7 @@ import { useScrollReveal } from '@/lib/useScrollReveal';
 import { useLandingMotion } from '@/lib/landingMotion';
 import { HeroPreview } from '@/components/landing/HeroPreview';
 import { SplitReveal } from '@/components/landing/SplitReveal';
+import { WordRotator } from '@/components/landing/WordRotator';
 import { InstallAppButton } from '@/components/PwaPrompts';
 
 /**
@@ -225,15 +226,22 @@ export function LandingPage() {
             <span className="lp-badge animate-fade-in-up inline-flex items-center gap-2 rounded-full border border-transparent bg-white/80 px-4 py-1.5 text-xs font-semibold text-primary-700 shadow-sm backdrop-blur-sm">
               <Zap size={13} className="text-primary-600" /> {lang === 'fr' ? 'Propulsé par l’IA agentique' : 'Powered by agentic AI'}
             </span>
-            <SplitReveal
-              as="h1"
-              trigger="load"
-              delay={120}
-              className="mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-ink-950 sm:text-6xl"
-              parts={lang === 'fr'
-                ? [{ text: 'Le CRM agentique conçu pour' }, { text: 'l’Afrique et le Golfe', className: 'lp-accent' }]
-                : [{ text: 'The agentic CRM built for' }, { text: 'Africa and the Gulf', className: 'lp-accent' }]}
-            />
+            <h1 className="mt-6 text-4xl font-bold leading-[1.1] tracking-tight text-ink-950 sm:text-6xl">
+              <span className="sr-only">{lang === 'fr' ? 'Le CRM en ligne conçu en Afrique, prêt pour le monde' : 'The online CRM built in Africa, ready for the world'}</span>
+              <span aria-hidden="true">
+                <SplitReveal as="span" trigger="load" delay={120} className="block" parts={lang === 'fr' ? 'Le CRM conçu en Afrique,' : 'The CRM built in Africa,'} />
+                <span className="block">
+                  <SplitReveal as="span" trigger="load" delay={420} parts={lang === 'fr' ? 'prêt pour' : 'ready for'} />{' '}
+                  <span className="animate-fade-in-up inline-block" style={{ animationDelay: '0.6s' }}>
+                    <WordRotator
+                      words={lang === 'fr'
+                        ? ['le monde', 'Douala', 'Abidjan', 'Lagos', 'Dakar', 'Nairobi', 'Dubaï', 'Paris']
+                        : ['the world', 'Lagos', 'Nairobi', 'Accra', 'Kigali', 'Dubai', 'London', 'New York']}
+                    />
+                  </span>
+                </span>
+              </span>
+            </h1>
             <p className="animate-fade-in-up mx-auto mt-6 max-w-2xl text-lg leading-8 text-ink-600" style={{ animationDelay: '0.1s' }}>
               {lang === 'fr'
                 ? 'Là où les personnes, les agents, les applications et les données se rejoignent sur une plateforme intégrée et fiable, qui travaille au cœur des systèmes qui font tourner votre entreprise.'
@@ -665,7 +673,7 @@ export function LandingPage() {
                 <Logo size={36} />
                 <span className="text-lg font-bold text-white">Atlas CRM</span>
               </Link>
-              <p className="mt-4 text-sm leading-6 text-ink-400">{lang === 'fr' ? 'Le CRM agentique de Liafrik Tech. Ventes, service, marketing et IA réunis sur un seul cloud, pensé à Dubaï et Yaoundé.' : 'Liafrik Tech’s agentic CRM. Sales, service, marketing, and AI united on a single cloud — for Dubai, Africa, and the world.'}</p>
+              <p className="mt-4 text-sm leading-6 text-ink-400">{lang === 'fr' ? 'Le CRM agentique de Liafrik Tech. Ventes, service, marketing et IA réunis sur un seul cloud. Conçu en Afrique, prêt pour le monde.' : 'Liafrik Tech’s agentic CRM. Sales, service, marketing and AI on a single cloud. Built in Africa, ready for the world.'}</p>
             </div>
             {[
               { h: lang === 'fr' ? 'Produit' : 'Product', links: [

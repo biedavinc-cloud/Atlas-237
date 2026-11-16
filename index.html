@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="Atlas CRM — La plateforme CRM cloud propulsée par l'IA. Ventes, service client et intelligence artificielle unifiés pour Dubai, l'Afrique et le monde." />
+    <meta name="description" content="Atlas CRM, le CRM en ligne conçu en Afrique et prêt pour le monde : ventes, pipeline, factures en FCFA, Mobile Money, WhatsApp et IA. 14 jours gratuits, sans carte." />
     <meta name="theme-color" content="#0176d3" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
@@ -17,7 +17,7 @@
     <meta name="application-name" content="Atlas CRM" />
     <link rel="preload" href="/fonts/GlacialIndifference-Regular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/GlacialIndifference-Bold.woff2" as="font" type="font/woff2" crossorigin />
-    <title>Atlas CRM — CRM Cloud propulsé par l'IA</title>
+    <title>Atlas CRM — CRM en ligne avec IA, conçu en Afrique · Essai gratuit</title>
     <style>
       body { margin: 0; font-family: "Glacial Indifference", system-ui, sans-serif; color: #0f172a; }
       ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -26,15 +26,19 @@
     </style>
     <link rel="canonical" href="https://atlas.liafrik.com/">
     <meta property="og:url" content="https://atlas.liafrik.com/">
-    <meta property="og:title" content="Atlas CRM — CRM Cloud propulsé par l'IA">
-    <meta property="og:description" content="Atlas CRM — La plateforme CRM cloud propulsée par l'IA. Ventes, service client et intelligence artificielle unifiés pour Dubai, l'Afrique et le monde.">
+    <meta property="og:title" content="Atlas CRM — CRM en ligne avec IA, conçu en Afrique · Essai gratuit">
+    <meta property="og:description" content="Atlas CRM, le CRM en ligne conçu en Afrique et prêt pour le monde : ventes, pipeline, factures en FCFA, Mobile Money, WhatsApp et IA. 14 jours gratuits, sans carte.">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Atlas CRM">
-    <meta property="og:image" content="/branding/atlas-logo.png">
+    <meta property="og:image" content="https://atlas.liafrik.com/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:locale:alternate" content="en_US">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Atlas CRM — CRM Cloud propulsé par l'IA">
-    <meta name="twitter:description" content="Atlas CRM — La plateforme CRM cloud propulsée par l'IA. Ventes, service client et intelligence artificielle unifiés pour Dubai, l'Afrique et le monde.">
-    <meta name="twitter:image" content="/branding/atlas-logo.png">
+    <meta name="twitter:title" content="Atlas CRM — CRM en ligne avec IA, conçu en Afrique · Essai gratuit">
+    <meta name="twitter:description" content="Atlas CRM, le CRM en ligne conçu en Afrique et prêt pour le monde : ventes, pipeline, factures en FCFA, Mobile Money, WhatsApp et IA. 14 jours gratuits, sans carte.">
+    <meta name="twitter:image" content="https://atlas.liafrik.com/og-image.png">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -43,7 +47,12 @@
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Web",
       "url": "https://atlas.liafrik.com/",
-      "description": "Atlas CRM is an AI-powered cloud CRM platform unifying sales, customer service, marketing, and AI automation for businesses in Dubai, Africa, and worldwide.",
+      "description": "Atlas CRM is an online CRM with built-in AI, built in Africa and ready for the world: contacts, sales pipeline, quotes and invoices (FCFA and 50+ currencies), Mobile Money payment links, WhatsApp and SMS, support tickets, workflows and a public API.",
+      "inLanguage": ["fr", "en"],
+      "availableLanguage": ["French", "English", "Spanish", "Portuguese", "Arabic"],
+      "areaServed": "Worldwide",
+      "screenshot": "https://atlas.liafrik.com/screenshots/desktop-pipeline.png",
+      "featureList": ["Contacts and companies", "Kanban sales pipeline", "Quotes and invoices", "Mobile Money and card payment links", "WhatsApp and SMS", "Support tickets with SLA", "Workflows", "Ask Atlas AI assistant", "Public REST API and webhooks", "Installable web app (PWA)"],
       "offers": {
         "@type": "AggregateOffer",
         "priceCurrency": "USD",
@@ -70,8 +79,29 @@
       }
     }
     </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Atlas CRM",
+      "alternateName": ["Atlas", "Atlas CRM by Liafrik"],
+      "url": "https://atlas.liafrik.com/",
+      "inLanguage": "fr",
+      "publisher": { "@type": "Organization", "name": "Liafrik Tech", "url": "https://liafrik.com", "logo": "https://atlas.liafrik.com/branding/atlas-logo.png" }
+    }
+    </script>
+    <style>
+      #boot { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background: #f4f6f9; transition: opacity .25s ease; }
+      #boot.done { opacity: 0; pointer-events: none; }
+      #boot .m { position: relative; width: 64px; height: 64px; border-radius: 9999px; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 1px rgba(13,28,51,.08), 0 6px 18px -8px rgba(13,28,51,.3); }
+      #boot .m img { width: 72%; height: 72%; object-fit: contain; }
+      #boot .r { position: absolute; inset: -4px; border-radius: 9999px; padding: 2px; background: conic-gradient(from 0deg, transparent 0 55%, #1b96ff 75%, #4bca81 90%, transparent 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: bootspin .9s linear infinite; }
+      @keyframes bootspin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { #boot .r { animation: none; } }
+    </style>
 </head>
   <body>
+    <div id="boot" role="status" aria-label="Atlas CRM"><div class="m"><span class="r"></span><img src="/branding/atlas-logo.png" alt="" width="46" height="46"></div></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

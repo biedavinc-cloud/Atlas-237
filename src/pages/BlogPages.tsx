@@ -149,7 +149,7 @@ function BlogChrome({ lang, children, path }: { lang: Lang; children: ReactNode;
           <div>
             <span className="inline-flex rounded-lg bg-white px-3 py-2"><img src="/brands/liafrik-logo.png" alt="Liafrik" className="h-8 w-auto" loading="lazy" /></span>
             <p className="mt-3 text-base font-bold text-white">Liafrik Tech</p>
-            <p className="mt-1 text-sm">{fr ? 'Des logiciels pour l’Afrique et le Golfe' : 'Software for Africa and the Gulf'} · {fr ? 'Dubaï – Yaoundé' : 'Dubai – Yaoundé'}</p>
+            <p className="mt-1 text-sm">{fr ? 'Des logiciels conçus en Afrique, prêts pour le monde' : 'Software built in Africa, ready for the world'} · {fr ? 'Dubaï – Yaoundé' : 'Dubai – Yaoundé'}</p>
           </div>
           <div className="grid grid-cols-2 gap-6 text-sm sm:grid-cols-3">
             <div className="space-y-2">
@@ -199,7 +199,7 @@ export function BlogIndexPage({ lang: forced = 'fr' }: { lang?: Language }) {
   const [params, setParams] = useSearchParams();
   useHreflangLinks('/blog');
   useMeta(fr ? 'Blog Liafrik Tech — Atlas, POS, Sukulu, Zanldo' : 'Liafrik Tech blog — Atlas, POS, Sukulu, Zanldo',
-    fr ? 'Articles sur les produits Liafrik : Atlas CRM, la caisse POS, la plateforme scolaire Sukulu et la marketplace Zanldo, pour l’Afrique et le Golfe.' : 'Articles on Liafrik products: Atlas CRM, the POS till, the Sukulu school platform and the Zanldo marketplace, for Africa and the Gulf.');
+    fr ? 'Articles sur les produits Liafrik : Atlas CRM, la caisse POS, la plateforme scolaire Sukulu et la marketplace Zanldo, conçus en Afrique.' : 'Articles on Liafrik products: Atlas CRM, the POS till, the Sukulu school platform and the Zanldo marketplace, built in Africa.');
 
   const filter = (params.get('product') as Product | null) || null;
   const sorted = useMemo(() => [...POSTS].sort((a, b) => b.date.localeCompare(a.date)), []);
