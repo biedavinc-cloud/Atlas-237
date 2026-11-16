@@ -163,11 +163,11 @@ export function InvoicesPage() {
       emptyIcon={<Receipt size={26} />}
       emptyTitle={t('empty.noInvoices', language)}
       emptyDescription={t('empty.noInvoicesDesc', language)}
-      relations="*, contact:contacts(first_name,last_name,email), company:companies(name)"
+      relations="*, contact:contacts(first_name,last_name), company:companies(name)"
       orderBy="created_at"
       rowLink={(r) => `/app/invoices/${r.id}`}
       rowActions={(row) => row.payment_status === 'paid' ? null : (
-        <QuickPaymentLinkButton amount={Number(row.amount_due ?? row.total) || 0} currency={row.currency || orgCurrency} email={row.contact?.email} label={row.invoice_number} />
+        <QuickPaymentLinkButton amount={Number(row.amount_due ?? row.total) || 0} currency={row.currency || orgCurrency} contactId={row.contact_id} label={row.invoice_number} />
       )}
     />
   );
@@ -294,12 +294,12 @@ export function SupportPage() {
       emptyIcon={<LifeBuoy size={28} />}
       emptyTitle={t('empty.noTickets', language)}
       emptyDescription={t('empty.noTicketsDesc', language)}
-      relations="*, contact:contacts(*), company:companies(*)"
+      relations="*, contact:contacts(id,first_name,last_name), company:companies(*)"
       orderBy="created_at"
       rowActions={(row, reload) => (
         <FreshdeskEscalateButton
           ticketId={row.id} ticketNumber={row.ticket_number} subject={row.subject} description={row.description}
-          email={row.contact?.email} internalNotes={row.internal_notes} onDone={reload}
+          contactId={row.contact_id} internalNotes={row.internal_notes} onDone={reload}
         />
       )}
     />

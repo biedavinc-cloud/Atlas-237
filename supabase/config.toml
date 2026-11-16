@@ -33,3 +33,12 @@ verify_jwt = false
 # (hashed lookup in api_keys), not a Supabase JWT.
 [functions.public-api]
 verify_jwt = false
+
+# Outside platforms (trading back office, shops, Aircall/Ringover, Twilio
+# recording callback) call this with an atlas_ek_ key or a signed URL, never a JWT.
+[functions.events-ingest]
+verify_jwt = false
+
+# Called by the Cloudflare Email Worker with the shared INBOUND_EMAIL_SECRET.
+[functions.email-inbound]
+verify_jwt = false

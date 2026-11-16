@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
 import {
   ShieldCheck, Users, Building2, CreditCard,
-  Receipt, ScrollText, Plus, Trash2, Ban, CheckCircle2, Loader2,
+  Receipt, Plus, Trash2, Ban, CheckCircle2, Loader2,
   AlertTriangle, TrendingUp, DollarSign, Activity, Search, CalendarPlus,
   Briefcase, Wallet, PiggyBank, ArrowUpRight, ArrowDownRight,
   UserPlus, Pencil, X, Calendar, KeyRound,

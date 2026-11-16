@@ -6,7 +6,7 @@ import {
   Brain, BookOpen, CheckSquare, BarChart3, LayoutGrid, Lightbulb,
   UserCog, UsersRound, ShieldCheck, Store, Plug, Webhook, Bell,
   ScrollText, Settings, Wallet, Gauge, Sparkles, Briefcase, ListChecks,
-  KeyRound,
+  KeyRound, Radio, Star, Shuffle, Trophy, SlidersHorizontal,
 } from 'lucide-react';
 
 /**
@@ -51,6 +51,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/app/activities', labelKey: 'nav.activities', icon: Activity, keywords: 'task tâche call appel meeting' },
       { to: '/app/tasks', labelKey: 'nav.tasks', icon: ListChecks, keywords: 'todo to-do tâche task à faire overdue retard' },
       { to: '/app/calendar', labelKey: 'nav.calendar', icon: Calendar, keywords: 'agenda planning rendez-vous' },
+      { to: '/app/live', labelKey: 'nav.liveActivity', icon: Radio, keywords: 'live direct trading deposit dépôt events événements webhook zanldo aircall ringover temps réel' },
+      { to: '/app/reviews', labelKey: 'nav.reviews', icon: Star, keywords: 'avis review rating note satisfaction' },
     ],
   },
   {
@@ -93,6 +95,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/app/employees', labelKey: 'nav.employees', icon: UserCog, keywords: 'staff employé collaborateur user utilisateur' },
       { to: '/app/teams', labelKey: 'nav.teams', icon: UsersRound, keywords: 'équipe group' },
       { to: '/app/permissions', labelKey: 'nav.permissions', icon: ShieldCheck, keywords: 'role rôle rbac access accès' },
+      { to: '/app/distribution', labelKey: 'nav.distribution', icon: Shuffle, keywords: 'distribuer assign attribuer leads portefeuille portfolio round robin import' },
+      { to: '/app/performance', labelKey: 'nav.performance', icon: Trophy, keywords: 'performance kpi agent appels calls écouter listen recording enregistrement qc' },
     ],
   },
   {
@@ -110,6 +114,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: '/app/notifications', labelKey: 'nav.notifications', icon: Bell, keywords: 'alert alerte' },
       { to: '/app/audit-log', labelKey: 'nav.auditLog', icon: ScrollText, keywords: 'audit journal log history historique' },
+      { to: '/app/workspace', labelKey: 'nav.workspace', icon: SlidersHorizontal, keywords: 'masquer mask pii portefeuille portfolio secteur industry champs fields sous-domaine subdomain adresse' },
       { to: '/app/settings', labelKey: 'nav.settings', icon: Settings, keywords: 'paramètres preferences organisation profile profil branding' },
       { to: '/app/billing', labelKey: 'nav.billing', icon: CreditCard, keywords: 'plan subscription abonnement facturation upgrade' },
       { to: '/app/usage', labelKey: 'nav.usage', icon: Gauge, keywords: 'utilisation quota limits limites' },

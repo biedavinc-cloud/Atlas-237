@@ -9,6 +9,9 @@ interface QuickMessageButtonProps {
   phone?: string | null;
   /** For context in the modal title only. */
   name?: string | null;
+  /** The record the number belongs to: lets the server use the real number
+   *  when it is hidden from this user. */
+  record?: { table: 'contacts' | 'leads'; id: string };
 }
 
 /**
@@ -19,7 +22,7 @@ interface QuickMessageButtonProps {
  * and (b) have a phone number to send to. Calls the same real
  * integration-action edge function Workflows use — no separate code path.
  */
-export function QuickMessageButton({ phone, name }: QuickMessageButtonProps) {
+export function QuickMessageButton({ phone, name, record }: QuickMessageButtonProps) {
   const { language } = useAuth();
   const lang = language;
   const { connected } = useConnectedProviders();
@@ -38,7 +41,9 @@ export function QuickMessageButton({ phone, name }: QuickMessageButtonProps) {
     setSending(true);
     setResult(null);
     const action = channel === 'whatsapp' ? 'send_whatsapp' : 'send_sms';
-    const params = channel === 'whatsapp' ? { to: phone, message } : { to: phone, message };
+    const masked = Boolean(phone && phone.includes('•'));
+    const params: Record<string, unknown> = { to: masked ? undefined : phone, message };
+    if (record) params._record = record;
     const res = await callIntegrationAction(action, params);
     setResult(res);
     setSending(false);

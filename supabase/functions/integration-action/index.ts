@@ -1,18 +1,11 @@
+import { hmacHex } from "../_shared/sign.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-// Real outbound calls to a small, deliberately-scoped set of connected
-// marketplace apps. Everything else in the marketplace (Slack, Gmail,
-// Shopify, HubSpot, the ~50 others) is still stored-credentials-only — see
-// AGENTS.md "Marketplace apps" section. These four were picked because
-// they're simple REST/HTTP APIs with no OAuth app registration required:
-// the org just pastes a token/URL, and this function can call the real
-// provider immediately.
-//
-// Auth model: uses the caller's own JWT (not the service role), so the
-// `integrations` select below is naturally scoped to their org by RLS —
-// same pattern as send-ticket-notification. This function only ever reads
-// an integration row already saved by the org itself; it never writes.
+// Real calls to the org's own connected apps (messages, e-mail, payment
+// links, calls, CRM/shop sync). Uses the caller's JWT, so the integrations
+// read is scoped to their org by RLS; run-scheduled-workflows may call with
+// the service role and an explicit org_id. See AGENTS.md "Marketplace".
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +13,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-type ActionResult = { ok: boolean; msg: string };
+type ActionResult = { ok: boolean; msg: string; url?: string };
+
+// Where a customer lands after paying a link (the org's own invoice page).
+const RETURN_URL = "https://atlas.liafrik.com/app/invoices";
+const FN_BASE = `${Deno.env.get("SUPABASE_URL")}/functions/v1`;
+
+// Currencies without minor units (amounts are sent as-is, not ×100).
+const ZERO_DECIMAL = new Set(["BIF", "CLP", "DJF", "GNF", "JPY", "KMF", "KRW", "MGA", "PYG", "RWF", "UGX", "VND", "VUV", "XAF", "XOF", "XPF"]);
+const minorUnits = (amount: number, currency: string) => ZERO_DECIMAL.has(currency.toUpperCase()) ? Math.round(amount) : Math.round(amount * 100);
 
 async function sendTelegram(config: Record<string, string>, params: Record<string, unknown>): Promise<ActionResult> {
   const chat_id = params.chat_id;
@@ -157,7 +158,7 @@ async function mollieCreatePayment(config: Record<string, string>, params: Recor
     body: JSON.stringify({
       amount: { currency: String(params.currency || "EUR"), value: Number(amount).toFixed(2) },
       description,
-      redirectUrl: params.redirect_url || "https://example.com/return",
+      redirectUrl: params.redirect_url || RETURN_URL,
     }),
   });
   const body = await res.json().catch(() => null);
@@ -177,8 +178,8 @@ async function cinetpayCreatePayment(config: Record<string, string>, params: Rec
       amount: Number(amount),
       currency: params.currency || "XOF",
       description: params.description || "Atlas payment",
-      notify_url: params.notify_url || "https://example.com/notify",
-      return_url: params.return_url || "https://example.com/return",
+      notify_url: params.notify_url || RETURN_URL,
+      return_url: params.return_url || RETURN_URL,
       channels: "ALL",
     }),
   });
@@ -196,8 +197,8 @@ async function waveCreateCheckout(config: Record<string, string>, params: Record
       amount: String(amount),
       currency: params.currency || "XOF",
       client_reference: params.client_reference || `wf-${Date.now()}`,
-      error_url: params.error_url || "https://example.com/error",
-      success_url: params.success_url || "https://example.com/success",
+      error_url: params.error_url || RETURN_URL,
+      success_url: params.success_url || RETURN_URL,
     }),
   });
   const body = await res.json().catch(() => null);
@@ -219,7 +220,7 @@ async function chapaInitialize(config: Record<string, string>, params: Record<st
       first_name: params.first_name || "",
       last_name: params.last_name || "",
       tx_ref,
-      return_url: params.return_url || "https://example.com/return",
+      return_url: params.return_url || RETURN_URL,
     }),
   });
   const body = await res.json().catch(() => null);
@@ -249,7 +250,7 @@ async function campayCollect(config: Record<string, string>, params: Record<stri
 async function shopifyCreateCustomer(config: Record<string, string>, params: Record<string, unknown>): Promise<ActionResult> {
   const email = params.email;
   if (!email) return { ok: false, msg: "Missing email" };
-  const res = await fetch(`https://${config.shop_domain}/admin/api/2024-01/customers.json`, {
+  const res = await fetch(`https://${config.shop_domain}/admin/api/2025-10/customers.json`, {
     method: "POST",
     headers: { "X-Shopify-Access-Token": config.access_token, "Content-Type": "application/json" },
     body: JSON.stringify({ customer: { email, first_name: params.first_name || "", last_name: params.last_name || "" } }),
@@ -271,6 +272,121 @@ async function woocommerceCreateCustomer(config: Record<string, string>, params:
   return { ok: res.ok, msg: res.ok ? `Customer #${body?.id} created` : (body?.message || `WooCommerce HTTP ${res.status}`) };
 }
 
+// ── Payment links on the org's own PSP accounts (invoice "payment link") ──
+
+async function paystackPaymentLink(config: Record<string, string>, params: Record<string, unknown>): Promise<ActionResult> {
+  const amount = Number(params.amount);
+  const email = params.email;
+  const currency = String(params.currency || "NGN").toUpperCase();
+  if (!amount || !email) return { ok: false, msg: "Missing amount or customer email" };
+  const res = await fetch("https://api.paystack.co/transaction/initialize", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${config.secret_key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email, currency,
+      amount: Math.round(amount * 100), // Paystack: always the subunit (kobo, pesewas, cents)
+      reference: `atl-${Date.now()}-${Math.floor(Math.random() * 1e4)}`,
+      callback_url: params.return_url || RETURN_URL,
+      metadata: { label: params.description || null, source: "atlas-crm" },
+    }),
+  });
+  const body = await res.json().catch(() => null);
+  const url = body?.data?.authorization_url;
+  return { ok: res.ok && body?.status === true && Boolean(url), url, msg: url ? `Payment link: ${url}` : (body?.message || `Paystack HTTP ${res.status}`) };
+}
+
+async function flutterwavePaymentLink(config: Record<string, string>, params: Record<string, unknown>): Promise<ActionResult> {
+  const amount = Number(params.amount);
+  const email = params.email;
+  if (!amount || !email) return { ok: false, msg: "Missing amount or customer email" };
+  const res = await fetch("https://api.flutterwave.com/v3/payments", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${config.secret_key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      tx_ref: `atl-${Date.now()}-${Math.floor(Math.random() * 1e4)}`,
+      amount, currency: String(params.currency || "USD").toUpperCase(),
+      redirect_url: params.return_url || RETURN_URL,
+      customer: { email, name: params.name || undefined },
+      customizations: { title: String(params.description || "Payment") },
+    }),
+  });
+  const body = await res.json().catch(() => null);
+  const url = body?.data?.link;
+  return { ok: res.ok && body?.status === "success" && Boolean(url), url, msg: url ? `Payment link: ${url}` : (body?.message || `Flutterwave HTTP ${res.status}`) };
+}
+
+async function stripePaymentLink(config: Record<string, string>, params: Record<string, unknown>): Promise<ActionResult> {
+  const amount = Number(params.amount);
+  const currency = String(params.currency || "USD").toUpperCase();
+  if (!amount) return { ok: false, msg: "Missing amount" };
+  const form = new URLSearchParams({
+    mode: "payment",
+    "line_items[0][quantity]": "1",
+    "line_items[0][price_data][currency]": currency.toLowerCase(),
+    "line_items[0][price_data][unit_amount]": String(minorUnits(amount, currency)),
+    "line_items[0][price_data][product_data][name]": String(params.description || "Invoice"),
+    success_url: String(params.return_url || RETURN_URL),
+    cancel_url: String(params.return_url || RETURN_URL),
+  });
+  if (params.email && !String(params.email).includes("•")) form.set("customer_email", String(params.email));
+  const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${config.secret_key}`, "Content-Type": "application/x-www-form-urlencoded" },
+    body: form,
+  });
+  const body = await res.json().catch(() => null);
+  return { ok: res.ok && Boolean(body?.url), url: body?.url, msg: body?.url ? `Payment link: ${body.url}` : (body?.error?.message || `Stripe HTTP ${res.status}`) };
+}
+
+// ── Calls ──
+
+/** Twilio bridge: rings the agent's phone, then dials the customer. The
+ *  agent never sees the customer's number; the call can be recorded and the
+ *  recording comes back to the contact's timeline through call-webhook. */
+async function twilioCall(config: Record<string, string>, params: Record<string, unknown>): Promise<ActionResult> {
+  const to = String(params.to || "");
+  const agent = String(params.agent_phone || "");
+  if (!to || !agent) return { ok: false, msg: !agent ? "Add your own phone number to your profile first (Settings → Profile)." : "This record has no phone number" };
+  const esc = (v: string) => v.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" }[c] as string));
+  const cb = params.callback_url ? ` record="record-from-answer-dual" recordingStatusCallback="${esc(String(params.callback_url))}" recordingStatusCallbackEvent="completed"` : "";
+  const twiml = `<Response><Dial callerId="${esc(config.from_number)}"${cb}><Number>${esc(to)}</Number></Dial></Response>`;
+  const sid = config.account_sid;
+  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Calls.json`, {
+    method: "POST",
+    headers: { Authorization: `Basic ${btoa(`${sid}:${config.auth_token}`)}`, "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ To: agent, From: config.from_number, Twiml: twiml }),
+  });
+  const body = await res.json().catch(() => null);
+  return { ok: res.ok, msg: res.ok ? "Your phone is ringing: pick up and Atlas connects the customer." : (body?.message || `Twilio HTTP ${res.status}`) };
+}
+
+/** Aircall: starts the call from the agent's Aircall app (agent matched by e-mail). */
+async function aircallCall(config: Record<string, string>, params: Record<string, unknown>): Promise<ActionResult> {
+  const to = String(params.to || "");
+  const agentEmail = String(params.agent_email || "").toLowerCase();
+  if (!to) return { ok: false, msg: "This record has no phone number" };
+  const auth = `Basic ${btoa(`${config.api_id || config.app_id}:${config.api_token}`)}`;
+  let user: { id: number; email: string } | undefined;
+  for (let page = 1; page <= 10 && !user; page++) {
+    const r = await fetch(`https://api.aircall.io/v1/users?per_page=50&page=${page}`, { headers: { Authorization: auth } });
+    if (!r.ok) return { ok: false, msg: `Aircall HTTP ${r.status}` };
+    const b = await r.json();
+    user = (b.users || []).find((u: { email: string }) => (u.email || "").toLowerCase() === agentEmail);
+    if (!b.meta?.next_page_link) break;
+  }
+  if (!user) return { ok: false, msg: `No Aircall user with the e-mail ${agentEmail}` };
+  const ur = await fetch(`https://api.aircall.io/v1/users/${user.id}`, { headers: { Authorization: auth } });
+  const ub = await ur.json().catch(() => null);
+  const numberId = ub?.user?.numbers?.[0]?.id;
+  if (!numberId) return { ok: false, msg: "Your Aircall user has no number assigned" };
+  const res = await fetch(`https://api.aircall.io/v1/users/${user.id}/calls`, {
+    method: "POST",
+    headers: { Authorization: auth, "Content-Type": "application/json" },
+    body: JSON.stringify({ number_id: numberId, to }),
+  });
+  return { ok: res.ok, msg: res.ok ? "Call started in your Aircall app." : `Aircall HTTP ${res.status}: ${(await res.text()).slice(0, 160)}` };
+}
+
 const ACTIONS: Record<string, { provider: string; run: (config: Record<string, string>, params: Record<string, unknown>) => Promise<ActionResult> }> = {
   send_telegram: { provider: "telegram", run: sendTelegram },
   send_sms: { provider: "twilio", run: sendSms },
@@ -286,6 +402,11 @@ const ACTIONS: Record<string, { provider: string; run: (config: Record<string, s
   campay_collect: { provider: "campay", run: campayCollect },
   shopify_create_customer: { provider: "shopify", run: shopifyCreateCustomer },
   woocommerce_create_customer: { provider: "woocommerce", run: woocommerceCreateCustomer },
+  paystack_payment_link: { provider: "paystack", run: paystackPaymentLink },
+  flutterwave_payment_link: { provider: "flutterwave", run: flutterwavePaymentLink },
+  stripe_payment_link: { provider: "stripe", run: stripePaymentLink },
+  twilio_call: { provider: "twilio", run: twilioCall },
+  aircall_call: { provider: "aircall", run: aircallCall },
 };
 
 Deno.serve(async (req: Request) => {
@@ -309,6 +430,8 @@ Deno.serve(async (req: Request) => {
 
     let supabaseClient;
     let callerOrgId: string | null = null;
+    let callerId: string | null = null;
+    let callerEmail: string | null = null;
     if (isInternalCall) {
       supabaseClient = createClient(Deno.env.get("SUPABASE_URL")!, serviceRoleKey);
     } else {
@@ -323,6 +446,8 @@ Deno.serve(async (req: Request) => {
           status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      callerId = userData.user.id;
+      callerEmail = userData.user.email ?? null;
     }
 
     const { action, params, integration_id, org_id } = await req.json();
@@ -377,7 +502,44 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const result = await handler.run(integ.config as Record<string, string>, params || {});
+    const p: Record<string, unknown> = { ...(params || {}) };
+    const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    // Masked contact details (workspace setting): the browser only sends the
+    // record id; the real e-mail/phone is read here, after checking the caller
+    // can see that record, and never sent back.
+    const rec = p._record as { table?: string; id?: string } | undefined;
+    delete p._record;
+    const scrub: string[] = [];
+    if (rec && !isInternalCall) {
+      if (rec.table !== "contacts" && rec.table !== "leads") return json({ ok: false, msg: "Unknown record type" }, 400);
+      const { data: visible } = await supabaseClient.from(rec.table === "contacts" ? "contacts_v" : "leads_v").select("id, org_id").eq("id", rec.id).maybeSingle();
+      if (!visible) return json({ ok: false, msg: "You do not have access to this record." }, 403);
+      const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceRoleKey);
+      const { data: real } = await admin.from(rec.table).select(rec.table === "contacts" ? "email, phone, whatsapp" : "email, phone").eq("id", rec.id).eq("org_id", visible.org_id).maybeSingle();
+      const r = (real || {}) as { email?: string; phone?: string; whatsapp?: string };
+      const masked = (v: unknown) => !v || String(v).includes("•");
+      [r.email, r.phone, r.whatsapp].forEach((v) => { if (v) scrub.push(String(v)); });
+      if (masked(p.email)) p.email = r.email;
+      if (action === "send_email" && masked(p.to)) p.to = r.email;
+      if (["send_sms", "twilio_call", "aircall_call"].includes(action) && masked(p.to)) p.to = r.phone;
+      if (action === "send_whatsapp" && masked(p.to)) p.to = r.whatsapp || r.phone;
+      if (masked(p.phone_number)) p.phone_number = r.phone;
+      if (action === "twilio_call" && p.record_call) {
+        const kind = rec.table === "contacts" ? "contact" : "lead";
+        const sig = await hmacHex(serviceRoleKey, `twilio|${visible.org_id}|${callerId}|${kind}|${rec.id}`);
+        p.callback_url = `${FN_BASE}/events-ingest?provider=twilio&org=${visible.org_id}&user=${callerId}&${kind}=${rec.id}&sig=${sig}`;
+      }
+    }
+    if (!isInternalCall && (action === "twilio_call" || action === "aircall_call")) {
+      const { data: me } = await supabaseClient.from("profiles").select("phone, email").eq("id", callerId).maybeSingle();
+      p.agent_phone = me?.phone || "";
+      p.agent_email = me?.email || callerEmail || "";
+    }
+
+    const result = await handler.run(integ.config as Record<string, string>, p);
+    // Never echo a resolved e-mail/phone back to a browser that may not see it.
+    for (const v of scrub) if (v.length > 3) result.msg = result.msg.split(v).join("•••");
     return new Response(JSON.stringify(result), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, msg: e instanceof Error ? e.message : String(e) }), {

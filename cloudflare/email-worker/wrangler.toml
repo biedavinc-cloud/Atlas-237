@@ -1,0 +1,6 @@
+name = "atlas-inbound-email"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+
+[vars]
+ATLAS_INBOUND_URL = "https://wmajotxkrbriudqrkuxr.supabase.co/functions/v1/email-inbound"

@@ -50,10 +50,13 @@ export function RecordAppActions({ person, target }: { person: Person; target: A
     setBusy(a.key);
     const first = person.first_name || '';
     const last = person.last_name || '';
-    const params: Record<string, string> =
-      a.key === 'hubspot' ? { email, firstname: first, lastname: last }
-      : a.key === 'mailchimp' ? { email, list_id: listId.trim() }
-      : { email, first_name: first, last_name: last };
+    // A masked address is replaced server side by the real one (record id).
+    const e = email.includes('•') ? undefined : email;
+    const params: Record<string, unknown> =
+      a.key === 'hubspot' ? { email: e, firstname: first, lastname: last }
+      : a.key === 'mailchimp' ? { email: e, list_id: listId.trim() }
+      : { email: e, first_name: first, last_name: last };
+    if (target.fk === 'contact_id' || target.fk === 'lead_id') params._record = { table: target.fk === 'contact_id' ? 'contacts' : 'leads', id: target.id };
     if (a.key === 'mailchimp') { try { localStorage.setItem(MAILCHIMP_LIST_KEY, listId.trim()); } catch { /* private mode */ } }
     const res = await callIntegrationAction(a.action, params);
     setResults(r => ({ ...r, [a.key]: res }));

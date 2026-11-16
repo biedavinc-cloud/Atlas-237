@@ -4,6 +4,7 @@ import { Globe, Loader2, ArrowRight, CheckCircle2, Eye, EyeOff, AlertCircle } fr
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { t, type Language } from '@/lib/i18n';
+import { useTenantHost } from '@/lib/tenantHost';
 import { Logo } from '@/components/Logo';
 import { BrandLogo } from '@/components/BrandLogos';
 import { useHreflangLinks } from '@/lib/useHreflang';
@@ -23,6 +24,7 @@ function GoogleIcon({ size = 18 }: { size?: number }) {
 }
 
 export function AuthPage() {
+  const tenant = useTenantHost();
   useHreflangLinks('/auth');
   // ?mode=signup (e.g. from the demo's "Create my account") opens sign-up directly.
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'reset'>(() => {
@@ -202,8 +204,8 @@ export function AuthPage() {
 
           <div className="relative">
             <Link to="/" className="flex items-center gap-2.5">
-              <Logo size={40} />
-              <span className="text-xl font-bold tracking-tight">Atlas CRM</span>
+              {tenant.profile?.logo_url ? <img src={tenant.profile.logo_url} alt="" className="h-10 w-auto rounded bg-white p-1" /> : <Logo size={40} />}
+              <span className="text-xl font-bold tracking-tight">{tenant.profile?.name || 'Atlas CRM'}</span>
             </Link>
           </div>
 
@@ -270,8 +272,8 @@ export function AuthPage() {
           <div className="-mx-5 -mt-8 mb-8 bg-gradient-to-r from-primary-600 to-primary-700 px-5 py-6 sm:-mx-10 sm:px-10 lg:hidden">
             <div className="flex items-start justify-between gap-3">
               <Link to="/" className="flex items-center gap-2.5">
-                <Logo size={36} />
-                <span className="text-lg font-bold tracking-tight text-white">Atlas CRM</span>
+                {tenant.profile?.logo_url ? <img src={tenant.profile.logo_url} alt="" className="h-9 w-auto rounded bg-white p-1" /> : <Logo size={36} />}
+                <span className="text-lg font-bold tracking-tight text-white">{tenant.profile?.name || 'Atlas CRM'}</span>
               </Link>
               <div className="flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1.5 text-sm text-white">
                 <Globe size={14} />

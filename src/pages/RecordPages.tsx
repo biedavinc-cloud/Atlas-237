@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowLeft, Mail, Phone, Edit2, Trash2, Building2, User, Handshake, Plus, FileText, Receipt,
+  ArrowLeft, Mail, Edit2, Trash2, Building2, User, Handshake, Plus, FileText, Receipt,
   LifeBuoy, ListChecks, MessageSquare, PhoneCall, CalendarClock, StickyNote, Loader2, Trophy, XCircle,
   Globe, MapPin, Shuffle, Check, ExternalLink, UserPlus,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { readTable } from '@/lib/pii';
 import { useAuth } from '@/context/AuthContext';
 import { tStatus, t } from '@/lib/i18n';
 import { Badge } from '@/components/ui';
@@ -13,6 +14,9 @@ import { Loading } from '@/components/Loading';
 import { RecordFormModal, type FormField } from '@/components/ListPage';
 import { QuickMessageButton } from '@/components/QuickMessageButton';
 import { QuickEmailButton } from '@/components/QuickEmailButton';
+import { QuickCallButton } from '@/components/QuickCallButton';
+import { useCustomFormFields } from '@/lib/workspace';
+import { CustomerLiveCard } from '@/components/CustomerLiveCard';
 import { RecordAppActions } from '@/components/RecordAppActions';
 import { ACTIVITY_EVENT } from '@/lib/activityLog';
 import { ConvertLeadModal } from '@/components/ConvertLeadModal';
@@ -31,7 +35,7 @@ function useRecord(table: string, id: string | undefined, select = '*') {
   const [missing, setMissing] = useState(false);
   const load = useCallback(async () => {
     if (!id) return;
-    const { data, error } = await supabase.from(table).select(select).eq('id', id).maybeSingle();
+    const { data, error } = await supabase.from(readTable(table)).select(select).eq('id', id).maybeSingle();
     if (error || !data) setMissing(true);
     else setRow(data as unknown as Row);
     setLoading(false);
@@ -66,6 +70,13 @@ function Shell({ back, backLabel, icon, title, subtitle, badges, actions, childr
       </div>
     </div>
   );
+}
+
+function CustomFieldsCard({ fields, values }: { fields: { key: string; label: string }[]; values: Record<string, unknown> | null }) {
+  const { language } = useAuth();
+  if (!fields.length) return null;
+  return <FieldsCard title={language === 'fr' ? 'Champs de votre secteur' : 'Your industry fields'}
+    items={fields.map(f => ({ label: f.label, value: values?.[f.key.slice(3)] != null && values?.[f.key.slice(3)] !== '' ? String(values?.[f.key.slice(3)]) : '—' }))} />;
 }
 
 function FieldsCard({ title, items }: { title: string; items: { label: string; value: ReactNode }[] }) {
@@ -320,6 +331,7 @@ export function ContactDetailPage() {
   const money = useMoney();
   const orgCurrency = organization?.currency || 'USD';
   const { row, loading, missing, reload } = useRecord('contacts', id, '*, company_rel:companies(id,name)');
+  const customFields = useCustomFormFields('contacts');
   const deals = useRelated('deals', 'contact_id', id, 'id,name,value,currency,status,stage:pipeline_stages(name)');
   const invoices = useRelated('invoices', 'contact_id', id, 'id,invoice_number,total,currency,payment_status');
   const quotes = useRelated('quotes', 'contact_id', id, 'id,quote_number,total,currency,status');
@@ -344,14 +356,14 @@ export function ContactDetailPage() {
       badges={<><Badge variant={statusTone(row.status)}>{tStatus(String(row.status), language)}</Badge>{tags.map(tg => <Badge key={tg} variant="neutral">{tg}</Badge>)}</>}
       actions={<>
         <QuickEmailButton to={row.email as string} name={name} target={{ fk: 'contact_id', id: row.id }} />
-        {row.phone ? <a href={`tel:${String(row.phone).replace(/\s/g, '')}`} className="btn-secondary btn-sm"><Phone size={14} /> {fr ? 'Appeler' : 'Call'}</a> : null}
-        <QuickMessageButton phone={row.phone as string} name={name} />
+        <QuickCallButton phone={row.phone as string} name={name} record={{ table: 'contacts', id: row.id }} />
+        <QuickMessageButton phone={row.phone as string} name={name} record={{ table: 'contacts', id: row.id }} />
         <button onClick={() => setEditing(true)} className="btn-secondary btn-sm"><Edit2 size={14} /> {t('common.edit', language)}</button>
         <button onClick={() => remove(row.id)} className="btn-icon hover:bg-error-50 hover:text-error-600" aria-label={t('common.delete', language)}><Trash2 size={15} /></button>
       </>}
       aside={<>
         <FieldsCard title={fr ? 'Coordonnées' : 'Details'} items={[
-          { label: t('common.email', language), value: row.email ? <a className="text-primary-700 hover:underline" href={`mailto:${row.email}`}>{String(row.email)}</a> : '—' },
+          { label: t('common.email', language), value: row.email ? (row.pii_masked ? <span className="text-ink-500" title={fr ? 'Masqué par votre manager' : 'Hidden by your manager'}>{String(row.email)}</span> : <a className="text-primary-700 hover:underline" href={`mailto:${row.email}`}>{String(row.email)}</a>) : '—' },
           { label: t('common.phone', language), value: (row.phone as string) || '—' },
           { label: t('list.city', language), value: [row.city, row.country ? getCountryName(String(row.country), language) : ''].filter(Boolean).join(', ') || '—' },
           { label: t('list.leadScore', language), value: <span className="tabular">{String(row.lead_score ?? 0)}/100</span> },
@@ -359,7 +371,9 @@ export function ContactDetailPage() {
           { label: fr ? 'Créé le' : 'Created', value: new Date(String(row.created_at)).toLocaleDateString(language) },
         ]} />
         {row.notes ? <section className="card p-5"><h2 className="card-title mb-2">{t('list.notes', language)}</h2><p className="whitespace-pre-wrap text-sm text-ink-700">{String(row.notes)}</p></section> : null}
+        <CustomFieldsCard fields={customFields} values={row.custom_fields as Record<string, unknown> | null} />
         <RecordAppActions person={row as { email?: string; first_name?: string; last_name?: string }} target={{ fk: 'contact_id', id: row.id }} />
+        <CustomerLiveCard contactId={row.id} />
         <TasksCard relatedType="contact" id={row.id} />
       </>}
     >
@@ -385,7 +399,7 @@ export function ContactDetailPage() {
         </Related>
       )}
 
-      <RecordFormModal open={editing} onClose={() => setEditing(false)} onSaved={() => reload()} table="contacts" title={name} fields={contactFields(language)} record={row} />
+      <RecordFormModal open={editing} onClose={() => setEditing(false)} onSaved={() => reload()} table="contacts" title={name} fields={[...contactFields(language), ...customFields]} record={row} />
       <RecordFormModal open={adding !== null} onClose={() => setAdding(null)} onSaved={() => adding?.reload()} table={adding?.table || 'deals'} title={adding?.title || ''} fields={adding?.fields || []} defaults={adding?.defaults} />
     </Shell>
   );
@@ -400,7 +414,7 @@ export function CompanyDetailPage() {
   const money = useMoney();
   const orgCurrency = organization?.currency || 'USD';
   const { row, loading, missing, reload } = useRecord('companies', id);
-  const contacts = useRelated('contacts', 'company_id', id, 'id,first_name,last_name,job_title,email');
+  const contacts = useRelated('contacts_v', 'company_id', id, 'id,first_name,last_name,job_title,email');
   const deals = useRelated('deals', 'company_id', id, 'id,name,value,currency,status,stage:pipeline_stages(name)');
   const invoices = useRelated('invoices', 'company_id', id, 'id,invoice_number,total,currency,payment_status');
   const [editing, setEditing] = useState(false);
@@ -465,7 +479,7 @@ export function DealDetailPage() {
   const fr = language === 'fr';
   const money = useMoney();
   const orgCurrency = organization?.currency || 'USD';
-  const { row, loading, missing, reload } = useRecord('deals', id, '*, stage:pipeline_stages(id,name,pipeline_id), contact:contacts(id,first_name,last_name,email,phone), company:companies(id,name)');
+  const { row, loading, missing, reload } = useRecord('deals', id, '*, stage:pipeline_stages(id,name,pipeline_id), contact:contacts_v(id,first_name,last_name,email,phone), company:companies(id,name)');
   const quotes = useRelated('quotes', 'deal_id', id, 'id,quote_number,total,currency,status');
   const invoices = useRelated('invoices', 'deal_id', id, 'id,invoice_number,total,currency,payment_status');
   const [stages, setStages] = useState<{ id: string; name: string; probability: number | null }[]>([]);
@@ -576,6 +590,7 @@ export function LeadDetailPage() {
   const fr = language === 'fr';
   const money = useMoney();
   const { row, loading, missing, reload } = useRecord('leads', id);
+  const customFields = useCustomFormFields('leads');
   const [editing, setEditing] = useState(false);
   const [converting, setConverting] = useState(false);
   const remove = useDelete('leads', '/app/leads');
@@ -598,7 +613,8 @@ export function LeadDetailPage() {
           ? <Link to={`/app/contacts/${row.converted_contact_id}`} className="btn-secondary btn-sm"><ExternalLink size={14} /> {fr ? 'Voir le contact' : 'Open contact'}</Link>
           : <button onClick={() => setConverting(true)} className="btn-primary btn-sm"><Shuffle size={14} /> {fr ? 'Convertir' : 'Convert'}</button>}
         <QuickEmailButton to={row.email as string} name={name} target={{ fk: 'lead_id', id: row.id }} />
-        <QuickMessageButton phone={row.phone as string} name={name} />
+        <QuickCallButton phone={row.phone as string} name={name} record={{ table: 'leads', id: row.id }} />
+        <QuickMessageButton phone={row.phone as string} name={name} record={{ table: 'leads', id: row.id }} />
         <button onClick={() => setEditing(true)} className="btn-secondary btn-sm"><Edit2 size={14} /> {t('common.edit', language)}</button>
         <button onClick={() => remove(row.id)} className="btn-icon hover:bg-error-50 hover:text-error-600" aria-label={t('common.delete', language)}><Trash2 size={15} /></button>
       </>}
@@ -612,6 +628,7 @@ export function LeadDetailPage() {
           { label: fr ? 'Créée le' : 'Created', value: new Date(String(row.created_at)).toLocaleDateString(language) },
           ...(row.converted_at ? [{ label: fr ? 'Convertie le' : 'Converted', value: new Date(String(row.converted_at)).toLocaleDateString(language) }] : []),
         ]} />
+        <CustomFieldsCard fields={customFields} values={row.custom_fields as Record<string, unknown> | null} />
         <RecordAppActions person={row as { email?: string; first_name?: string; last_name?: string }} target={{ fk: 'lead_id', id: row.id }} />
         <TasksCard relatedType="lead" id={row.id} />
       </>}
@@ -628,7 +645,7 @@ export function LeadDetailPage() {
       {row.notes ? <section className="card p-5"><h2 className="card-title mb-2">{t('list.notes', language)}</h2><p className="whitespace-pre-wrap text-sm text-ink-700">{String(row.notes)}</p></section> : null}
       <Timeline fk="lead_id" id={row.id} />
 
-      <RecordFormModal open={editing} onClose={() => setEditing(false)} onSaved={() => reload()} table="leads" title={name} fields={leadFields(language)} record={row} />
+      <RecordFormModal open={editing} onClose={() => setEditing(false)} onSaved={() => reload()} table="leads" title={name} fields={[...leadFields(language), ...customFields]} record={row} />
       {converting && <ConvertLeadModal lead={row as unknown as Lead} onClose={() => setConverting(false)} />}
     </Shell>
   );

@@ -1,4 +1,4 @@
-export type Role = 'owner' | 'admin' | 'manager' | 'sales' | 'marketing' | 'finance' | 'support' | 'member';
+export type Role = 'owner' | 'admin' | 'manager' | 'qc' | 'agent' | 'sales' | 'marketing' | 'finance' | 'support' | 'member';
 
 export type Plan = 'starter' | 'growth' | 'pro' | 'enterprise';
 

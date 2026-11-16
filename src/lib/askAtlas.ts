@@ -93,22 +93,22 @@ export async function askAtlas(question: string, lang: 'en' | 'fr' | 'es' | 'pt'
 
   // ---- Contacts ----
   if (has(q, 'contact', 'contacts') && !has(q, 'deal', 'lead')) {
-    const { count } = await supabase.from('contacts').select('*', { count: 'exact', head: true });
+    const { count } = await supabase.from('contacts').select('id', { count: 'exact', head: true });
     return { text: pick(`Vous avez ${count ?? 0} contacts enregistrés.`, `You have ${count ?? 0} contacts.`), route: '/app/contacts' };
   }
 
   // ---- Leads (hot / new) ----
   if (has(q, 'lead', 'leads', 'prospect')) {
     if (has(q, 'hot', 'chaud', 'qualifié', 'qualified')) {
-      const { count } = await supabase.from('leads').select('*', { count: 'exact', head: true }).eq('temperature', 'hot').neq('status', 'converted');
+      const { count } = await supabase.from('leads').select('id', { count: 'exact', head: true }).eq('temperature', 'hot').neq('status', 'converted');
       return { text: pick(`Il y a ${count ?? 0} leads chauds non convertis à qualifier.`, `There are ${count ?? 0} hot unconverted leads.`), route: '/app/leads' };
     }
     if (has(q, 'new', 'nouveau', 'nouveaux', 'recent', 'récent')) {
       const since = new Date(Date.now() - 7 * 86400000).toISOString();
-      const { count } = await supabase.from('leads').select('*', { count: 'exact', head: true }).gte('created_at', since);
+      const { count } = await supabase.from('leads').select('id', { count: 'exact', head: true }).gte('created_at', since);
       return { text: pick(`${count ?? 0} nouveaux leads cette semaine.`, `${count ?? 0} new leads this week.`), route: '/app/leads' };
     }
-    const { count } = await supabase.from('leads').select('*', { count: 'exact', head: true });
+    const { count } = await supabase.from('leads').select('id', { count: 'exact', head: true });
     return { text: pick(`Vous avez ${count ?? 0} leads au total.`, `You have ${count ?? 0} leads in total.`), route: '/app/leads' };
   }
 
@@ -174,8 +174,8 @@ export async function askAtlas(question: string, lang: 'en' | 'fr' | 'es' | 'pt'
   // ---- Overview / summary ----
   if (has(q, 'summary', 'résumé', 'resume', 'overview', 'aperçu', 'apercu', 'rapport', 'comment', 'state', 'situation', 'report', 'status', 'statut', 'today', 'aujourd')) {
     const [contacts, leads, deals, tickets] = await Promise.all([
-      supabase.from('contacts').select('*', { count: 'exact', head: true }),
-      supabase.from('leads').select('*', { count: 'exact', head: true }),
+      supabase.from('contacts').select('id', { count: 'exact', head: true }),
+      supabase.from('leads').select('id', { count: 'exact', head: true }),
       supabase.from('deals').select('*', { count: 'exact', head: true }).eq('status', 'open'),
       supabase.from('tickets').select('*', { count: 'exact', head: true }).eq('status', 'open'),
     ]);

@@ -76,7 +76,7 @@ export function DashboardsPage() {
       try {
         const [dealsRes, leadsRes, paymentsRes, dashRes] = await Promise.all([
           supabase.from('deals').select('*', { count: 'exact', head: true }).eq('status', 'open'),
-          supabase.from('leads').select('*', { count: 'exact', head: true }),
+          supabase.from('leads').select('id', { count: 'exact', head: true }),
           supabase.from('payments').select('amount'),
           supabase.from('dashboards').select('*').order('created_at', { ascending: false }),
         ]);
@@ -202,7 +202,7 @@ export function AIInsightsPage() {
       try {
         const [dealsAtRiskRes, hotLeadsRes, unpaidRes, paymentsRes] = await Promise.all([
           supabase.from('deals').select('*', { count: 'exact', head: true }).eq('status', 'open').lt('closing_date', new Date().toISOString()),
-          supabase.from('leads').select('*', { count: 'exact', head: true }).eq('temperature', 'hot').neq('status', 'converted'),
+          supabase.from('leads').select('id', { count: 'exact', head: true }).eq('temperature', 'hot').neq('status', 'converted'),
           supabase.from('invoices').select('*', { count: 'exact', head: true }).eq('payment_status', 'unpaid'),
           supabase.from('payments').select('amount'),
         ]);

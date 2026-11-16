@@ -24,6 +24,8 @@ const CONTACT: AppUse = { fr: 'Fiche contact', en: 'Contact record', to: '/app/c
 const LEAD: AppUse = { fr: 'Fiche lead', en: 'Lead record', to: '/app/leads' };
 const INVOICE: AppUse = { fr: 'Factures → lien de paiement', en: 'Invoices → payment link', to: '/app/invoices' };
 const DOCS: AppUse = { fr: 'Devis et factures → envoi par email', en: 'Quotes & invoices → send by email', to: '/app/invoices' };
+const CALL: AppUse = { fr: 'Fiche contact / lead → Appeler', en: 'Contact / lead record → Call', to: '/app/contacts' };
+const LIVE: AppUse = { fr: 'Activité en direct + timeline du contact', en: 'Live activity + contact timeline', to: '/app/live' };
 const TICKETS: AppUse = { fr: 'Tickets support → escalade', en: 'Support tickets → escalate', to: '/app/support' };
 
 export const APP_USAGE: Record<string, AppUse[]> = {
@@ -31,7 +33,15 @@ export const APP_USAGE: Record<string, AppUse[]> = {
   anthropic: [ASK_ATLAS, AI_SETTINGS],
   gemini: [ASK_ATLAS, AI_SETTINGS],
   whatsapp: [CONTACT, LEAD, WORKFLOWS],
-  twilio: [CONTACT, LEAD, WORKFLOWS],
+  twilio: [CONTACT, LEAD, CALL, WORKFLOWS],
+  aircall: [CALL, LIVE],
+  ringover: [LIVE],
+  zanldo: [LIVE],
+  trading_platform: [LIVE],
+  custom_events: [LIVE],
+  stripe: [INVOICE, WORKFLOWS],
+  paystack: [INVOICE, WORKFLOWS],
+  flutterwave: [INVOICE, WORKFLOWS],
   resend: [CONTACT, LEAD, DOCS, WORKFLOWS],
   telegram: [WORKFLOWS],
   mailchimp: [CONTACT, LEAD, WORKFLOWS],
@@ -52,7 +62,15 @@ export const APP_PURPOSE: Record<string, { fr: string; en: string }> = {
   anthropic: { fr: 'Fait répondre Ask Atlas avec Claude, sur vos données CRM.', en: 'Ask Atlas answers with Claude, on your CRM data.' },
   gemini: { fr: 'Fait répondre Ask Atlas avec votre propre clé Gemini.', en: 'Ask Atlas answers with your own Gemini key.' },
   whatsapp: { fr: 'Écrivez à un contact ou un lead sur WhatsApp depuis sa fiche.', en: 'Message a contact or lead on WhatsApp from their record.' },
-  twilio: { fr: 'Envoyez un SMS à un contact ou un lead depuis sa fiche.', en: 'Text a contact or lead from their record.' },
+  twilio: { fr: 'SMS et appels depuis la fiche, même quand le numéro est masqué (appel relayé, enregistrement possible).', en: 'Texts and calls from the record, even when the number is hidden (bridged call, optional recording).' },
+  aircall: { fr: 'Appelez depuis la fiche via votre app Aircall ; appels et enregistrements arrivent sur la timeline.', en: 'Call from the record through your Aircall app; calls and recordings land on the timeline.' },
+  ringover: { fr: 'Les appels Ringover et leurs enregistrements arrivent sur la fiche du client.', en: 'Ringover calls and their recordings land on the customer record.' },
+  zanldo: { fr: 'Commandes et avis de votre boutique Zanldo en direct dans Atlas.', en: 'Orders and reviews from your Zanldo store, live in Atlas.' },
+  trading_platform: { fr: 'Dépôts, retraits et ordres de vos clients en direct, via votre pont ou votre back-office.', en: "Your clients' deposits, withdrawals and trades live, through your bridge or back office." },
+  custom_events: { fr: 'Toute app qui sait envoyer un webhook peut pousser ses événements clients vers Atlas.', en: 'Any app that can send a webhook can push customer events to Atlas.' },
+  stripe: { fr: 'Générez un lien de paiement Stripe (Checkout) pour une facture.', en: 'Generate a Stripe Checkout payment link for an invoice.' },
+  paystack: { fr: 'Générez un lien de paiement Paystack pour une facture.', en: 'Generate a Paystack payment link for an invoice.' },
+  flutterwave: { fr: 'Générez un lien de paiement Flutterwave pour une facture.', en: 'Generate a Flutterwave payment link for an invoice.' },
   resend: { fr: 'Envoyez des emails, devis et factures depuis votre domaine.', en: 'Send emails, quotes and invoices from your own domain.' },
   telegram: { fr: 'Recevez des alertes Telegram quand un workflow tourne.', en: 'Get Telegram alerts when a workflow runs.' },
   mailchimp: { fr: 'Ajoutez un contact à une audience Mailchimp en un clic.', en: 'Add a contact to a Mailchimp audience in one click.' },

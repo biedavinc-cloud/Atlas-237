@@ -11,6 +11,7 @@ import { Loading } from '@/components/Loading';
 import type { Contact, Company, Lead, Deal } from '@/types';
 import { formatAmount } from '@/lib/i18n-countries';
 import { QuickMessageButton } from '@/components/QuickMessageButton';
+import { useCustomFormFields } from '@/lib/workspace';
 import { ConvertLeadModal } from '@/components/ConvertLeadModal';
 import { contactFields, companyFields, leadFields, dealFields, contactRelation, dealRelation, companyRelation } from '@/lib/entityFields';
 
@@ -18,6 +19,7 @@ type WithCompany = { company_rel?: { id: string; name: string } | null };
 
 export function ContactsPage() {
   const { language } = useAuth();
+  const customFields = useCustomFormFields('contacts');
   return (
     <ListPage<Contact & WithCompany>
       table="contacts"
@@ -30,7 +32,7 @@ export function ContactsPage() {
         { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'active' ? 'success' : 'neutral'}>{tStatus(r.status, language)}</Badge> },
         { key: 'lead_score', label: t('list.leadScore', language), render: (r) => <span className="font-semibold tabular">{r.lead_score}</span> },
       ]}
-      formFields={contactFields(language)}
+      formFields={[...contactFields(language), ...customFields]}
       relations="*, company_rel:companies(id,name)"
       searchColumns={['first_name', 'last_name', 'email', 'phone', 'company', 'job_title']}
       emptyIcon={<Users size={26} />}
@@ -39,7 +41,7 @@ export function ContactsPage() {
       orderBy="created_at"
       importable
       rowLink={(r) => `/app/contacts/${r.id}`}
-      rowActions={(row) => <QuickMessageButton phone={row.phone} name={`${row.first_name} ${row.last_name}`} />}
+      rowActions={(row) => <QuickMessageButton phone={row.phone} name={`${row.first_name} ${row.last_name}`} record={{ table: 'contacts', id: row.id }} />}
     />
   );
 }
@@ -75,6 +77,7 @@ export function LeadsPage() {
   const { language, organization } = useAuth();
   const orgCurrency = organization?.currency || 'USD';
   const [converting, setConverting] = useState<{ lead: Lead; reload: () => void } | null>(null);
+  const leadCustomFields = useCustomFormFields('leads');
   const fr = language === 'fr';
   return (
     <>
@@ -89,7 +92,7 @@ export function LeadsPage() {
           { key: 'status', label: t('common.status', language), render: (r) => <Badge variant={r.status === 'converted' ? 'success' : r.status === 'lost' ? 'error' : 'primary'}>{tStatus(r.status, language)}</Badge> },
           { key: 'potential_value', label: t('common.value', language), render: (r) => <span className="tabular">{formatAmount((r.potential_value || 0), orgCurrency, language)}</span> },
         ]}
-        formFields={leadFields(language)}
+        formFields={[...leadFields(language), ...leadCustomFields]}
         searchColumns={['first_name', 'last_name', 'email', 'phone', 'company_name']}
         emptyIcon={<UserPlus size={26} />}
         emptyTitle={t('empty.noLeads', language)}
@@ -104,7 +107,7 @@ export function LeadsPage() {
                 <Shuffle size={14} />
               </button>
             )}
-            <QuickMessageButton phone={row.phone} name={`${row.first_name} ${row.last_name}`} />
+            <QuickMessageButton phone={row.phone} name={`${row.first_name} ${row.last_name}`} record={{ table: 'leads', id: row.id }} />
           </>
         )}
       />

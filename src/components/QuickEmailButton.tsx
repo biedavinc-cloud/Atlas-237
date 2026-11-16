@@ -13,6 +13,8 @@ interface QuickEmailButtonProps {
   /** Logs the sent email on this record's timeline. */
   target?: ActivityTarget;
   label?: string;
+  /** Contact/lead the address belongs to, when `target` is another record. */
+  record?: { table: 'contacts' | 'leads'; id: string };
 }
 
 /**
@@ -21,7 +23,7 @@ interface QuickEmailButtonProps {
  * back to a mailto: link, so the button is always useful and never lies
  * about having sent anything.
  */
-export function QuickEmailButton({ to, name, subject = '', message = '', target, label }: QuickEmailButtonProps) {
+export function QuickEmailButton({ to, name, subject = '', message = '', target, label, record: recordProp }: QuickEmailButtonProps) {
   const { language } = useAuth();
   const fr = language === 'fr';
   const { connected } = useConnectedProviders();
@@ -31,8 +33,14 @@ export function QuickEmailButton({ to, name, subject = '', message = '', target,
   const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const text = label || 'Email';
 
+  // Hidden by the workspace's masking setting: only Atlas (server side)
+  // knows the address, so sending goes through Resend with the record id.
+  const masked = Boolean(to && to.includes('•'));
+  const record = recordProp || (target && (target.fk === 'contact_id' || target.fk === 'lead_id')
+    ? { table: target.fk === 'contact_id' ? 'contacts' : 'leads', id: target.id } : undefined);
+
   if (!connected.has('resend')) {
-    if (!to) return null;
+    if (!to || masked) return null;
     const href = `mailto:${to}${subject ? `?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}` : ''}`;
     return <a href={href} className="btn-secondary btn-sm"><Mail size={14} /> {text}</a>;
   }
@@ -40,7 +48,10 @@ export function QuickEmailButton({ to, name, subject = '', message = '', target,
   async function send() {
     setSending(true);
     setResult(null);
-    const res = await callIntegrationAction('send_email', { to: form.to.trim(), subject: form.subject.trim(), message: form.message });
+    const res = await callIntegrationAction('send_email', {
+      to: masked ? undefined : form.to.trim(), subject: form.subject.trim(), message: form.message,
+      ...(record ? { _record: record } : {}),
+    });
     if (res.ok && target) {
       await logActivity(target, 'email', form.subject.trim(), `${fr ? 'Envoyé à' : 'Sent to'} ${form.to.trim()} (Resend)\n\n${form.message}`);
     }
@@ -60,7 +71,8 @@ export function QuickEmailButton({ to, name, subject = '', message = '', target,
         <div className="space-y-4">
           <div>
             <label className="label">{fr ? 'Destinataire' : 'To'}</label>
-            <input className="input" type="email" value={form.to} onChange={e => setForm({ ...form, to: e.target.value })} />
+            <input className="input" type="email" value={form.to} readOnly={masked} onChange={e => setForm({ ...form, to: e.target.value })} />
+            {masked && <p className="mt-1 text-xs text-ink-500">{fr ? 'Adresse masquée : Atlas l’envoie sans vous la montrer.' : 'Hidden address: Atlas sends it without showing it to you.'}</p>}
           </div>
           <div>
             <label className="label">{fr ? 'Objet' : 'Subject'}</label>

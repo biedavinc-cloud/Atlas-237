@@ -41,6 +41,9 @@ const UNLIMITED_FEATURES: PlanFeatures = {
   prioritySupport: true,
   dedicatedManager: true,
   sla: true,
+  reviews: true,
+  workspaceControls: true,
+  liveEvents: true,
   exportData: true,
   customRoles: true,
   salesCodeTracking: true,
@@ -67,6 +70,12 @@ export interface PlanFeatures {
   prioritySupport: boolean;
   dedicatedManager: boolean;
   sla: boolean;
+  /** Review requests + public review page (Growth+). */
+  reviews: boolean;
+  /** Contact masking, portfolios, distribution, team performance, custom fields, dedicated address (Pro+). */
+  workspaceControls: boolean;
+  /** Live customer events from outside platforms (Pro+). */
+  liveEvents: boolean;
   exportData: boolean;
   customRoles: boolean;
   salesCodeTracking: boolean;
@@ -97,6 +106,9 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     prioritySupport: false,
     dedicatedManager: false,
     sla: false,
+    reviews: false,
+    workspaceControls: false,
+    liveEvents: false,
     exportData: true,
     customRoles: false,
     salesCodeTracking: false,
@@ -126,6 +138,9 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     prioritySupport: true,
     dedicatedManager: false,
     sla: false,
+    reviews: true,
+    workspaceControls: false,
+    liveEvents: false,
     exportData: true,
     customRoles: true,
     salesCodeTracking: true,
@@ -149,6 +164,9 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     prioritySupport: true,
     dedicatedManager: false,
     sla: true,
+    reviews: true,
+    workspaceControls: true,
+    liveEvents: true,
     exportData: true,
     customRoles: true,
     salesCodeTracking: true,
@@ -172,6 +190,9 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     prioritySupport: true,
     dedicatedManager: true,
     sla: true,
+    reviews: true,
+    workspaceControls: true,
+    liveEvents: true,
     exportData: true,
     customRoles: true,
     salesCodeTracking: true,

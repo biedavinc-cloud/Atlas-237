@@ -132,6 +132,29 @@ const GROUPS: Group[] = [
     fields: [{ key: 'GEMINI_API_KEY', label: { fr: 'Clé API', en: 'API key' }, placeholder: 'AIza…' }],
   },
   {
+    id: 'tenants', title: 'Adresses entreprise (societe.liafrik.com)', kind: 'platform',
+    what: { fr: 'Permet aux organisations Pro/Enterprise d’activer elles-mêmes leur adresse dédiée : Atlas ajoute le sous-domaine au projet Cloudflare Pages et crée l’enregistrement DNS.', en: 'Lets Pro/Enterprise organizations activate their own address: Atlas adds the subdomain to the Cloudflare Pages project and creates the DNS record.' },
+    where: { fr: 'Cloudflare → My Profile → API Tokens → Create token avec « Cloudflare Pages: Edit » (compte) et « DNS: Edit » (zone liafrik.com). Account ID et Zone ID : page d’aperçu de la zone. Ajoutez aussi https://*.liafrik.com/** dans Supabase → Auth → URL Configuration.', en: 'Cloudflare → My Profile → API Tokens → Create token with "Cloudflare Pages: Edit" (account) and "DNS: Edit" (liafrik.com zone). Account ID and Zone ID: zone overview page. Also add https://*.liafrik.com/** in Supabase → Auth → URL Configuration.' },
+    doc: 'https://developers.cloudflare.com/pages/configuration/custom-domains/',
+    fields: [
+      { key: 'TENANT_ROOT_DOMAIN', label: { fr: 'Domaine racine', en: 'Root domain' }, placeholder: 'liafrik.com' },
+      { key: 'CLOUDFLARE_API_TOKEN', label: { fr: 'Jeton API Cloudflare', en: 'Cloudflare API token' } },
+      { key: 'CLOUDFLARE_ACCOUNT_ID', label: { fr: 'Account ID', en: 'Account ID' } },
+      { key: 'CLOUDFLARE_ZONE_ID', label: { fr: 'Zone ID', en: 'Zone ID' } },
+      { key: 'CLOUDFLARE_PAGES_PROJECT', label: { fr: 'Projet Pages', en: 'Pages project' }, placeholder: 'atlas-237' },
+    ],
+  },
+  {
+    id: 'inbound', title: 'E-mails entrants des clients', kind: 'platform',
+    what: { fr: 'Chaque organisation reçoit <adresse>@domaine : les e-mails de ses clients arrivent sur la bonne fiche et chez le bon agent.', en: 'Each organization gets <address>@domain: its customers’ e-mails land on the right record and with the right agent.' },
+    where: { fr: 'Cloudflare → Email Routing sur le domaine choisi → règle catch-all « Send to a Worker » vers atlas-inbound-email (dossier cloudflare/email-worker du dépôt). Même secret ici et dans le Worker.', en: 'Cloudflare → Email Routing on the chosen domain → catch-all rule "Send to a Worker" to atlas-inbound-email (repo folder cloudflare/email-worker). Same secret here and in the Worker.' },
+    doc: 'https://developers.cloudflare.com/email-routing/email-workers/',
+    fields: [
+      { key: 'INBOUND_EMAIL_DOMAIN', label: { fr: 'Domaine de réception', en: 'Receiving domain' }, placeholder: 'in.liafrik.com' },
+      { key: 'INBOUND_EMAIL_SECRET', label: { fr: 'Secret partagé', en: 'Shared secret' } },
+    ],
+  },
+  {
     id: 'origins', title: 'Domaines autorisés', kind: 'platform',
     what: { fr: 'Adresses vers lesquelles un paiement peut revenir, en plus de atlas.liafrik.com.', en: 'Addresses a checkout may return to, in addition to atlas.liafrik.com.' },
     where: { fr: 'Séparez par des virgules, ex. https://crm.mondomaine.com', en: 'Comma separated, e.g. https://crm.mydomain.com' },

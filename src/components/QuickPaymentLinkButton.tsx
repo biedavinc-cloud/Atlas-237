@@ -10,9 +10,15 @@ interface QuickPaymentLinkButtonProps {
   /** Customer email — required by Mollie/Chapa, optional for the others. */
   email?: string | null;
   label?: string | null;
+  /** The invoice's contact: lets the server fill in the e-mail/phone itself
+   *  (works when contact details are hidden from the agent). */
+  contactId?: string | null;
 }
 
-const GATEWAYS: { provider: string; action: string; needsEmail?: boolean; defaultCurrency: string }[] = [
+const GATEWAYS: { provider: string; action: string; needsEmail?: boolean; defaultCurrency: string; name?: string }[] = [
+  { provider: 'stripe', name: 'Stripe', action: 'stripe_payment_link', defaultCurrency: 'USD' },
+  { provider: 'paystack', name: 'Paystack', action: 'paystack_payment_link', needsEmail: true, defaultCurrency: 'NGN' },
+  { provider: 'flutterwave', name: 'Flutterwave', action: 'flutterwave_payment_link', needsEmail: true, defaultCurrency: 'USD' },
   { provider: 'mollie', action: 'mollie_create_payment', needsEmail: false, defaultCurrency: 'EUR' },
   { provider: 'cinetpay', action: 'cinetpay_create_payment', defaultCurrency: 'XOF' },
   { provider: 'wave', action: 'wave_create_checkout', defaultCurrency: 'XOF' },
@@ -27,7 +33,7 @@ const GATEWAYS: { provider: string; action: string; needsEmail?: boolean; defaul
  * CamPay day-to-day, instead of having to build a Workflow for one invoice.
  * Only renders if at least one of these gateways is connected.
  */
-export function QuickPaymentLinkButton({ amount, currency, email, label }: QuickPaymentLinkButtonProps) {
+export function QuickPaymentLinkButton({ amount, currency, email, label, contactId }: QuickPaymentLinkButtonProps) {
   const { language } = useAuth();
   const lang = language;
   const { connected } = useConnectedProviders();
@@ -53,8 +59,10 @@ export function QuickPaymentLinkButton({ amount, currency, email, label }: Quick
       currency: currency || active.defaultCurrency,
       description: label || 'Atlas invoice',
     };
-    if (active.provider === 'chapa') { params.email = customerEmail; params.first_name = ''; params.last_name = ''; }
-    if (active.provider === 'campay') { params.phone_number = phone; }
+    if (customerEmail.trim()) params.email = customerEmail.trim();
+    if (active.provider === 'chapa') { params.first_name = ''; params.last_name = ''; }
+    if (active.provider === 'campay' && phone.trim()) { params.phone_number = phone.trim(); }
+    if (contactId) params._record = { table: 'contacts', id: contactId };
     const res = await callIntegrationAction(active.action, params);
     setResult(res);
     setSending(false);
@@ -82,22 +90,23 @@ export function QuickPaymentLinkButton({ amount, currency, email, label }: Quick
           <div>
             <label className="label">{lang === 'fr' ? 'Fournisseur' : 'Gateway'}</label>
             <select className="input" value={active.provider} onChange={e => setProvider(e.target.value)}>
-              {available.map(g => <option key={g.provider} value={g.provider}>{g.provider}</option>)}
+              {available.map(g => <option key={g.provider} value={g.provider}>{g.name || g.provider}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-2 text-sm text-ink-600">
             <div>{lang === 'fr' ? 'Montant' : 'Amount'}: <span className="font-semibold text-ink-800">{amount} {currency || active.defaultCurrency}</span></div>
           </div>
-          {active.provider === 'chapa' && (
+          {(active.needsEmail || active.provider === 'stripe') && (
             <div>
               <label className="label">{lang === 'fr' ? 'Email du client' : 'Customer email'}</label>
-              <input className="input" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} />
+              <input className="input" type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)}
+                placeholder={contactId ? (lang === 'fr' ? 'Celui du contact de la facture' : "The invoice contact's") : ''} />
             </div>
           )}
           {active.provider === 'campay' && (
             <div>
               <label className="label">{lang === 'fr' ? 'Numéro de téléphone' : 'Phone number'}</label>
-              <input className="input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="2376xxxxxxxx" />
+              <input className="input" value={phone} onChange={e => setPhone(e.target.value)} placeholder={contactId ? (lang === 'fr' ? 'Celui du contact de la facture' : "The invoice contact's") : '2376xxxxxxxx'} />
             </div>
           )}
           {result && (

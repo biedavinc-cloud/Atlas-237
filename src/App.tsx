@@ -1,3 +1,4 @@
+import { tenantSlugFromHost } from '@/lib/tenantHost';
 import { PwaUpdateToast } from '@/components/PwaPrompts';
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { lazy, Suspense, useEffect } from 'react';
@@ -37,6 +38,12 @@ const DocumentPage = lazy(() => import('@/pages/DocumentPage').then(m => ({ defa
 const BlogIndexPage = lazy(() => import('@/pages/BlogPages').then(m => ({ default: m.BlogIndexPage })));
 const BlogArticlePage = lazy(() => import('@/pages/BlogPages').then(m => ({ default: m.BlogArticlePage })));
 const TasksPage = lazy(() => import('@/pages/CRMPages').then(m => ({ default: m.TasksPage })));
+const WorkspaceSettingsPage = lazy(() => import('@/pages/WorkspacePages').then(m => ({ default: m.WorkspaceSettingsPage })));
+const LiveActivityPage = lazy(() => import('@/pages/WorkspacePages').then(m => ({ default: m.LiveActivityPage })));
+const DistributionPage = lazy(() => import('@/pages/WorkspacePages').then(m => ({ default: m.DistributionPage })));
+const PerformancePage = lazy(() => import('@/pages/WorkspacePages').then(m => ({ default: m.PerformancePage })));
+const ReviewsPage = lazy(() => import('@/pages/WorkspacePages').then(m => ({ default: m.ReviewsPage })));
+const PublicReviewPage = lazy(() => import('@/pages/WorkspacePages').then(m => ({ default: m.PublicReviewPage })));
 const ProductsPage = lazy(() => import('@/pages/BusinessPages').then(m => ({ default: m.ProductsPage })));
 const QuotesPage = lazy(() => import('@/pages/BusinessPages').then(m => ({ default: m.QuotesPage })));
 const OrdersPage = lazy(() => import('@/pages/BusinessPages').then(m => ({ default: m.OrdersPage })));
@@ -100,6 +107,11 @@ function ProtectedRoutes() {
         <Route path="activities" element={<ActivitiesPage />} />
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="tasks" element={<TasksPage />} />
+        <Route path="workspace" element={<WorkspaceSettingsPage />} />
+        <Route path="live" element={<LiveActivityPage />} />
+        <Route path="distribution" element={<DistributionPage />} />
+        <Route path="performance" element={<PerformancePage />} />
+        <Route path="reviews" element={<ReviewsPage />} />
         {/* Business */}
         <Route path="products" element={<ProductsPage />} />
         <Route path="quotes" element={<QuotesPage />} />
@@ -146,6 +158,8 @@ function LandingRoutes({ lang }: { lang?: Language }) {
   useEffect(() => { if (lang && lang !== language) setLanguage(lang); }, [lang, language, setLanguage]);
   if (loading) return <Loading fullPage />;
   if (session) return <Navigate to="/app" replace />;
+  // A company's own address (societe.liafrik.com) goes straight to its sign-in.
+  if (tenantSlugFromHost()) return <Navigate to="/auth" replace />;
   return <LandingPage />;
 }
 
@@ -183,6 +197,7 @@ export default function App() {
             <Route path="accounting" element={<Suspense fallback={<PageFallback />}><SuperAdminAccountingPage /></Suspense>} />
             <Route path="keys" element={<Suspense fallback={<PageFallback />}><PlatformKeysPage /></Suspense>} />
           </Route>
+          <Route path="/r/:token" element={<Suspense fallback={<Loading fullPage />}><PublicReviewPage /></Suspense>} />
           <Route path="/demo" element={<DemoEntry />} />
           <Route path="/en/demo" element={<DemoEntry lang="en" />} />
           <Route path="/blog" element={<Suspense fallback={<Loading fullPage />}><BlogIndexPage /></Suspense>} />

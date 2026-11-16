@@ -27,6 +27,9 @@ interface AppDef {
   docsUrl: string;
   /** Only meaningful for category 'Payments' — drives the Cards/Mobile Money/Transfers sub-filter. */
   paymentType?: 'cards' | 'mobile_money' | 'transfers';
+  /** Apps that push their events to Atlas (no key stored here): the card opens
+   *  Live activity → Event sources with this kind preselected. */
+  eventsKind?: string;
 }
 
 // Every app Atlas knows how to store credentials for. Only the ones with a
@@ -46,7 +49,11 @@ const ALL_APPS: AppDef[] = [
   { provider: 'telegram', name: 'Telegram', category: 'Messaging', authType: 'api_key', configFields: [{ key: 'bot_token', label: 'Bot Token', placeholder: '123456:ABC-DEF...', type: 'password' }], docsUrl: 'https://core.telegram.org/bots/api' },
   { provider: 'zoom', name: 'Zoom', category: 'Video', authType: 'oauth', docsUrl: 'https://developers.zoom.us' },
   { provider: 'google_meet', name: 'Google Meet', category: 'Video', authType: 'oauth', docsUrl: 'https://developers.google.com/meet' },
-  { provider: 'aircall', name: 'Aircall', category: 'Calling', authType: 'api_key', configFields: [{ key: 'api_token', label: 'API Token', placeholder: 'aircall_xxx', type: 'password' }, { key: 'app_id', label: 'App ID', placeholder: '12345' }], docsUrl: 'https://developer.aircall.io' },
+  { provider: 'aircall', name: 'Aircall', category: 'Calling', authType: 'api_key', configFields: [{ key: 'api_id', label: 'API ID', placeholder: 'Aircall Dashboard → Integrations → API Keys' }, { key: 'api_token', label: 'API Token', placeholder: 'API token', type: 'password' }], docsUrl: 'https://developer.aircall.io/api-references/' },
+  { provider: 'ringover', name: 'Ringover', category: 'Calling', authType: 'webhook_url', eventsKind: 'ringover', docsUrl: 'https://developer.ringover.com' },
+  { provider: 'zanldo', name: 'Zanldo', category: 'E-commerce', authType: 'webhook_url', eventsKind: 'zanldo', docsUrl: 'https://zanldo.com' },
+  { provider: 'trading_platform', name: 'MT4 / MT5 / cTrader', category: 'Trading', authType: 'webhook_url', eventsKind: 'trading', docsUrl: 'https://atlas.liafrik.com/app/live' },
+  { provider: 'custom_events', name: 'Webhook (any app)', category: 'Automation', authType: 'webhook_url', eventsKind: 'custom', docsUrl: 'https://atlas.liafrik.com/app/live' },
   { provider: 'calendly', name: 'Calendly', category: 'Scheduling', authType: 'api_key', configFields: [{ key: 'personal_access_token', label: 'Personal Access Token', placeholder: 'cal_pat_xxx', type: 'password' }], docsUrl: 'https://developer.calendly.com' },
   { provider: 'hubspot', name: 'HubSpot', category: 'CRM', authType: 'api_key', configFields: [{ key: 'api_key', label: 'API Key', placeholder: 'pat-na1-xxx', type: 'password' }], docsUrl: 'https://developers.hubspot.com' },
   { provider: 'quickbooks', name: 'QuickBooks', category: 'Accounting', authType: 'oauth', docsUrl: 'https://developer.intuit.com' },
@@ -439,6 +446,8 @@ export function MarketplacePage() {
     Support: lang === 'fr' ? 'Support client' : 'Customer Support',
     Storage: lang === 'fr' ? 'Stockage' : 'Storage',
     'Project Management': lang === 'fr' ? 'Gestion de projet' : 'Project Management',
+    Calling: lang === 'fr' ? 'Centre d’appels' : 'Call center',
+    Trading: lang === 'fr' ? 'Trading & finance' : 'Trading & finance',
   };
 
   return (
@@ -523,13 +532,17 @@ export function MarketplacePage() {
                   Docs <ExternalLink size={10} />
                 </a>
               </div>
-              <button
+              {app.eventsKind ? (
+                <Link to={`/app/live?source=${app.eventsKind}`} className="btn-secondary btn-sm mt-auto w-full">
+                  <Plus size={14} /> {lang === 'fr' ? 'Configurer le flux' : 'Set up the feed'}
+                </Link>
+              ) : <button
                 onClick={() => toggleConnect(app)}
                 disabled={busy === app.provider}
                 className={`btn-sm mt-auto w-full ${isConnected ? 'bg-success-600 text-white hover:bg-success-700' : 'btn-secondary'}`}
               >
                 {busy === app.provider ? '...' : isConnected ? <><Check size={14} /> {lang === 'fr' ? 'Connecté' : 'Connected'}</> : <><Plus size={14} /> {lang === 'fr' ? 'Connecter' : 'Connect'}</>}
-              </button>
+              </button>}
             </div>
           );
         })}

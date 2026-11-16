@@ -16,7 +16,8 @@ export type WorkflowActionType =
   | 'send_telegram' | 'send_sms' | 'mailchimp_subscribe' | 'call_custom_app'
   | 'send_whatsapp' | 'send_email' | 'hubspot_upsert_contact' | 'freshdesk_create_ticket'
   | 'mollie_create_payment' | 'cinetpay_create_payment' | 'wave_create_checkout'
-  | 'chapa_initialize' | 'campay_collect' | 'shopify_create_customer' | 'woocommerce_create_customer';
+  | 'chapa_initialize' | 'campay_collect' | 'shopify_create_customer' | 'woocommerce_create_customer'
+  | 'paystack_payment_link' | 'flutterwave_payment_link' | 'stripe_payment_link';
 
 export interface WorkflowAction {
   type: WorkflowActionType;
@@ -55,6 +56,9 @@ export const WORKFLOW_ACTION_TYPES: { value: WorkflowActionType; label: { fr: st
   { value: 'shopify_create_customer', label: { fr: 'Créer un client Shopify', en: 'Create a Shopify customer' } },
   { value: 'woocommerce_create_customer', label: { fr: 'Créer un client WooCommerce', en: 'Create a WooCommerce customer' } },
   { value: 'mollie_create_payment', label: { fr: 'Créer un paiement Mollie', en: 'Create a Mollie payment' } },
+  { value: 'paystack_payment_link', label: { fr: 'Créer un lien de paiement Paystack', en: 'Create a Paystack payment link' } },
+  { value: 'flutterwave_payment_link', label: { fr: 'Créer un lien de paiement Flutterwave', en: 'Create a Flutterwave payment link' } },
+  { value: 'stripe_payment_link', label: { fr: 'Créer un lien de paiement Stripe', en: 'Create a Stripe payment link' } },
   { value: 'cinetpay_create_payment', label: { fr: 'Créer un paiement CinetPay', en: 'Create a CinetPay payment' } },
   { value: 'wave_create_checkout', label: { fr: 'Créer un paiement Wave', en: 'Create a Wave checkout' } },
   { value: 'chapa_initialize', label: { fr: 'Créer un paiement Chapa', en: 'Create a Chapa payment' } },
@@ -72,6 +76,9 @@ export const WORKFLOW_ACTION_PROVIDER: Partial<Record<WorkflowActionType, string
   hubspot_upsert_contact: 'hubspot',
   freshdesk_create_ticket: 'freshdesk',
   mollie_create_payment: 'mollie',
+  paystack_payment_link: 'paystack',
+  flutterwave_payment_link: 'flutterwave',
+  stripe_payment_link: 'stripe',
   cinetpay_create_payment: 'cinetpay',
   wave_create_checkout: 'wave',
   chapa_initialize: 'chapa',
@@ -118,6 +125,23 @@ export const WORKFLOW_PARAM_FIELDS: Partial<Record<WorkflowActionType, { key: st
     { key: 'email', label: { fr: 'Email', en: 'Email' } },
     { key: 'first_name', label: { fr: 'Prénom', en: 'First name' } },
     { key: 'last_name', label: { fr: 'Nom', en: 'Last name' } },
+  ],
+  paystack_payment_link: [
+    { key: 'amount', label: { fr: 'Montant', en: 'Amount' }, placeholder: '5000' },
+    { key: 'currency', label: { fr: 'Devise', en: 'Currency' }, placeholder: 'NGN' },
+    { key: 'email', label: { fr: 'Email du client', en: 'Customer email' } },
+    { key: 'description', label: { fr: 'Description', en: 'Description' } },
+  ],
+  flutterwave_payment_link: [
+    { key: 'amount', label: { fr: 'Montant', en: 'Amount' }, placeholder: '50' },
+    { key: 'currency', label: { fr: 'Devise', en: 'Currency' }, placeholder: 'USD' },
+    { key: 'email', label: { fr: 'Email du client', en: 'Customer email' } },
+    { key: 'description', label: { fr: 'Description', en: 'Description' } },
+  ],
+  stripe_payment_link: [
+    { key: 'amount', label: { fr: 'Montant', en: 'Amount' }, placeholder: '50' },
+    { key: 'currency', label: { fr: 'Devise', en: 'Currency' }, placeholder: 'USD' },
+    { key: 'description', label: { fr: 'Description', en: 'Description' } },
   ],
   mollie_create_payment: [
     { key: 'amount', label: { fr: 'Montant', en: 'Amount' }, placeholder: '10.00' },

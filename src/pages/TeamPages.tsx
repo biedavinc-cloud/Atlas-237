@@ -15,7 +15,9 @@ import type { Profile, Role } from '@/types';
 const ROLE_OPTIONS: { value: Role; label: { fr: string; en: string } }[] = [
   { value: 'owner', label: { fr: 'Propriétaire', en: 'Owner' } },
   { value: 'admin', label: { fr: 'Administrateur', en: 'Admin' } },
-  { value: 'manager', label: { fr: 'Gestionnaire', en: 'Manager' } },
+  { value: 'manager', label: { fr: 'Manager (CRM manager, chef d’équipe)', en: 'Manager (CRM manager, team lead)' } },
+  { value: 'qc', label: { fr: 'Contrôle qualité (QC)', en: 'Quality control (QC)' } },
+  { value: 'agent', label: { fr: 'Agent (centre d’appels, conseiller)', en: 'Agent (call center, advisor)' } },
   { value: 'sales', label: { fr: 'Ventes', en: 'Sales' } },
   { value: 'marketing', label: { fr: 'Marketing', en: 'Marketing' } },
   { value: 'finance', label: { fr: 'Finance', en: 'Finance' } },

@@ -161,6 +161,18 @@ export function LandingPage() {
       ],
     },
     {
+      group: { fr: 'Équipes & centres d’appels', en: 'Teams & call centers' },
+      rows: [
+        { label: { fr: 'Demandes d’avis clients', en: 'Customer review requests' }, values: [false, true, true, true] },
+        { label: { fr: 'Coordonnées clients masquées aux agents', en: 'Customer details hidden from agents' }, values: [false, false, true, true] },
+        { label: { fr: 'Portefeuilles par agent', en: 'Per-agent portfolios' }, values: [false, false, true, true] },
+        { label: { fr: 'Distribution des leads & performance équipe', en: 'Lead distribution & team performance' }, values: [false, false, true, true] },
+        { label: { fr: 'Activité client en direct (trading, boutiques, appels)', en: 'Live customer activity (trading, shops, calls)' }, values: [false, false, true, true] },
+        { label: { fr: 'Champs et secteur personnalisés', en: 'Custom fields & industry setup' }, values: [false, false, true, true] },
+        { label: { fr: 'Adresse dédiée entreprise.liafrik.com', en: 'Dedicated company.liafrik.com address' }, values: [false, false, true, true] },
+      ],
+    },
+    {
       group: { fr: 'Sécurité & Administration', en: 'Security & Administration' },
       rows: [
         { label: { fr: 'Marque personnalisée', en: 'Custom branding' }, values: [false, true, true, true] },

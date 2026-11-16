@@ -62,8 +62,10 @@ export function ConvertLeadModal({ lead, onClose, onDone }: { lead: Lead; onClos
       const { data: contact, error: cErr } = await supabase.from('contacts').insert({
         first_name: lead.first_name,
         last_name: lead.last_name,
-        email: lead.email,
-        phone: lead.phone,
+        // Masked values ("j•••@…") are never copied; copy_lead_pii fills
+        // the real ones server side.
+        email: lead.pii_masked ? null : lead.email,
+        phone: lead.pii_masked ? null : lead.phone,
         job_title: lead.title,
         company_id: companyId,
         company: withCompany ? companyName.trim() || null : lead.company_name,
@@ -74,6 +76,10 @@ export function ConvertLeadModal({ lead, onClose, onDone }: { lead: Lead; onClos
         owner_id: profile?.id || null,
       }).select('id').single();
       if (cErr) throw cErr;
+      if (lead.pii_masked) {
+        const { error: pErr } = await supabase.rpc('copy_lead_pii', { p_lead: lead.id, p_contact: contact.id });
+        if (pErr) throw pErr;
+      }
 
       if (withDeal && dealName.trim()) {
         const stage = stages.find(s => s.id === stageId);

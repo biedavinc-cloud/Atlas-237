@@ -30,7 +30,9 @@ function persist() {
     try { sessionStorage.setItem(DEMO_DB_KEY, JSON.stringify(db)); } catch { /* quota: keep in memory */ }
   }, 150);
 }
-const tableRows = (t: string) => (db[t] ||= []);
+// contacts_v / leads_v (masked views in production) read the base tables here.
+const baseTable = (t: string) => (t === 'contacts_v' || t === 'leads_v' ? t.slice(0, -2) : t);
+const tableRows = (t: string) => (db[baseTable(t)] ||= []);
 
 const uuid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`);
 const singular = (t: string) => (t.endsWith('ies') ? `${t.slice(0, -3)}y` : t.endsWith('s') ? t.slice(0, -1) : t);
@@ -145,7 +147,7 @@ class Query implements PromiseLike<Result> {
   private payload: Row | Row[] | null = null;
   private onConflict = 'id';
 
-  constructor(private table: string) {}
+  constructor(private table: string) { this.table = baseTable(table); }
 
   select(cols = '*', opts?: { count?: string; head?: boolean }) {
     this.selectStr = cols || '*';
@@ -291,6 +293,7 @@ function rpc(name: string): Promise<{ data: unknown; error: null }> {
     is_platform_exempt: false,
     link_super_admin: null,
     rbac_check: true,
+    my_workspace: [{ org_id: null, role: 'owner', pii: true, see_all: true }],
     org_subscription_status: [{ status: 'trialing', plan: 'pro', trial_ends_at: trialEnd, current_period_end: null }],
   };
   return Promise.resolve({ data: name in answers ? answers[name] : null, error: null });

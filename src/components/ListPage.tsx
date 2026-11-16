@@ -4,6 +4,7 @@ import { Plus, Search, Edit2, Trash2, Upload, FileSpreadsheet, CheckCircle2, Loa
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
+import { readTable, isPiiTable, PII_FIELDS } from '@/lib/pii';
 import { useAuth } from '@/context/AuthContext';
 import { t } from '@/lib/i18n';
 import { getErrorMessage } from '@/lib/errors';
@@ -111,11 +112,13 @@ export interface FormField {
   };
 }
 
-function ImportModal({ table, fields, onClose, onDone, language }: {
+export function ImportModal({ table, fields, onClose, onDone, language, extra }: {
   table: string;
   fields: FormField[];
   onClose: () => void;
-  onDone: (imported: number) => void;
+  onDone: (imported: number, ids: string[]) => void;
+  /** Columns added to every imported row (e.g. a source tag). */
+  extra?: Record<string, unknown>;
   language: string;
 }) {
   const lang = language;
@@ -127,6 +130,7 @@ function ImportModal({ table, fields, onClose, onDone, language }: {
   const [importedCount, setImportedCount] = useState(0);
   const [error, setError] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const importedIds = useRef<string[]>([]);
 
   function handleFile(f: File) {
     setError('');
@@ -192,10 +196,13 @@ function ImportModal({ table, fields, onClose, onDone, language }: {
       fields.forEach(f => {
         const csvCol = fieldMap[f.key];
         if (csvCol && r[csvCol] !== undefined) {
-          obj[f.key] = f.type === 'number' ? Number(r[csvCol]) || 0 : String(r[csvCol]);
+          const v = f.type === 'number' ? Number(r[csvCol]) || 0 : String(r[csvCol]);
+          if (f.key.startsWith('cf:')) obj.custom_fields = { ...((obj.custom_fields as Record<string, unknown>) || {}), [f.key.slice(3)]: v };
+          else if (f.type === 'tags') obj[f.key] = String(v).split(',').map(x => x.trim()).filter(Boolean);
+          else obj[f.key] = v;
         }
       });
-      return obj;
+      return Object.keys(obj).length ? { ...obj, ...(extra || {}) } : obj;
     }).filter(obj => Object.keys(obj).length > 0);
   }
 
@@ -204,8 +211,9 @@ function ImportModal({ table, fields, onClose, onDone, language }: {
     setError('');
     const data = mappedRows();
     try {
-      const { error: insErr } = await supabase.from(table).insert(data);
+      const { data: inserted, error: insErr } = await supabase.from(table).insert(data).select('id');
       if (insErr) throw insErr;
+      importedIds.current = ((inserted || []) as { id: string }[]).map(r => r.id);
       setImportedCount(data.length);
       setStep('done');
     } catch (err) {
@@ -317,7 +325,7 @@ function ImportModal({ table, fields, onClose, onDone, language }: {
           </div>
           <h3 className="font-bold text-ink-800 text-lg mb-1">{importedCount} {lang === 'fr' ? 'ligne(s) importée(s) avec succès !' : 'row(s) imported successfully!'}</h3>
           <p className="text-sm text-ink-500 mb-4">{lang === 'fr' ? 'Vos données sont maintenant disponibles.' : 'Your data is now available.'}</p>
-          <button onClick={() => onDone(importedCount)} className="btn-primary btn-sm">{lang === 'fr' ? 'Terminer' : 'Done'}</button>
+          <button onClick={() => onDone(importedCount, importedIds.current)} className="btn-primary btn-sm">{lang === 'fr' ? 'Terminer' : 'Done'}</button>
         </div>
       )}
     </Modal>
@@ -360,7 +368,7 @@ function RelationSelect({ field, value, onChange, id }: { field: FormField; valu
   useEffect(() => {
     const rel = field.relation;
     if (!rel) return;
-    let q = supabase.from(rel.table).select(rel.select || '*').limit(1000);
+    let q = supabase.from(readTable(rel.table)).select(rel.select || '*').limit(1000);
     if (rel.orderBy) q = q.order(rel.orderBy, { ascending: true });
     q.then(({ data }) => {
       const rows = (data || []) as unknown as Record<string, unknown>[];
@@ -404,7 +412,8 @@ export function RecordFormModal({ open, onClose, onSaved, table, title, fields, 
     const data: Record<string, unknown> = {};
     if (record) {
       fields.forEach(f => {
-        const v = record[f.key];
+        // "cf:<key>" fields live inside the custom_fields jsonb column.
+        const v = f.key.startsWith('cf:') ? (record.custom_fields as Record<string, unknown> | null)?.[f.key.slice(3)] : record[f.key];
         // 'tags' columns are real Postgres arrays (text[]); the input works
         // with a comma-separated string, converted back on save.
         data[f.key] = f.type === 'tags' && Array.isArray(v) ? v.join(', ') : v;
@@ -437,6 +446,17 @@ export function RecordFormModal({ open, onClose, onSaved, table, title, fields, 
           (editing || (v !== null && v !== '' && v !== undefined))
         )
       );
+      // Columns that only exist on the read view, and contact details the
+      // database returned masked: never written back.
+      delete payload.pii_masked;
+      if (record?.pii_masked) PII_FIELDS.forEach((k) => { delete payload[k]; });
+      // Workspace custom fields ("cf:<key>") are merged into custom_fields.
+      const cfKeys = Object.keys(payload).filter((k) => k.startsWith('cf:'));
+      if (cfKeys.length) {
+        const cf: Record<string, unknown> = { ...((record?.custom_fields as Record<string, unknown>) || {}) };
+        cfKeys.forEach((k) => { cf[k.slice(3)] = payload[k] === '' ? null : payload[k]; delete payload[k]; });
+        payload.custom_fields = cf;
+      }
       fields.forEach(f => {
         if (f.type === 'tags' && f.key in payload) {
           const raw = payload[f.key];
@@ -448,20 +468,20 @@ export function RecordFormModal({ open, onClose, onSaved, table, title, fields, 
         if (f.type === 'relation' && payload[f.key] === '') payload[f.key] = null;
       });
       if (editing && record?.id) {
-        const { data: updated, error } = await supabase.from(table).update(payload).eq('id', record.id as string).select().single();
+        const { data: updated, error } = await supabase.from(table).update(payload).eq('id', record.id as string).select(isPiiTable(table) ? 'id' : '*').single();
         if (error) throw error;
         for (const ev of computeWebhookEvents(table, 'updated', payload)) {
           triggerWebhooks(ev, { id: record.id, table, ...payload });
         }
-        onSaved((updated as Record<string, unknown>) || { ...record, ...payload });
+        onSaved({ ...record, ...payload, ...((updated as Record<string, unknown>) || {}) });
       } else {
-        const { data: inserted, error } = await supabase.from(table).insert(payload).select().single();
+        const { data: inserted, error } = await supabase.from(table).insert(payload).select(isPiiTable(table) ? 'id' : '*').single();
         if (error) throw error;
         if (table === 'tickets' && inserted) notifyNewTicket(inserted as Record<string, unknown>);
         for (const ev of computeWebhookEvents(table, 'created', payload)) {
           triggerWebhooks(ev, { id: (inserted as Record<string, unknown> | null)?.id, table, ...payload });
         }
-        onSaved((inserted as Record<string, unknown>) || payload);
+        onSaved({ ...payload, ...((inserted as Record<string, unknown>) || {}) });
       }
       onClose();
     } catch (err: unknown) {
@@ -485,7 +505,12 @@ export function RecordFormModal({ open, onClose, onSaved, table, title, fields, 
                 <label className="label" htmlFor={id}>
                   {field.label}{field.required && <span className="text-error-600 ms-0.5" aria-hidden>*</span>}
                 </label>
-                {field.type === 'relation' ? (
+                {record?.pii_masked && PII_FIELDS.includes(field.key) ? (
+                  <div>
+                    <input id={id} className="input bg-ink-50 text-ink-500" value={String(formData[field.key] ?? '')} readOnly aria-describedby={`${id}-masked`} />
+                    <p id={`${id}-masked`} className="mt-1 text-xs text-ink-500">{language === 'fr' ? 'Masqué par votre manager. Contactez le client depuis sa fiche.' : 'Hidden by your manager. Reach the customer from their record.'}</p>
+                  </div>
+                ) : field.type === 'relation' ? (
                   <RelationSelect id={id} field={field} value={String(formData[field.key] ?? '')} onChange={v => set(field.key, v)} />
                 ) : field.type === 'select' ? (
                   <select id={id} className="input" value={String(formData[field.key] ?? '')} onChange={e => set(field.key, e.target.value)}>
@@ -618,7 +643,7 @@ export function ListPage<T extends { id: string }>({
     setLoading(true);
     setLoadError('');
     const from = page * PAGE_SIZE;
-    let query = supabase.from(table).select(relations || select || '*', { count: 'exact' });
+    let query = supabase.from(readTable(table)).select(relations || select || '*', { count: 'exact' });
     query = applyFilters(query).order(sort.key, { ascending: sort.asc }).range(from, from + PAGE_SIZE - 1);
     const { data, error, count } = await query;
     if (error) setLoadError(error.message);
@@ -676,7 +701,7 @@ export function ListPage<T extends { id: string }>({
     try {
       const all: Record<string, unknown>[] = [];
       for (let from = 0; ; from += 1000) {
-        const q = applyFilters(supabase.from(table).select(select || '*')).order(sort.key, { ascending: sort.asc }).range(from, from + 999);
+        const q = applyFilters(supabase.from(readTable(table)).select(select || '*')).order(sort.key, { ascending: sort.asc }).range(from, from + 999);
         const { data, error } = await q;
         if (error) throw error;
         all.push(...((data || []) as unknown as Record<string, unknown>[]));

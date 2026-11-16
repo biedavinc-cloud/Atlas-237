@@ -59,7 +59,7 @@ export function DocumentPage({ kind }: { kind: Kind }) {
   const load = useCallback(async () => {
     if (!id) return;
     const [{ data: d }, { data: it }, { data: pr }] = await Promise.all([
-      supabase.from(table).select('*, contact:contacts(id,first_name,last_name,email,phone,city,country), company:companies(id,name,city,country,website), deal:deals(id,name)').eq('id', id).maybeSingle(),
+      supabase.from(table).select('*, contact:contacts_v(id,first_name,last_name,email,phone,city,country), company:companies(id,name,city,country,website), deal:deals(id,name)').eq('id', id).maybeSingle(),
       supabase.from(itemsTable).select('*').eq(fk, id).order('created_at', { ascending: true }),
       supabase.from('products').select('id,name,price,description,tax_rate').order('name', { ascending: true }).limit(500),
     ]);
@@ -256,8 +256,9 @@ export function DocumentPage({ kind }: { kind: Kind }) {
               subject={`${kind === 'quote' ? (fr ? 'Devis' : 'Quote') : (fr ? 'Facture' : 'Invoice')} ${number} — ${organization?.name || ''}`}
               message={docEmailBody}
               target={deal ? { fk: 'deal_id', id: deal.id } : { fk: 'contact_id', id: contact.id }}
+              record={{ table: 'contacts', id: contact.id }}
             />}
-            {kind === 'invoice' && totals.due > 0 && <QuickPaymentLinkButton amount={totals.due} currency={currency} email={contact?.email} label={number} />}
+            {kind === 'invoice' && totals.due > 0 && <QuickPaymentLinkButton amount={totals.due} currency={currency} email={contact?.email?.includes('•') ? null : contact?.email} contactId={contact?.id} label={number} />}
             {kind === 'invoice' && totals.due > 0 && totals.total > 0 && <button onClick={markPaid} disabled={saving} className="btn-success btn-sm"><CheckCircle2 size={14} /> {fr ? 'Marquer payée' : 'Mark as paid'}</button>}
             <button onClick={save} disabled={saving || !dirty} className="btn-primary btn-sm">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {fr ? 'Enregistrer' : 'Save'}</button>
           </div>
