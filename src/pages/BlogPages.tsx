@@ -326,7 +326,7 @@ function ProductCard({ product, lang, compact }: { product: Product; lang: Lang;
     <div className={`rounded-2xl border border-ink-100 bg-white p-5 shadow-sm ${compact ? '' : 'ring-1 ring-black/[0.02]'}`}>
       {info.logo ? (
         <div>
-          <img src={info.logo} alt={PRODUCT_LABEL[product]} className="h-10 w-auto max-w-full object-contain object-left" loading="lazy" />
+          <img src={info.logo} alt={PRODUCT_LABEL[product]} className={`${info.logoTall ? 'h-24' : 'h-10'} w-auto max-w-full object-contain object-left`} loading="lazy" />
           <p className="mt-2 text-xs font-semibold" style={{ color: info.accent }}>{info.domain}</p>
         </div>
       ) : (

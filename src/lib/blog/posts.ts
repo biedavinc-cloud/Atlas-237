@@ -46,6 +46,8 @@ export interface ProductInfo {
   /** Square icon and full wordmark in public/brands/ (official files provided by Liafrik). */
   icon?: string;
   logo?: string;
+  /** Logos that are taller than wide need more height to stay legible. */
+  logoTall?: boolean;
   /** Internal route (Atlas) vs. external site. */
   internal: boolean;
   domain: string;
@@ -109,7 +111,8 @@ export const PRODUCT_INFO: Record<Product, ProductInfo> = {
     cta: { fr: 'Découvrir Nutro', en: 'Discover Nutro' },
   },
   stella: {
-    url: 'https://stella.liafrik.com', internal: false, domain: 'stella.liafrik.com', accent: '#c026d3',
+    url: 'https://stella.liafrik.com', internal: false, domain: 'stella.liafrik.com', accent: '#6f4cff',
+    icon: '/brands/stella-icon.png', logo: '/brands/stella-logo.png', logoTall: true,
     tagline: { fr: 'Réservez salons de beauté, barbiers et spas en Afrique.', en: 'Book beauty salons, barbers and spas in Africa.' },
     cta: { fr: 'Découvrir Stella Art', en: 'Discover Stella Art' },
   },
@@ -231,7 +234,7 @@ export const POSTS: Post[] = [
     product: 'stella',
     date: '2026-11-15',
     readMin: 3,
-    cover: { from: '#3b0a3f', to: '#c026d3', motif: 'waves' },
+    cover: { from: '#1e1147', to: '#6f4cff', motif: 'waves' },
     fr: {
       title: 'Stella Art : réserver son salon, son barbier ou son spa en quelques secondes',
       dek: 'Coiffure, tresses, barbier, onglerie, massage, soin du visage : Stella Art permet de réserver en ligne, avec acompte en Mobile Money et rappel sur WhatsApp.',

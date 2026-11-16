@@ -1095,6 +1095,10 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   (Health Cloud and Stella Art pages currently expose little more than
   their description — keep their articles short until more is public).
   linkify() turns any *.liafrik.com address in an article into a link.
+- Stella Art: `stella-logo.png` is the full official logo (tall, shown at
+  h-24 via `logoTall`); `stella-icon.png` is the purple face profile
+  extracted from it with slightly thickened lines so it stays readable at
+  20–40 px. Regenerate from the official file rather than editing it.
 
 ## Branding
 - The company name is written "Liafrik" (not "LiAfrik"). Credit line:
