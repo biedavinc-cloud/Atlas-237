@@ -40,7 +40,7 @@ function ProductLink({ product, lang, className, style, children }: { product: P
 }
 
 /* Turns the official product addresses written in an article into real links. */
-const URL_RE = /((?:https?:\/\/)?(?:atlas\.liafrik\.com|liafrik\.com|gosukulu\.com|zanldo\.com)(?:\/[\w\-./]*[\w/])?)/g;
+const URL_RE = /((?:https?:\/\/)?(?:(?:[a-z0-9-]+\.)?liafrik\.com|gosukulu\.com|zanldo\.com)(?:\/[\w\-./]*[\w/])?)/g;
 
 function linkify(text: string, lang: Lang): ReactNode[] {
   return text.split(URL_RE).map((part, i) => {

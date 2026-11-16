@@ -1088,11 +1088,13 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   Health Cloud (hospital management), Nutro (restaurant POS, Pro and
   Premium), Stella (salon/spa bookings and checkout), Libooks, Sellia.
   Official logos/icons live in `public/brands/` (`PRODUCT_INFO.icon/logo`).
-  Health Cloud, Nutro and Stella have no public page or feature list yet:
-  they appear in the suite grid/footer with the owner's one-line
-  description and link to liafrik.com, but get no article until real
-  feature descriptions and URLs are provided. The Sukulu icon file
-  received was blank, so Sukulu still uses a generic pictogram.
+  Official sites: Health Cloud → health.liafrik.com, Nutro →
+  nutro.liafrik.com (Starter $29 / Premium $69 / Enterprise $189 a month,
+  14-day trial; there is no "Pro" plan on its site), Stella Art →
+  stella.liafrik.com. Their articles only state what those pages say
+  (Health Cloud and Stella Art pages currently expose little more than
+  their description — keep their articles short until more is public).
+  linkify() turns any *.liafrik.com address in an article into a link.
 
 ## Branding
 - The company name is written "Liafrik" (not "LiAfrik"). Credit line:
