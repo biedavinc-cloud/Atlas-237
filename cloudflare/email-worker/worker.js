@@ -1,8 +1,8 @@
-// Atlas inbound e-mail → Supabase edge function `email-inbound`.
-// Deploy: `npx wrangler deploy` in this folder, set the two secrets
-// (`npx wrangler secret put INBOUND_EMAIL_SECRET`, same value as in
-// /super-admin/keys), then in Cloudflare → Email → Email Routing of the
-// inbound domain add a catch-all rule "Send to a Worker" → atlas-inbound-email.
+// Atlas inbound e-mail -> Supabase edge function `email-inbound`.
+// Installed automatically by the `cloudflare-setup` edge function
+// (/super-admin/keys -> "Install inbound e-mail"), which uploads this code
+// with INBOUND_EMAIL_SECRET as a secret and adds one Email Routing rule
+// per workspace address (<slug>@INBOUND_EMAIL_DOMAIN -> this Worker).
 export default {
   async email(message, env) {
     const raw = new Uint8Array(await new Response(message.raw).arrayBuffer());

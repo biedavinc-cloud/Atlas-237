@@ -261,8 +261,9 @@ export function GiantMarquee({ lang }: { lang: Lang }) {
     function tick() {
       raf = 0;
       if (!visible) return;
-      const y = window.scrollY; boost = boost * 0.9 + Math.min(40, Math.abs(y - last)) * 0.12; last = y;
-      x = (x + 0.06 + boost * 0.08) % 50;
+      // Slow drift (about 50 px/s on desktop), nudged a little by scrolling.
+      const y = window.scrollY; boost = boost * 0.92 + Math.min(30, Math.abs(y - last)) * 0.04; last = y;
+      x = (x + 0.004 + Math.min(boost, 6) * 0.004) % 50;
       rows.forEach((r, i) => { r.style.transform = `translate3d(${i % 2 ? x - 50 : -x}%,0,0)`; });
       raf = requestAnimationFrame(tick);
     }

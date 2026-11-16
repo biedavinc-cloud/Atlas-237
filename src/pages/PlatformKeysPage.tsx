@@ -278,6 +278,8 @@ export function PlatformKeysPage() {
         ))}
       </div>
 
+      {tab === 'platform' && <CloudflareSetupCard fr={fr} />}
+
       <p className="text-xs text-ink-400">
         {fr ? 'Chaque enregistrement et suppression est inscrit au ' : 'Every save and removal is written to the '}
         <Link to="/super-admin/audit" className="font-semibold text-primary-700 hover:underline">{fr ? 'journal d’audit' : 'audit log'}</Link>
@@ -423,5 +425,34 @@ function KeyField({ f, row, envSet, buildValue, fr, tr, onSaved }: { f: FieldDef
       {row.is_set && row.updated_at && <p className="mt-1 text-[11px] text-ink-400">{fr ? 'Modifiée le ' : 'Updated '}{new Date(row.updated_at).toLocaleString(fr ? 'fr-FR' : 'en-GB')}{row.updated_by_email ? ` · ${row.updated_by_email}` : ''}</p>}
       {err && <p className="mt-1 text-xs text-error-700">{err}</p>}
     </div>
+  );
+}
+
+/** One click: deploys the inbound e-mail Worker, turns on Email Routing for
+ *  the inbound subdomain and creates one rule per workspace address
+ *  (edge function cloudflare-setup, idempotent). */
+function CloudflareSetupCard({ fr }: { fr: boolean }) {
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState<{ ok: boolean; msg?: string; steps?: { step: string; ok: boolean; msg: string }[] } | null>(null);
+  async function run() {
+    setBusy(true); setRes(null);
+    const { data, error: err } = await supabase.functions.invoke('cloudflare-setup', { body: {} });
+    setRes(err ? { ok: false, msg: getErrorMessage(err) } : data);
+    setBusy(false);
+  }
+  return (
+    <section className="card p-5">
+      <h2 className="card-title">{fr ? 'Installer les e-mails entrants (Cloudflare)' : 'Install inbound e-mail (Cloudflare)'}</h2>
+      <p className="mt-1 text-sm text-ink-600">{fr
+        ? 'Déploie le Worker atlas-inbound-email, active Email Routing sur le domaine de réception (sous-domaine : vos boîtes @liafrik.com ne changent pas) et crée une règle par adresse d’entreprise. Le jeton Cloudflare doit avoir : Workers Scripts (Edit), Email Routing Rules (Edit), Zone Settings (Edit) et, pour les adresses entreprise, Cloudflare Pages (Edit). Relançable sans risque.'
+        : 'Deploys the atlas-inbound-email Worker, turns on Email Routing for the receiving domain (a subdomain: your @liafrik.com mailboxes are untouched) and creates one rule per company address. The Cloudflare token needs: Workers Scripts (Edit), Email Routing Rules (Edit), Zone Settings (Edit) and, for company addresses, Cloudflare Pages (Edit). Safe to run again.'}</p>
+      <button type="button" onClick={run} disabled={busy} className="btn-primary btn-sm mt-4">{busy ? <Loader2 size={14} className="animate-spin" /> : null} {fr ? 'Installer / vérifier' : 'Install / check'}</button>
+      {res && (
+        <ul className="mt-4 space-y-1.5 text-sm">
+          {res.msg && <li className={res.ok ? 'text-success-700' : 'text-error-700'}>{res.msg}</li>}
+          {(res.steps || []).map((st) => <li key={st.step} className={st.ok ? 'text-success-700' : 'text-error-700'}>{st.ok ? '✓' : '✗'} {st.msg}</li>)}
+        </ul>
+      )}
+    </section>
   );
 }

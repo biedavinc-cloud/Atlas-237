@@ -1334,8 +1334,14 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   activities with `metadata.recording_url`. Smoke-tested live.
 - `email-inbound` (verify_jwt=false, `INBOUND_EMAIL_SECRET`) + the Cloudflare
   Email Worker in `cloudflare/email-worker/`: mail to `<slug>@<INBOUND_EMAIL_DOMAIN>`
-  lands on the sender's contact/lead timeline and notifies its owner.
-  Needs the domain's Email Routing set up by the platform owner.
+  (live value: `in.liafrik.com`; the secret was generated in Vault) lands on
+  the sender's contact/lead timeline and notifies its owner. Catch-all rules
+  only exist on apex domains, so each workspace gets a literal routing rule.
+  `cloudflare-setup` (super admin, button on /super-admin/keys) deploys the
+  Worker, enables Email Routing on the subdomain and creates the rules;
+  `tenant-domain` also creates the rule when an org activates its address.
+  liafrik.com already uses Cloudflare Email Routing on the apex — never touch
+  the apex MX/catch-all from code.
 - `tenant-domain`: adds `<slug>.<TENANT_ROOT_DOMAIN>` to the Pages project
   and a proxied CNAME (Cloudflare keys in /super-admin/keys). The front
   detects tenant hosts (`src/lib/tenantHost.ts`) and brands the sign-in.

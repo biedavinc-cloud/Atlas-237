@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getSecrets } from "../_shared/secrets.ts";
+import { ensureInboundRule } from "../_shared/cloudflare.ts";
 
 // Activates <slug>.<TENANT_ROOT_DOMAIN> for the caller's organization
 // (Pro/Enterprise, owner/admin): adds it as a custom domain of the Pages
@@ -54,5 +55,8 @@ Deno.serve(async (req) => {
     if (!rec.success) return json({ ok: false, msg: `Cloudflare DNS: ${rec.errors?.[0]?.message || "could not create the record"}` });
   }
   const status = dom.result?.status || "pending";
+  // The workspace's inbound e-mail address (<slug>@INBOUND_EMAIL_DOMAIN), when configured.
+  const inbound = await getSecrets(["INBOUND_EMAIL_DOMAIN"]);
+  if (inbound.INBOUND_EMAIL_DOMAIN) await ensureInboundRule({ ...s, INBOUND_EMAIL_DOMAIN: inbound.INBOUND_EMAIL_DOMAIN }, org.slug);
   return json({ ok: true, status, msg: status === "active" ? t(`https://${host} est en ligne.`, `https://${host} is live.`) : t(`https://${host} est en cours d’activation (certificat en cours, quelques minutes en général).`, `https://${host} is being activated (certificate in progress, usually a few minutes).`) });
 });
