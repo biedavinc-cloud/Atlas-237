@@ -1073,6 +1073,16 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   the demo. Don't reintroduce testimonials or numbers that aren't real.
 - `/legal/status` runs live checks (Auth + REST) from the visitor's browser
   instead of a hardcoded "all systems operational".
+- Every article leads to its product: `PRODUCT_INFO` in `posts.ts` holds
+  each product's official URL (Atlas → /auth + /demo, POS →
+  liafrik.com/en/products/pos, Sukulu → gosukulu.com, Zanldo → zanldo.com,
+  others → liafrik.com), tagline, CTA and accent. The blog index opens with
+  product tiles linking to each product and a filter (`?product=`);
+  articles show a product pill, a sticky product card + table of contents
+  (desktop), a product card under the intro (mobile), a product CTA band,
+  share buttons (WhatsApp, LinkedIn, copy) and a reading progress bar.
+  Official addresses written in the text are turned into links by
+  `linkify()` in BlogPages.tsx — keep writing them as plain domains.
 
 ## Branding
 - The company name is written "Liafrik" (not "LiAfrik"). Credit line:

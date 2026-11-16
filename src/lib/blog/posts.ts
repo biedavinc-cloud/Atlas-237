@@ -32,6 +32,60 @@ export const PRODUCT_LABEL: Record<Product, string> = {
   zanldo: 'Zanldo',
 };
 
+/**
+ * Where each product lives, so every article leads to the product it talks
+ * about. Only official addresses: Atlas (this app), liafrik.com product
+ * pages, gosukulu.com, zanldo.com. Libooks and Sellia have no public page
+ * yet, so they point to liafrik.com.
+ */
+export interface ProductInfo {
+  url: string;
+  /** Internal route (Atlas) vs. external site. */
+  internal: boolean;
+  domain: string;
+  tagline: { fr: string; en: string };
+  cta: { fr: string; en: string };
+  accent: string;
+}
+
+export const PRODUCT_INFO: Record<Product, ProductInfo> = {
+  atlas: {
+    url: '/auth', internal: true, domain: 'atlas.liafrik.com', accent: '#0176d3',
+    tagline: { fr: 'Le CRM avec IA intégrée, pensé pour l’Afrique et le Golfe.', en: 'The CRM with built-in AI, built for Africa and the Gulf.' },
+    cta: { fr: 'Essayer Atlas gratuitement', en: 'Try Atlas for free' },
+  },
+  pos: {
+    url: 'https://liafrik.com/en/products/pos', internal: false, domain: 'liafrik.com', accent: '#16a34a',
+    tagline: { fr: 'La caisse qui continue de vendre quand le réseau tombe.', en: 'The till that keeps selling when the network drops.' },
+    cta: { fr: 'Découvrir Liafrik POS', en: 'Discover Liafrik POS' },
+  },
+  sukulu: {
+    url: 'https://gosukulu.com', internal: false, domain: 'gosukulu.com', accent: '#7c3aed',
+    tagline: { fr: 'Toute l’école sur une seule plateforme.', en: 'The whole school on one platform.' },
+    cta: { fr: 'Découvrir Sukulu', en: 'Discover Sukulu' },
+  },
+  zanldo: {
+    url: 'https://zanldo.com', internal: false, domain: 'zanldo.com', accent: '#ea580c',
+    tagline: { fr: 'Vendez en ligne, payé directement, sans commission.', en: 'Sell online, get paid directly, no commission.' },
+    cta: { fr: 'Ouvrir ma boutique sur Zanldo', en: 'Open my Zanldo store' },
+  },
+  liafrik: {
+    url: 'https://liafrik.com', internal: false, domain: 'liafrik.com', accent: '#0d1c33',
+    tagline: { fr: 'La suite logicielle de Liafrik Tech, Dubaï – Yaoundé.', en: 'The Liafrik Tech software suite, Dubai – Yaoundé.' },
+    cta: { fr: 'Voir toute la suite Liafrik', en: 'See the whole Liafrik suite' },
+  },
+  libooks: {
+    url: 'https://liafrik.com', internal: false, domain: 'liafrik.com', accent: '#0f766e',
+    tagline: { fr: 'La comptabilité de la suite Liafrik.', en: 'Accounting in the Liafrik suite.' },
+    cta: { fr: 'En savoir plus sur liafrik.com', en: 'Learn more on liafrik.com' },
+  },
+  sellia: {
+    url: 'https://liafrik.com', internal: false, domain: 'liafrik.com', accent: '#be185d',
+    tagline: { fr: 'Le commerce de la suite Liafrik.', en: 'Commerce in the Liafrik suite.' },
+    cta: { fr: 'En savoir plus sur liafrik.com', en: 'Learn more on liafrik.com' },
+  },
+};
+
 export const POSTS: Post[] = [
   {
     slug: 'liafrik-pos-la-caisse-qui-ne-lache-pas',
