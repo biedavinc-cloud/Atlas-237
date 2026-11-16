@@ -8,6 +8,8 @@ import { useAuth } from '@/context/AuthContext';
 import { Logo } from '@/components/Logo';
 import { POSTS, PRODUCT_INFO, PRODUCT_LABEL, getPost, type Block, type Post, type Product } from '@/lib/blog/posts';
 import { useHreflangLinks } from '@/lib/useHreflang';
+import { useLandingMotion } from '@/lib/landingMotion';
+import { SplitReveal } from '@/components/landing/SplitReveal';
 import type { Language } from '@/lib/i18n';
 
 type Lang = 'fr' | 'en';
@@ -118,6 +120,7 @@ function BlogChrome({ lang, children, path }: { lang: Lang; children: ReactNode;
   const navigate = useNavigate();
   const { setLanguage } = useAuth();
   const fr = lang === 'fr';
+  useLandingMotion();
   return (
     <div className="min-h-screen bg-white text-ink-900">
       <header className="sticky top-0 z-40 border-b border-ink-100 bg-white/90 backdrop-blur-xl">
@@ -211,9 +214,13 @@ export function BlogIndexPage({ lang: forced = 'fr' }: { lang?: Language }) {
         <section className="relative overflow-hidden border-b border-ink-100 bg-gradient-to-b from-primary-50/70 to-white">
           <div className="lp-grid" aria-hidden />
           <div className="relative mx-auto max-w-6xl px-5 pt-14 pb-12 sm:px-8 sm:pt-20">
-            <h1 className="max-w-3xl text-4xl font-bold leading-[1.05] tracking-tight text-navy-900 sm:text-6xl">
-              {fr ? 'La tech africaine qui vend, enseigne, encaisse et automatise.' : 'African tech that sells, teaches, collects and automates.'}
-            </h1>
+            <SplitReveal
+              as="h1"
+              trigger="load"
+              key={lang}
+              className="max-w-3xl text-4xl font-bold leading-[1.05] tracking-tight text-navy-900 sm:text-6xl"
+              parts={fr ? 'La tech africaine qui vend, enseigne, encaisse et automatise.' : 'African tech that sells, teaches, collects and automates.'}
+            />
             <p className="mt-5 max-w-2xl text-lg leading-8 text-ink-600">
               {fr ? 'Le blog de Liafrik Tech. Chaque article parle d’un produit que vous pouvez ouvrir tout de suite.' : 'The Liafrik Tech blog. Every article covers a product you can open right now.'}
             </p>
@@ -222,7 +229,7 @@ export function BlogIndexPage({ lang: forced = 'fr' }: { lang?: Language }) {
               {SHOWCASE.map(p => {
                 const info = PRODUCT_INFO[p];
                 return (
-                  <ProductLink key={p} product={p} lang={lang} className="group flex items-start gap-3 rounded-2xl border border-ink-100 bg-white/90 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-ink-200 hover:shadow-md">
+                  <ProductLink key={p} product={p} lang={lang} className="lp-tilt group flex items-start gap-3 rounded-2xl border border-ink-100 bg-white/90 p-4 shadow-sm hover:border-ink-200 hover:shadow-md">
                     <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl" style={{ backgroundColor: `${info.accent}14`, color: info.accent }}>
                       <ProductIcon product={p} size={20} />
                     </span>
@@ -304,11 +311,11 @@ function ProductCta({ product, lang }: { product: Product; lang: Lang }) {
           <div className="flex flex-wrap gap-3">
             {isAtlas ? (
               <>
-                <a href={`${base(lang)}/demo`} className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-3 font-semibold text-navy-900 hover:bg-primary-50"><PlayCircle size={18} /> {fr ? 'Ouvrir la démo' : 'Open the demo'}</a>
+                <a href={`${base(lang)}/demo`} className="lp-cta lp-magnetic inline-flex items-center gap-2 rounded-lg bg-white px-5 py-3 font-semibold text-navy-900 hover:bg-primary-50"><PlayCircle size={18} /> {fr ? 'Ouvrir la démo' : 'Open the demo'}</a>
                 <Link to={`${base(lang)}/auth`} className="inline-flex items-center gap-2 rounded-lg border border-white/30 px-5 py-3 font-semibold text-white hover:bg-white/10">{fr ? 'Essai gratuit 14 jours' : '14-day free trial'}</Link>
               </>
             ) : (
-              <ProductLink product={product} lang={lang} className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-3 font-semibold text-navy-900 hover:bg-primary-50">
+              <ProductLink product={product} lang={lang} className="lp-cta lp-magnetic inline-flex items-center gap-2 rounded-lg bg-white px-5 py-3 font-semibold text-navy-900 hover:bg-primary-50">
                 {info.cta[lang]} <ArrowUpRight size={18} className="rtl:-scale-x-100" />
               </ProductLink>
             )}
@@ -436,7 +443,7 @@ export function BlogArticlePage({ lang: forced = 'fr' }: { lang?: Language }) {
                 </ProductLink>
                 <span className="text-ink-500">{fmtDate(post.date, lang)} · {post.readMin} min {fr ? 'de lecture' : 'read'}</span>
               </div>
-              <h1 className="mt-4 text-4xl font-bold leading-[1.08] tracking-tight text-navy-900 sm:text-5xl">{post[lang].title}</h1>
+              <SplitReveal as="h1" trigger="load" key={`${post.slug}-${lang}`} className="mt-4 text-4xl font-bold leading-[1.08] tracking-tight text-navy-900 sm:text-5xl" parts={post[lang].title} />
               <p className="mt-5 text-xl leading-8 text-ink-600 blog-serif">{post[lang].dek}</p>
             </div>
           </header>

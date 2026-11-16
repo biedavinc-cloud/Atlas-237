@@ -25,6 +25,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useScrollReveal } from '@/lib/useScrollReveal';
 import { useLandingMotion } from '@/lib/landingMotion';
 import { HeroPreview } from '@/components/landing/HeroPreview';
+import { SplitReveal } from '@/components/landing/SplitReveal';
 import { InstallAppButton } from '@/components/PwaPrompts';
 
 /**
@@ -181,12 +182,12 @@ export function LandingPage() {
             <span className="text-lg font-bold tracking-tight">Atlas CRM</span>
           </Link>
           <nav className="hidden items-center gap-6 text-sm font-medium text-ink-600 lg:flex">
-            <a href="#products" className="hover:text-primary-700 transition">{lang === 'fr' ? 'Produits' : 'Products'}</a>
-            <a href="#pricing" className="hover:text-primary-700 transition">{lang === 'fr' ? 'Tarifs' : 'Pricing'}</a>
-            <a href="#industries" className="hover:text-primary-700 transition">{lang === 'fr' ? 'Industries' : 'Industries'}</a>
-            <a href="#faq" className="hover:text-primary-700 transition">FAQ</a>
-            <Link to={lang === 'fr' ? '/blog' : '/en/blog'} className="hover:text-primary-700 transition">Blog</Link>
-            <a href={lang === 'fr' ? '/demo' : '/en/demo'} className="hover:text-primary-700 transition">{lang === 'fr' ? 'Démo' : 'Demo'}</a>
+            <a href="#products" className="lp-navlink hover:text-primary-700 transition">{lang === 'fr' ? 'Produits' : 'Products'}</a>
+            <a href="#pricing" className="lp-navlink hover:text-primary-700 transition">{lang === 'fr' ? 'Tarifs' : 'Pricing'}</a>
+            <a href="#industries" className="lp-navlink hover:text-primary-700 transition">{lang === 'fr' ? 'Industries' : 'Industries'}</a>
+            <a href="#faq" className="lp-navlink hover:text-primary-700 transition">FAQ</a>
+            <Link to={lang === 'fr' ? '/blog' : '/en/blog'} className="lp-navlink hover:text-primary-700 transition">Blog</Link>
+            <a href={lang === 'fr' ? '/demo' : '/en/demo'} className="lp-navlink hover:text-primary-700 transition">{lang === 'fr' ? 'Démo' : 'Demo'}</a>
           </nav>
           <div className="flex items-center gap-2.5">
             <button
@@ -221,22 +222,28 @@ export function LandingPage() {
           <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-primary-200/40 blur-3xl animate-pulse-slow" />
           <div className="absolute -left-24 top-40 h-80 w-80 rounded-full bg-accent-200/20 blur-3xl" />
           <div className="relative mx-auto max-w-4xl px-6 pt-20 text-center md:px-10 lg:pt-28">
-            <span className="animate-fade-in-up inline-flex items-center gap-2 rounded-full border border-primary-200 bg-white/80 px-4 py-1.5 text-xs font-semibold text-primary-700 shadow-sm backdrop-blur-sm">
+            <span className="lp-badge animate-fade-in-up inline-flex items-center gap-2 rounded-full border border-transparent bg-white/80 px-4 py-1.5 text-xs font-semibold text-primary-700 shadow-sm backdrop-blur-sm">
               <Zap size={13} className="text-primary-600" /> {lang === 'fr' ? 'Propulsé par l’IA agentique' : 'Powered by agentic AI'}
             </span>
-            <h1 className="animate-fade-in-up mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-ink-950 sm:text-6xl" style={{ animationDelay: '0.05s' }}>
-              {lang === 'fr' ? <>Le CRM agentique conçu pour <span className="lp-shine text-primary-600">l’Afrique et le Golfe</span></> : <>The agentic CRM built for <span className="lp-shine text-primary-600">Africa and the Gulf</span></>}
-            </h1>
+            <SplitReveal
+              as="h1"
+              trigger="load"
+              delay={120}
+              className="mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-ink-950 sm:text-6xl"
+              parts={lang === 'fr'
+                ? [{ text: 'Le CRM agentique conçu pour' }, { text: 'l’Afrique et le Golfe', className: 'lp-accent' }]
+                : [{ text: 'The agentic CRM built for' }, { text: 'Africa and the Gulf', className: 'lp-accent' }]}
+            />
             <p className="animate-fade-in-up mx-auto mt-6 max-w-2xl text-lg leading-8 text-ink-600" style={{ animationDelay: '0.1s' }}>
               {lang === 'fr'
                 ? 'Là où les personnes, les agents, les applications et les données se rejoignent sur une plateforme intégrée et fiable, qui travaille au cœur des systèmes qui font tourner votre entreprise.'
                 : 'Where people, agents, apps, and data come together on a unified, trusted platform that works at the heart of the systems running your business.'}
             </p>
             <div className="animate-fade-in-up mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row" style={{ animationDelay: '0.2s' }}>
-              <Link to="/auth" className="group inline-flex items-center gap-2 rounded-lg bg-primary-600 px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-primary-600/20 transition hover:bg-primary-700 hover:shadow-xl hover:shadow-primary-600/30">
+              <Link to="/auth" className="lp-cta lp-cta-glow lp-magnetic group inline-flex items-center gap-2 rounded-lg bg-primary-600 px-7 py-3.5 text-base font-semibold text-white hover:bg-primary-700">
                 {lang === 'fr' ? 'Commencer gratuitement' : 'Start for free'} <ArrowRight size={18} className="transition group-hover:translate-x-1" />
               </Link>
-              <a href={lang === 'fr' ? '/demo' : '/en/demo'} className="inline-flex items-center gap-2 rounded-lg border border-ink-200 bg-white px-7 py-3.5 text-base font-semibold text-ink-800 transition hover:bg-ink-50 hover:border-ink-300">
+              <a href={lang === 'fr' ? '/demo' : '/en/demo'} className="lp-cta lp-magnetic inline-flex items-center gap-2 rounded-lg border border-ink-200 bg-white px-7 py-3.5 text-base font-semibold text-ink-800 transition hover:bg-ink-50 hover:border-ink-300">
                 <PlayCircle size={18} /> {lang === 'fr' ? 'Essayer la démo' : 'Try the live demo'}
               </a>
             </div>
@@ -271,7 +278,7 @@ export function LandingPage() {
         {/* ───────── Agentic Enterprise / product cloud grid ───────── */}
         <section id="products" className="mx-auto max-w-7xl px-6 py-20 md:px-10 lg:py-24">
           <div className="mx-auto max-w-2xl text-center reveal">
-            <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Bienvenue dans l’Entreprise Agentique' : 'Welcome to the Agentic Enterprise'}</h2>
+            <SplitReveal className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl" parts={lang === 'fr' ? 'Bienvenue dans l’Entreprise Agentique' : 'Welcome to the Agentic Enterprise'} />
             <p className="mt-3 text-lg text-ink-600">{lang === 'fr' ? 'Là où les humains, les agents et les plateformes conduisent ensemble la réussite client.' : 'Where humans, agents, and platforms drive customer success together.'}</p>
           </div>
           <div className="reveal lp-stagger mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -300,7 +307,7 @@ export function LandingPage() {
         <section className="bg-ink-50 py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-6 md:px-10">
             <div className="reveal mx-auto max-w-2xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Jugez sur pièces, pas sur promesses' : 'Judge for yourself, not by promises'}</h2>
+              <SplitReveal className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl" parts={lang === 'fr' ? 'Jugez sur pièces, pas sur promesses' : 'Judge for yourself, not by promises'} />
               <p className="mt-4 text-ink-600">{lang === 'fr' ? 'Aucun chiffre gonflé, aucun avis inventé sur cette page. À la place, six choses à vérifier vous-même dans la démo, en cinq minutes, sans créer de compte.' : 'No inflated numbers, no made-up reviews on this page. Instead, six things to check yourself in the demo, in five minutes, without an account.'}</p>
             </div>
             <ol className="reveal lp-stagger mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -313,7 +320,7 @@ export function LandingPage() {
                 { to: '/app/contacts', fr: 'Exportez vos contacts en CSV', en: 'Export your contacts to CSV', frD: 'Vos données sortent quand vous voulez. Import CSV et Excel à l’arrivée.', enD: 'Your data leaves whenever you want. CSV and Excel import on the way in.' },
               ].map((c) => (
                 <li key={c.to}>
-                  <a href={`${lang === 'fr' ? '/demo' : '/en/demo'}?to=${c.to}`} className="lp-spot group flex h-full flex-col rounded-2xl border border-ink-100 bg-white p-6 shadow-sm transition hover:border-primary-200 hover:shadow-md">
+                  <a href={`${lang === 'fr' ? '/demo' : '/en/demo'}?to=${c.to}`} className="lp-spot lp-tilt group flex h-full flex-col rounded-2xl border border-ink-100 bg-white p-6 shadow-sm transition hover:border-primary-200 hover:shadow-md">
                     <CheckCircle2 size={22} className="text-success-600" />
                     <h3 className="mt-3 text-base font-bold text-ink-900">{lang === 'fr' ? c.fr : c.en}</h3>
                     <p className="mt-1.5 flex-1 text-sm leading-6 text-ink-600">{lang === 'fr' ? c.frD : c.enD}</p>
@@ -339,12 +346,12 @@ export function LandingPage() {
         </section>
 
         {/* ───────── Built-in AI / Starter Suite ───────── */}
-        <section id="pricing" className="relative overflow-hidden bg-primary-700 py-20 text-white lg:py-24">
+        <section id="pricing" className="lp-aurora relative overflow-hidden bg-primary-700 py-20 text-white lg:py-24">
           <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-white/10 blur-3xl animate-pulse-slow" />
           <div className="relative mx-auto max-w-7xl px-6 md:px-10">
             <div className="grid items-center gap-12 lg:grid-cols-2">
               <div className="reveal">
-                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{lang === 'fr' ? 'Une IA intégrée pour chaque partie de votre entreprise' : 'Built-in AI for every part of your business'}</h2>
+                <SplitReveal className="text-3xl font-bold tracking-tight sm:text-4xl" parts={lang === 'fr' ? 'Une IA intégrée pour chaque partie de votre entreprise' : 'Built-in AI for every part of your business'} />
                 <p className="mt-4 text-lg leading-8 text-primary-100">
                   {lang === 'fr'
                     ? <>Mettez l’IA au travail sur les ventes, le service et le marketing avec <strong className="text-white">Starter Suite</strong> — un CRM qui connaît votre métier et automatise des expériences client dont vous serez fier. Démarrez simplement avec une configuration rapide et des agents pré-construits.</>
@@ -383,9 +390,7 @@ export function LandingPage() {
         {/* ───────── Integrations: only apps with a real place of use ───────── */}
         <section id="integrations" className="mx-auto max-w-7xl px-6 py-20 md:px-10 lg:py-24">
           <div className="reveal mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">
-              {lang === 'fr' ? 'Des intégrations qui servent, là où vous travaillez' : 'Integrations that do something, where you work'}
-            </h2>
+            <SplitReveal className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl" parts={lang === 'fr' ? 'Des intégrations qui servent, là où vous travaillez' : 'Integrations that do something, where you work'} />
             <p className="mt-5 text-lg text-ink-600">
               {lang === 'fr'
                 ? 'Pas de mur de logos. Chaque app connectée apparaît à un endroit précis d’Atlas, et chaque action passe par un vrai appel à l’app, avec son résultat affiché.'
@@ -394,7 +399,7 @@ export function LandingPage() {
           </div>
           <div className="reveal lp-stagger mt-14 grid gap-6 md:grid-cols-2">
             {INTEGRATION_GROUPS.map((g) => (
-              <div key={g.where.en} className="lp-spot rounded-2xl border border-ink-100 bg-white p-6 shadow-sm">
+              <div key={g.where.en} className="lp-spot lp-tilt rounded-2xl border border-ink-100 bg-white p-6 shadow-sm">
                 <h3 className="text-lg font-bold text-ink-900">{g.where[contentLang]}</h3>
                 <p className="mt-1.5 text-sm leading-6 text-ink-600">{g.what[contentLang]}</p>
                 <ul className="mt-5 flex flex-wrap gap-2">
@@ -416,7 +421,7 @@ export function LandingPage() {
         {/* ───────── Platform / architecture ───────── */}
         <section className="mx-auto max-w-7xl px-6 py-20 md:px-10 lg:py-24">
           <div className="reveal mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Atlas CRM est la plateforme' : 'Atlas CRM is the platform'}</h2>
+            <SplitReveal className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl" parts={lang === 'fr' ? 'Atlas CRM est la plateforme' : 'Atlas CRM is the platform'} />
             <p className="mt-2 text-3xl font-bold tracking-tight text-primary-600 sm:text-4xl">{lang === 'fr' ? 'pour l’Entreprise Agentique' : 'for the Agentic Enterprise'}</p>
             <p className="mt-5 text-lg text-ink-600">{lang === 'fr' ? 'Notre plateforme profondément unifiée réunit applications, données, agents et métadonnées pour la réussite client et employé. Avec la confiance et la gouvernance intégrées, votre IA et votre entreprise passent à l’échelle de façon sécurisée et fiable.' : 'Our deeply unified platform brings together apps, data, agents, and metadata for customer and employee success. With trust and governance built in, your AI and your business scale securely and reliably.'}</p>
             <Link to="/auth" className="group mt-7 inline-flex items-center gap-2 rounded-lg bg-ink-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-ink-800">
@@ -443,7 +448,7 @@ export function LandingPage() {
         <section id="industries" className="bg-ink-50 py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-6 md:px-10">
             <div className="reveal mx-auto max-w-2xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Un CRM qui s’adapte à votre secteur' : 'A CRM that fits your industry'}</h2>
+              <SplitReveal className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl" parts={lang === 'fr' ? 'Un CRM qui s’adapte à votre secteur' : 'A CRM that fits your industry'} />
               <p className="mt-4 text-ink-600">{lang === 'fr' ? 'Conçues avec une expertise métier, ces solutions prêtes à l’emploi s’alignent sur vos workflows, données et besoins client.' : 'Built with industry expertise, these ready-to-use solutions align with your workflows, data, and customer needs.'}</p>
             </div>
             <div className="reveal lp-stagger mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -471,7 +476,7 @@ export function LandingPage() {
         {/* ───────── Resources ───────── */}
         <section className="mx-auto max-w-7xl px-6 py-20 md:px-10 lg:py-24">
           <div className="reveal mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Découvrez Atlas CRM en profondeur' : 'Go deeper with Atlas CRM'}</h2>
+            <SplitReveal className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl" parts={lang === 'fr' ? 'Découvrez Atlas CRM en profondeur' : 'Go deeper with Atlas CRM'} />
           </div>
           <div className="reveal lp-stagger mt-14 grid gap-6 md:grid-cols-3">
             {reports.map((r) => (
@@ -488,7 +493,7 @@ export function LandingPage() {
         <section className="bg-ink-50 py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-6 md:px-10">
             <div className="reveal mx-auto max-w-2xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Une tarification claire et transparente' : 'Clear and transparent pricing'}</h2>
+              <SplitReveal className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl" parts={lang === 'fr' ? 'Une tarification claire et transparente' : 'Clear and transparent pricing'} />
               <p className="mt-4 text-ink-600">{lang === 'fr' ? 'Choisissez le plan adapté à votre croissance.' : 'Choose the plan that fits your growth.'}</p>
               <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white p-1">
                 <button
@@ -571,7 +576,7 @@ export function LandingPage() {
         <section className="mx-auto max-w-7xl px-6 py-20 md:px-10 lg:py-24">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div className="reveal">
-              <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Nous croyons que l’entreprise est la plus grande plateforme de changement' : 'We believe business is the greatest platform for change'}</h2>
+              <SplitReveal className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl" parts={lang === 'fr' ? 'Nous croyons que l’entreprise est la plus grande plateforme de changement' : 'We believe business is the greatest platform for change'} />
               <p className="mt-4 text-ink-600">{lang === 'fr' ? 'Fondés sur la confiance, la réussite client, l’innovation, l’égalité et la durabilité, nous nous engageons à bien faire en affaires et à faire le bien dans le monde — en investissant 1% de notre équité, technologie et temps pour créer un changement durable.' : 'Founded on trust, customer success, innovation, equality, and sustainability, we are committed to doing well in business and doing good in the world — investing 1% of our equity, technology, and time to create lasting change.'}</p>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Link to="/legal/about" className="group inline-flex items-center gap-2 rounded-lg bg-ink-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-ink-800">{lang === 'fr' ? 'Voir ce qui nous anime' : 'See what drives us'} <ArrowRight size={16} className="transition group-hover:translate-x-1" /></Link>
@@ -596,12 +601,12 @@ export function LandingPage() {
         </section>
 
         {/* ───────── Final CTA ───────── */}
-        <section className="bg-primary-700 py-20 text-white">
+        <section className="lp-aurora relative overflow-hidden bg-primary-700 py-20 text-white">
           <div className="reveal mx-auto max-w-3xl px-6 text-center md:px-10">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{lang === 'fr' ? 'Commencez dès aujourd’hui' : 'Get started today'}</h2>
+            <SplitReveal className="text-3xl font-bold tracking-tight sm:text-4xl" parts={lang === 'fr' ? 'Commencez dès aujourd’hui' : 'Get started today'} />
             <p className="mt-4 text-lg text-primary-100">{lang === 'fr' ? 'Rien à installer. Sans carte bancaire. 14 jours gratuits.' : 'Nothing to install. No credit card. 14-day free trial.'}</p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link to="/auth" className="group inline-flex items-center gap-2 rounded-lg bg-white px-7 py-3.5 text-base font-semibold text-primary-700 shadow-lg transition hover:bg-primary-50">
+              <Link to="/auth" className="lp-cta lp-magnetic group inline-flex items-center gap-2 rounded-lg bg-white px-7 py-3.5 text-base font-semibold text-primary-700 shadow-lg hover:bg-primary-50">
                 {lang === 'fr' ? 'Essayer gratuitement' : 'Try for free'} <ArrowRight size={18} className="transition group-hover:translate-x-1" />
               </Link>
               <InstallAppButton variant="solid" className="!bg-white/10 !text-white ring-1 ring-white/30 hover:!bg-white/20" />
@@ -612,7 +617,7 @@ export function LandingPage() {
         {/* ───────── FAQ ───────── */}
         <section id="faq" className="mx-auto max-w-3xl px-6 py-20 md:px-10 lg:py-24">
           <div className="reveal text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Questions fréquentes' : 'Frequently asked questions'}</h2>
+            <SplitReveal className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl" parts={lang === 'fr' ? 'Questions fréquentes' : 'Frequently asked questions'} />
           </div>
           <div className="mt-10 space-y-4">
             {faqs.map((f) => (
@@ -638,15 +643,13 @@ export function LandingPage() {
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/90 backdrop-blur-sm">
               <Building2 size={13} /> {lang === 'fr' ? 'Fait pour l’entreprise' : 'Built for the enterprise'}
             </span>
-            <h2 className="mt-6 text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
-              {lang === 'fr' ? 'Votre entreprise mérite un CRM à la hauteur' : 'Your business deserves a CRM built to match it'}
-            </h2>
+            <SplitReveal className="mt-6 text-3xl font-bold leading-tight tracking-tight sm:text-5xl" parts={lang === 'fr' ? 'Votre entreprise mérite un CRM à la hauteur' : 'Your business deserves a CRM built to match it'} />
             <p className="mx-auto mt-5 max-w-xl text-lg text-white/80">
               {lang === 'fr'
                 ? 'Chaque entreprise dans son propre espace, cloisonné par la base de données elle-même. Votre équipe, vos clients et vos chiffres ne sont visibles que par vous.'
                 : 'Every company in its own workspace, isolated by the database itself. Your team, your customers and your numbers are visible to you alone.'}
             </p>
-            <a href={lang === 'fr' ? '/demo' : '/en/demo'} className="group mt-8 inline-flex items-center gap-2 rounded-lg bg-white px-7 py-3.5 text-base font-semibold text-ink-950 shadow-lg transition hover:bg-white/90">
+            <a href={lang === 'fr' ? '/demo' : '/en/demo'} className="lp-cta lp-magnetic group mt-8 inline-flex items-center gap-2 rounded-lg bg-white px-7 py-3.5 text-base font-semibold text-ink-950 shadow-lg hover:bg-white/90">
               {lang === 'fr' ? 'Ouvrir la démo' : 'Open the demo'} <ArrowRight size={18} className="transition group-hover:translate-x-1" />
             </a>
           </div>

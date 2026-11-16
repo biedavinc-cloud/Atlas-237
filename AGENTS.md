@@ -1232,3 +1232,25 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   on data isolation and installing the app.
 - StatCard: icon hidden and value smaller below `sm` so large FCFA amounts
   no longer get truncated on phones.
+
+## Landing motion, round 2 (Nov 2026, inspired by motionsites.ai)
+- `src/components/landing/SplitReveal.tsx`: headings split into words that
+  rise out of a blur one by one. `trigger="load"` for the hero h1 and blog
+  h1s, otherwise on scroll (adds `.reveal`, so `useScrollReveal` drives it).
+  Gradient accent words use `className: 'lp-accent'`. Text stays in the DOM
+  (SEO, screen readers). Used on every single-string landing h2.
+- HeroPreview v2: KPI strip (demo data: 51 M FCFA collected, 13 open deals,
+  4 unpaid invoices) with a sparkline that draws, a cursor that grabs and
+  drags the deal, a 3D stage `#lp-stage` (leans back at the top, flattens
+  as you scroll, follows the mouse on desktop via `--lp-rx/--lp-ry`), glow
+  behind the window, a sheen sweep, and two floating cards for real
+  integrations (WhatsApp, Mobile Money payment link) shown from `xl` only.
+- `.lp-badge` (light running around the hero badge border), `.lp-cta` (sheen
+  on hover) + `.lp-magnetic` (pulled toward the cursor), `.lp-tilt` (3D tilt
+  on proof/integration cards and blog product cards), `.lp-aurora` (moving
+  glow on the blue pricing and final-CTA sections), `.lp-navlink`
+  underline, smooth anchor scrolling. Pointer effects only on
+  `(hover: hover) and (pointer: fine)`; `useLandingMotion` also runs in
+  `BlogChrome`. No logo marquee: the integrations copy promises "no logo
+  wall", keep it that way. All frozen in the reduced-motion block at the
+  end of `src/index.css`.
