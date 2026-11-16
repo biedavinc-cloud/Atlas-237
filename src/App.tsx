@@ -43,6 +43,7 @@ const LiveActivityPage = lazy(() => import('@/pages/WorkspacePages').then(m => (
 const DistributionPage = lazy(() => import('@/pages/WorkspacePages').then(m => ({ default: m.DistributionPage })));
 const PerformancePage = lazy(() => import('@/pages/WorkspacePages').then(m => ({ default: m.PerformancePage })));
 const ReviewsPage = lazy(() => import('@/pages/WorkspacePages').then(m => ({ default: m.ReviewsPage })));
+const SeoLandingPage = lazy(() => import('@/pages/SeoLandingPage').then(m => ({ default: m.SeoLandingPage })));
 const PublicReviewPage = lazy(() => import('@/pages/WorkspacePages').then(m => ({ default: m.PublicReviewPage })));
 const ProductsPage = lazy(() => import('@/pages/BusinessPages').then(m => ({ default: m.ProductsPage })));
 const QuotesPage = lazy(() => import('@/pages/BusinessPages').then(m => ({ default: m.QuotesPage })));
@@ -197,6 +198,12 @@ export default function App() {
             <Route path="accounting" element={<Suspense fallback={<PageFallback />}><SuperAdminAccountingPage /></Suspense>} />
             <Route path="keys" element={<Suspense fallback={<PageFallback />}><PlatformKeysPage /></Suspense>} />
           </Route>
+          <Route path="/crm-en-ligne" element={<Suspense fallback={<Loading fullPage />}><SeoLandingPage /></Suspense>} />
+          <Route path="/crm-afrique" element={<Suspense fallback={<Loading fullPage />}><SeoLandingPage /></Suspense>} />
+          <Route path="/crm-centre-appels" element={<Suspense fallback={<Loading fullPage />}><SeoLandingPage /></Suspense>} />
+          <Route path="/en/online-crm" element={<Suspense fallback={<Loading fullPage />}><SeoLandingPage /></Suspense>} />
+          <Route path="/en/crm-for-africa" element={<Suspense fallback={<Loading fullPage />}><SeoLandingPage /></Suspense>} />
+          <Route path="/en/call-center-crm" element={<Suspense fallback={<Loading fullPage />}><SeoLandingPage /></Suspense>} />
           <Route path="/r/:token" element={<Suspense fallback={<Loading fullPage />}><PublicReviewPage /></Suspense>} />
           <Route path="/demo" element={<DemoEntry />} />
           <Route path="/en/demo" element={<DemoEntry lang="en" />} />

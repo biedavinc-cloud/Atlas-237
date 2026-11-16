@@ -7,6 +7,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { Logo } from '@/components/Logo';
 import { POSTS, PRODUCT_INFO, PRODUCT_LABEL, getPost, type Block, type Post, type Product } from '@/lib/blog/posts';
+import { useCanonical } from '@/lib/useCanonical';
 import { useHreflangLinks } from '@/lib/useHreflang';
 import { useLandingMotion } from '@/lib/landingMotion';
 import { SplitReveal } from '@/components/landing/SplitReveal';
@@ -198,6 +199,7 @@ export function BlogIndexPage({ lang: forced = 'fr' }: { lang?: Language }) {
   const fr = lang === 'fr';
   const [params, setParams] = useSearchParams();
   useHreflangLinks('/blog');
+  useCanonical(fr ? '/blog' : '/en/blog');
   useMeta(fr ? 'Blog Liafrik Tech — Atlas, POS, Sukulu, Zanldo' : 'Liafrik Tech blog — Atlas, POS, Sukulu, Zanldo',
     fr ? 'Articles sur les produits Liafrik : Atlas CRM, la caisse POS, la plateforme scolaire Sukulu et la marketplace Zanldo, conçus en Afrique.' : 'Articles on Liafrik products: Atlas CRM, the POS till, the Sukulu school platform and the Zanldo marketplace, built in Africa.');
 
@@ -417,6 +419,7 @@ export function BlogArticlePage({ lang: forced = 'fr' }: { lang?: Language }) {
   const fr = lang === 'fr';
   const post = getPost(slug);
   useHreflangLinks(`/blog/${slug || ''}`);
+  useCanonical(`${lang === 'fr' ? '' : '/en'}/blog/${post?.slug || slug || ''}`);
   useMeta(post ? `${post[lang].title} — Blog Liafrik` : 'Blog Liafrik', post ? post[lang].dek : '');
   useEffect(() => { window.scrollTo(0, 0); }, [slug]);
   if (!post) return <Navigate to={`${base(lang)}/blog`} replace />;

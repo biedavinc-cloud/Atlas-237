@@ -135,7 +135,7 @@ and individual pages. Tables expected: contacts, companies, leads, deals, pipeli
 activities, products, quotes, orders, invoices, payments, campaigns, tickets, ai_agents,
 ai_tasks, approvals, workflows, ai_memory, knowledge_documents, integrations, api_keys,
 webhooks, notifications, audit_logs, profiles, organizations. SQL migrations are at
-`supabase/migrations/` (latest: `20261116081153_051_super_admin_requires_confirmed_email.sql`).
+`supabase/migrations/` (latest: `20261116114213_058_advisor_cleanup.sql`).
 - Whenever you add or edit a `ListPage` `formFields` array, or a direct
   `supabase.from(table).insert({...})` / `.update({...})` call anywhere else,
   double-check every key against the table's real columns in
@@ -1304,3 +1304,58 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
 - `is_super_admin()` / `link_super_admin()` only honour an e-mail match
   once that e-mail is confirmed (051): a listed super-admin address with no
   account yet could otherwise be claimed by signing up with it.
+
+## Workspace controls, call center, live events, reviews (052–058, Nov 2026)
+- Plans: `reviews` Growth+, `workspaceControls` + `liveEvents` Pro+ — in
+  `PLAN_FEATURES`, `org_plan_has_feature`, the pricing matrix ("Équipes &
+  centres d'appels") and the Billing cards. Keep all four in step.
+- **Contact masking** (`workspace_settings.mask_pii`, roles in `pii_roles`)
+  and **portfolios** (`portfolio_mode`, `supervisor_roles`) are decided in
+  SQL by `my_workspace()`; owner/admin always see everything (055). Reads of
+  contacts/leads go through the definer views `contacts_v` / `leads_v`
+  (`readTable()` in `src/lib/pii.ts`; embeds use `contacts_v(...)`). Since
+  053 the `email/phone/whatsapp` columns of `contacts` and `email/phone` of
+  `leads` are NOT selectable by `authenticated`: never `select('*')` or embed
+  those columns from the base tables (count queries use `select('id')`).
+  Writes still go to the base tables (`.select('id')` after insert/update).
+- Masked records still work: quick actions send `_record: {table, id}` and
+  `integration-action` resolves the real e-mail/phone server side after
+  checking the caller can see the record (via the view), then scrubs those
+  values from the reply. New actions: `paystack_payment_link`,
+  `flutterwave_payment_link`, `stripe_payment_link`, `twilio_call` (bridge:
+  rings the agent's profile phone, optional recording → signed callback to
+  `events-ingest?provider=twilio`), `aircall_call`.
+- SECURITY fixed: any user could update their own `profiles.role`/`org_id`
+  (`guard_profile_changes` trigger, 055); any member could create API keys
+  that bypass masking (owner/admin only, 057).
+- `events-ingest` (verify_jwt=false): `atlas_ek_` keys (SHA-256 in
+  `event_sources.key_hash`), adapters for generic JSON, Aircall, Ringover;
+  writes `customer_events` (dedupe on source+external id, realtime) and call
+  activities with `metadata.recording_url`. Smoke-tested live.
+- `email-inbound` (verify_jwt=false, `INBOUND_EMAIL_SECRET`) + the Cloudflare
+  Email Worker in `cloudflare/email-worker/`: mail to `<slug>@<INBOUND_EMAIL_DOMAIN>`
+  lands on the sender's contact/lead timeline and notifies its owner.
+  Needs the domain's Email Routing set up by the platform owner.
+- `tenant-domain`: adds `<slug>.<TENANT_ROOT_DOMAIN>` to the Pages project
+  and a proxied CNAME (Cloudflare keys in /super-admin/keys). The front
+  detects tenant hosts (`src/lib/tenantHost.ts`) and brands the sign-in.
+  Supabase Auth redirect URLs must include `https://*.liafrik.com/**`.
+- Pages: `/app/workspace`, `/app/live`, `/app/distribution`,
+  `/app/performance`, `/app/reviews`, public `/r/:token`. Custom fields are
+  `cf:<key>` form fields stored in `custom_fields` (ListPage handles both
+  the form and file import).
+
+## Landing round 3 + SEO pages (Nov 2026)
+- `src/components/landing/GlobalSections.tsx`: pinned story (giant text
+  behind glass, stacking fact cards), product showcase (auto-advancing list
+  + preview, labelled fictional data), coverage, industries fan, outlined
+  scroll-velocity marquee, 195-flag strip (`public/brand-flags/flags-strip.webp`,
+  one image generated from flag-icons, MIT — see LICENSE file next to it),
+  and the footer. CSS: `lp2-*` at the end of `src/index.css`, with mobile
+  and reduced-motion fallbacks.
+- Keyword pages in `src/lib/seoPages.ts` (`/crm-en-ligne`, `/crm-afrique`,
+  `/crm-centre-appels` + `/en/...`), rendered by `SeoLandingPage`.
+  `npm run build` runs `scripts/prerender.mjs`, which writes `dist/<path>.html`
+  with its own title/description/canonical/hreflang/JSON-LD and real text
+  for these pages, the blog and every article, and `/en`. Add new public
+  pages there and to `public/sitemap.xml`.

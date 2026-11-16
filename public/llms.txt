@@ -16,6 +16,12 @@ Four flat monthly plans per organization, in USD: Starter ($19), Growth ($49), P
 - Terms of Service: https://atlas.liafrik.com/legal/terms
 - Live demo (no account, fictional data): https://atlas.liafrik.com/demo
 - Blog: https://atlas.liafrik.com/blog
+- Online CRM (FR): https://atlas.liafrik.com/crm-en-ligne · (EN) https://atlas.liafrik.com/en/online-crm
+- CRM for Africa (FR): https://atlas.liafrik.com/crm-afrique · (EN) https://atlas.liafrik.com/en/crm-for-africa
+- Call center CRM (FR): https://atlas.liafrik.com/crm-centre-appels · (EN) https://atlas.liafrik.com/en/call-center-crm
+
+## Team and call-center features (Pro and Enterprise)
+Customer e-mails and phone numbers can be hidden from agents (enforced by the database) while agents still call, text and e-mail from Atlas; per-agent portfolios; lead distribution (manual, round-robin, file import); team performance and recorded-call listening (Twilio, Aircall, Ringover); live customer events from trading platforms, online stores (e.g. Zanldo) or any webhook; custom fields per industry; a dedicated company.liafrik.com sign-in address. Customer reviews are included from Growth.
 
 ## Other Liafrik products
 - Full suite: https://liafrik.com

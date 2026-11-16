@@ -1,23 +1,14 @@
 import { Fragment, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ShieldCheck, TrendingUp, Bot, BarChart3,
-  CheckCircle2, X, ArrowRight, Cloud, Globe2, Zap,
-  MessageSquare, Database, Workflow, PlayCircle, Building2, Globe,
-  Facebook, Instagram, Linkedin, Youtube,
+  ShieldCheck, TrendingUp,
+  CheckCircle2, X, ArrowRight, Globe2, Zap,
+  PlayCircle, Building2, Globe,
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { POSTS, PRODUCT_LABEL } from '@/lib/blog/posts';
-import { InstagramFeed } from '@/components/InstagramFeed';
 import { useHreflangLinks } from '@/lib/useHreflang';
 
-function TikTokIcon({ size = 18 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-label="TikTok">
-      <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
-    </svg>
-  );
-}
 import { BrandLogo } from '@/components/BrandLogos';
 import { VideoBackground } from '@/components/VideoBackground';
 import { HERO_VIDEO_SOURCES, HERO_VIDEO_POSTER, FINAL_CTA_VIDEO_SOURCES, FINAL_CTA_VIDEO_POSTER } from '@/lib/media';
@@ -28,6 +19,7 @@ import { HeroPreview } from '@/components/landing/HeroPreview';
 import { SplitReveal } from '@/components/landing/SplitReveal';
 import { WordRotator } from '@/components/landing/WordRotator';
 import { InstallAppButton } from '@/components/PwaPrompts';
+import { StackStory, ProductShowcase, CoverageSection, IndustriesFan, GiantMarquee, FlagsMarquee, GlobalFooter } from '@/components/landing/GlobalSections';
 
 /**
  * The integrations section shows only apps that do something in Atlas,
@@ -44,7 +36,17 @@ const INTEGRATION_GROUPS: { where: { fr: string; en: string }; what: { fr: strin
   {
     where: { fr: 'Sur la facture', en: 'On the invoice' },
     what: { fr: 'Un lien de paiement carte ou Mobile Money généré pour le montant restant dû, prêt à envoyer.', en: 'A card or mobile money payment link for the amount due, ready to send.' },
-    apps: [{ id: 'cinetpay', name: 'CinetPay' }, { id: 'campay', name: 'CamPay' }, { id: 'wave', name: 'Wave' }, { id: 'chapa', name: 'Chapa' }, { id: 'mollie', name: 'Mollie' }],
+    apps: [{ id: 'stripe', name: 'Stripe' }, { id: 'paystack', name: 'Paystack' }, { id: 'flutterwave', name: 'Flutterwave' }, { id: 'cinetpay', name: 'CinetPay' }, { id: 'campay', name: 'CamPay' }, { id: 'wave', name: 'Wave' }, { id: 'chapa', name: 'Chapa' }, { id: 'mollie', name: 'Mollie' }],
+  },
+  {
+    where: { fr: 'Dans le centre d’appels', en: 'In the call center' },
+    what: { fr: 'Appel depuis la fiche, même quand le numéro est masqué à l’agent. Appels et enregistrements reviennent sur la fiche.', en: 'Call from the record, even when the number is hidden from the agent. Calls and recordings come back to the record.' },
+    apps: [{ id: 'twilio', name: 'Twilio Voice' }, { id: 'aircall', name: 'Aircall' }, { id: 'ringover', name: 'Ringover' }],
+  },
+  {
+    where: { fr: 'Dans l’activité en direct', en: 'In live activity' },
+    what: { fr: 'Dépôts, ordres, commandes : ce que vos clients font ailleurs s’affiche sur leur fiche, en temps réel.', en: 'Deposits, trades, orders: what your customers do elsewhere shows on their record, in real time.' },
+    apps: [{ id: 'zanldo', name: 'Zanldo' }, { id: 'trading_platform', name: 'MT4 / MT5 / cTrader' }, { id: 'custom_events', name: 'Webhook' }],
   },
   {
     where: { fr: 'Dans le support et l’IA', en: 'In support and AI' },
@@ -58,24 +60,7 @@ const INTEGRATION_GROUPS: { where: { fr: string; en: string }; what: { fr: strin
   },
 ];
 
-const cloudProducts = [
-  { icon: MessageSquare, name: { fr: 'Atlas Connect', en: 'Atlas Connect' }, desc: { fr: 'WhatsApp, SMS, e-mail, Telegram et paiements Mobile Money branchés sur vos fiches clients.', en: 'WhatsApp, SMS, email, Telegram and mobile money payments wired into your customer records.' } },
-  { icon: BarChart3, name: { fr: 'Atlas Dashboards', en: 'Atlas Dashboards' }, desc: { fr: 'Transformez l’analytique agentique en intelligence actionable.', en: 'Turn agentic analytics into actionable intelligence.' } },
-  { icon: Bot, name: { fr: 'Atlas AI Workforce', en: 'Atlas AI Workforce' }, desc: { fr: 'Créez des expériences agentiques de confiance qui agissent avec intention.', en: 'Build trusted agentic experiences that act with intention.' } },
-  { icon: Cloud, name: { fr: 'Atlas 360', en: 'Atlas 360' }, desc: { fr: 'Une fiche par client : affaires, devis, factures, tickets et historique au même endroit.', en: 'One page per customer: deals, quotes, invoices, tickets and history in one place.' } },
-  { icon: Database, name: { fr: 'Atlas Data Hub', en: 'Atlas Data Hub' }, desc: { fr: 'Une fondation de données gouvernée, unifiée et fiable.', en: 'A governed, unified, and trusted data foundation.' } },
-];
 
-const industries = [
-  { icon: Building2, name: { fr: 'Services financiers', en: 'Financial Services' }, desc: { fr: 'Connectez-vous proactivement aux clients pour des expériences IA à forte valeur.', en: 'Proactively connect with clients for high-value AI experiences.' } },
-  { icon: TrendingUp, name: { fr: 'Retail', en: 'Retail' }, desc: { fr: 'Acquérez des clients rentables plus vite avec des données unifiées en temps réel.', en: 'Acquire profitable customers faster with unified real-time data.' } },
-  { icon: ShieldCheck, name: { fr: 'Santé & Sciences de la vie', en: 'Health & Life Sciences' }, desc: { fr: 'Élevez vos équipes avec des agents IA pour des communautés plus saines.', en: 'Empower your teams with AI agents for healthier communities.' } },
-  { icon: Building2, name: { fr: 'Construction & Immobilier', en: 'Construction & Real Estate' }, desc: { fr: 'Fluidifiez vos processus et atteignez l’excellence opérationnelle.', en: 'Streamline your processes and reach operational excellence.' } },
-  { icon: Bot, name: { fr: 'Éducation', en: 'Education' }, desc: { fr: 'Boostez la productivité et le support étudiant 24/7 avec une IA dédiée.', en: 'Boost productivity and 24/7 student support with dedicated AI.' } },
-  { icon: Workflow, name: { fr: 'Services pro', en: 'Professional Services' }, desc: { fr: 'Renforcez la confiance client, recrutez les bons talents et bâtissez la culture.', en: 'Strengthen client trust, hire the right talent, and build culture.' } },
-  { icon: Cloud, name: { fr: 'Technologie', en: 'Technology' }, desc: { fr: 'Automatisez les workflows, unifiez les données et prospérez avec une IA fiable.', en: 'Automate workflows, unify data, and thrive with trusted AI.' } },
-  { icon: Workflow, name: { fr: 'Industrie', en: 'Manufacturing' }, desc: { fr: 'Intégrez toutes vos données sur une chaîne de valeur unifiée.', en: 'Integrate all your data on a unified value chain.' } },
-];
 
 // Resource cards point to real blog articles (src/lib/blog/posts.ts).
 const reports = POSTS.slice().sort((x, y) => y.date.localeCompare(x.date)).slice(0, 3).map((p) => ({
@@ -295,32 +280,21 @@ export function LandingPage() {
           </div>
         </section>
 
+        {/* ───────── Pinned story: giant text behind glass, cards stacking ───────── */}
+        <StackStory lang={contentLang} />
+
         {/* ───────── Agentic Enterprise / product cloud grid ───────── */}
-        <section id="products" className="mx-auto max-w-7xl px-6 py-20 md:px-10 lg:py-24">
-          <div className="mx-auto max-w-2xl text-center reveal">
-            <SplitReveal className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl" parts={lang === 'fr' ? 'Bienvenue dans l’Entreprise Agentique' : 'Welcome to the Agentic Enterprise'} />
-            <p className="mt-3 text-lg text-ink-600">{lang === 'fr' ? 'Là où les humains, les agents et les plateformes conduisent ensemble la réussite client.' : 'Where humans, agents, and platforms drive customer success together.'}</p>
+        <section id="products" className="mx-auto max-w-7xl px-6 py-20 md:px-10 lg:py-28">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="reveal max-w-3xl">
+              <SplitReveal className="text-4xl font-bold leading-[1.02] tracking-tight text-ink-950 sm:text-6xl" parts={lang === 'fr' ? 'Vendre, servir, encaisser : tout dans un seul espace.' : 'Sell, serve, get paid: all in one workspace.'} />
+              <p className="mt-4 text-lg text-ink-600">{lang === 'fr' ? 'Chaque module parle aux autres. Un appel, une commande ou un paiement arrive sur la même fiche client.' : 'Every module talks to the others. A call, an order or a payment lands on the same customer record.'}</p>
+            </div>
+            <a href={lang === 'fr' ? '/demo' : '/en/demo'} className="reveal inline-flex flex-none items-center gap-2 self-start rounded-full border border-ink-300 px-6 py-3 text-sm font-semibold text-ink-900 transition hover:bg-ink-50 lg:self-auto">
+              {lang === 'fr' ? 'Tout voir dans la démo' : 'See it all in the demo'} <ArrowRight size={16} className="rtl:rotate-180" />
+            </a>
           </div>
-          <div className="reveal lp-stagger mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {cloudProducts.map((p) => (
-              <div key={p.name[contentLang]} className="lp-spot group flex gap-4 rounded-2xl border border-ink-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-primary-200 hover:shadow-xl hover:shadow-primary-600/5">
-                <div className="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-primary-50 text-primary-600 transition group-hover:scale-110 group-hover:bg-primary-600 group-hover:text-white">
-                  <p.icon size={22} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-ink-900">{p.name[contentLang]}</h3>
-                  <p className="mt-1.5 text-sm leading-6 text-ink-600">{p.desc[contentLang]}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="reveal mx-auto mt-14 max-w-4xl rounded-2xl bg-primary-50 p-8 text-center md:p-12">
-            <p className="text-lg leading-8 text-ink-700">
-              {lang === 'fr'
-                ? <>Les humains et les <Link to="/auth" className="font-semibold text-primary-700 underline-offset-2 hover:underline">agents</Link> travaillent au cœur des systèmes qui font tourner votre entreprise. Résultat : des décisions plus rapides, des relations client plus fortes et une croissance continue.</>
-                : <>Humans and <Link to="/auth" className="font-semibold text-primary-700 underline-offset-2 hover:underline">agents</Link> work at the heart of the systems running your business. The result: faster decisions, stronger customer relationships, and continuous growth.</>}
-            </p>
-          </div>
+          <ProductShowcase lang={contentLang} />
         </section>
 
         {/* ───────── Proof you can check yourself (no invented testimonials) ───────── */}
@@ -438,6 +412,9 @@ export function LandingPage() {
           </p>
         </section>
 
+        {/* ───────── Coverage ───────── */}
+        <CoverageSection lang={contentLang} />
+
         {/* ───────── Platform / architecture ───────── */}
         <section className="mx-auto max-w-7xl px-6 py-20 md:px-10 lg:py-24">
           <div className="reveal mx-auto max-w-2xl text-center">
@@ -465,32 +442,8 @@ export function LandingPage() {
         </section>
 
         {/* ───────── Industries ───────── */}
-        <section id="industries" className="bg-ink-50 py-20 lg:py-24">
-          <div className="mx-auto max-w-7xl px-6 md:px-10">
-            <div className="reveal mx-auto max-w-2xl text-center">
-              <SplitReveal className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl" parts={lang === 'fr' ? 'Un CRM qui s’adapte à votre secteur' : 'A CRM that fits your industry'} />
-              <p className="mt-4 text-ink-600">{lang === 'fr' ? 'Conçues avec une expertise métier, ces solutions prêtes à l’emploi s’alignent sur vos workflows, données et besoins client.' : 'Built with industry expertise, these ready-to-use solutions align with your workflows, data, and customer needs.'}</p>
-            </div>
-            <div className="reveal lp-stagger mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {industries.map((ind) => (
-                <div key={ind.name[contentLang]} className="lp-spot group rounded-2xl border border-ink-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-600 transition group-hover:scale-110 group-hover:bg-primary-600 group-hover:text-white">
-                    <ind.icon size={20} />
-                  </div>
-                  <h3 className="mt-4 font-bold text-ink-900">{ind.name[contentLang]}</h3>
-                  <p className="mt-1.5 text-sm leading-6 text-ink-600">{ind.desc[contentLang]}</p>
-                  <Link to="/auth" className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:underline">
-                    {lang === 'fr' ? 'En savoir plus' : 'Learn more'} <ArrowRight size={14} />
-                  </Link>
-                </div>
-              ))}
-            </div>
-            <div className="reveal mt-10 text-center">
-              <Link to="/auth" className="inline-flex items-center gap-2 rounded-lg border border-ink-200 bg-white px-6 py-3 text-sm font-semibold text-ink-800 transition hover:bg-ink-100">
-                {lang === 'fr' ? 'Voir toutes les industries' : 'See all industries'} <ArrowRight size={16} />
-              </Link>
-            </div>
-          </div>
+        <section id="industries">
+          <IndustriesFan lang={contentLang} />
         </section>
 
         {/* ───────── Resources ───────── */}
@@ -674,80 +627,13 @@ export function LandingPage() {
             </a>
           </div>
         </section>
+        {/* ───────── Signature + every country ───────── */}
+        <GiantMarquee lang={contentLang} />
+        <FlagsMarquee lang={contentLang} />
       </main>
 
       {/* ───────── Footer ───────── */}
-      <footer className="border-t border-ink-100 bg-ink-950 text-ink-300">
-        <div className="mx-auto max-w-7xl px-6 py-14 md:px-10">
-          <div className="grid gap-10 md:grid-cols-5">
-            <div className="md:col-span-2">
-              <Link to="/" className="flex items-center gap-2.5">
-                <Logo size={36} />
-                <span className="text-lg font-bold text-white">Atlas CRM</span>
-              </Link>
-              <p className="mt-4 text-sm leading-6 text-ink-400">{lang === 'fr' ? 'Le CRM agentique de Liafrik Tech. Ventes, service, marketing et IA réunis sur un seul cloud. Conçu en Afrique, prêt pour le monde.' : 'Liafrik Tech’s agentic CRM. Sales, service, marketing and AI on a single cloud. Built in Africa, ready for the world.'}</p>
-            </div>
-            {[
-              { h: lang === 'fr' ? 'Produit' : 'Product', links: [
-                { l: lang === 'fr' ? 'Atlas Sales' : 'Atlas Sales', to: '/legal/sales-cloud' },
-                { l: lang === 'fr' ? 'Atlas Service' : 'Atlas Service', to: '/legal/service-cloud' },
-                { l: lang === 'fr' ? 'Atlas AI Workforce' : 'Atlas AI Workforce', to: '/legal/agentforce' },
-                { l: lang === 'fr' ? 'Atlas Data Hub' : 'Atlas Data Hub', to: '/legal/data-360' },
-                { l: lang === 'fr' ? 'Atlas Dashboards' : 'Atlas Dashboards', to: '/legal/tableau' },
-              ] },
-              { h: lang === 'fr' ? 'Ressources' : 'Resources', links: [
-                { l: lang === 'fr' ? 'Tarifs' : 'Pricing', to: '/legal/pricing' },
-                { l: lang === 'fr' ? 'Documentation' : 'Documentation', to: '/legal/docs' },
-                { l: 'Statut', to: '/legal/status' },
-                { l: lang === 'fr' ? 'Communauté' : 'Community', to: '/legal/community' },
-                { l: 'Blog', to: lang === 'fr' ? '/blog' : '/en/blog' },
-                { l: lang === 'fr' ? 'Démo en ligne' : 'Live demo', to: lang === 'fr' ? '/demo' : '/en/demo' },
-              ] },
-              { h: lang === 'fr' ? 'Entreprise' : 'Company', links: [
-                { l: lang === 'fr' ? 'À propos' : 'About', to: '/legal/about' },
-                { l: lang === 'fr' ? 'Sécurité' : 'Security', to: '/legal/security' },
-                { l: lang === 'fr' ? 'Contact' : 'Contact', to: '/legal/contact' },
-                { l: lang === 'fr' ? 'Carrières' : 'Careers', to: '/legal/careers' },
-                { l: 'Pledge 1%', to: '/legal/pledge' },
-              ] },
-            ].map((col) => (
-              <div key={col.h}>
-                <p className="text-sm font-bold text-white">{col.h}</p>
-                <ul className="mt-4 space-y-2.5">
-                  {col.links.map((link) => (
-                    <li key={link.l}><Link to={link.to} className="text-sm text-ink-400 transition hover:text-white">{link.l}</Link></li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-12 border-t border-ink-800 pt-8">
-            <div className="mx-auto max-w-3xl">
-              <InstagramFeed lang={lang} />
-            </div>
-          </div>
-
-          <div className="mt-8 flex flex-col items-center justify-between gap-6 pt-0 sm:flex-row">
-            <p className="text-xs text-ink-500">© {new Date().getFullYear()} Atlas CRM · {lang === 'fr' ? 'développé par' : 'built by'} <a href="https://liafrik.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">Liafrik Tech</a> · {lang === 'fr' ? 'Dubaï – Yaoundé' : 'Dubai – Yaoundé'}. {lang === 'fr' ? 'Tous droits réservés.' : 'All rights reserved.'}</p>
-            <div className="flex items-center gap-4">
-              <a href="https://www.tiktok.com/@liyahgroup" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="text-ink-500 transition hover:text-white"><TikTokIcon size={18} /></a>
-              <a href="https://www.facebook.com/share/1LMAGqsy3n/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-ink-500 transition hover:text-white"><Facebook size={18} /></a>
-              <a href="https://www.instagram.com/liafrik_tech" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-ink-500 transition hover:text-white"><Instagram size={18} /></a>
-              <a href="https://www.linkedin.com/company/liafrik/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="text-ink-500 transition hover:text-white"><Linkedin size={18} /></a>
-              <a href="https://youtube.com/@liyah-n" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="text-ink-500 transition hover:text-white"><Youtube size={18} /></a>
-            </div>
-            <div className="flex flex-wrap justify-center gap-5 text-xs text-ink-500">
-              <Link to="/legal/privacy" className="hover:text-white transition">{lang === 'fr' ? 'Confidentialité' : 'Privacy'}</Link>
-              <Link to="/legal/terms" className="hover:text-white transition">{lang === 'fr' ? 'Conditions' : 'Terms'}</Link>
-              <Link to="/legal/refund" className="hover:text-white transition">{lang === 'fr' ? 'Remboursement' : 'Refund Policy'}</Link>
-              <Link to="/legal/legal-notice" className="hover:text-white transition">{lang === 'fr' ? 'Mentions légales' : 'Legal Notice'}</Link>
-              <Link to="/legal/cookies" className="hover:text-white transition">Cookies</Link>
-              <Link to="/legal/gdpr" className="hover:text-white transition">RGPD / GDPR</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <GlobalFooter lang={contentLang} />
     </div>
   );
 }
