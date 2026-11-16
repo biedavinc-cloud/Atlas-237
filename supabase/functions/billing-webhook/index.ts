@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { getSecret } from "../_shared/secrets.ts";
 import { corsHeaders, json, adminClient, settleIntent, type Intent } from "../_shared/billing.ts";
 
 // Server-to-server notifications from Korapay and CinetPay, plus CinetPay's
@@ -56,7 +57,7 @@ Deno.serve(async (req: Request) => {
     let reference = "";
 
     if (provider === "korapay") {
-      const secret = Deno.env.get("KORAPAY_SECRET_KEY") || "";
+      const secret = (await getSecret("KORAPAY_SECRET_KEY")) || "";
       const signature = req.headers.get("x-korapay-signature") || "";
       const parsed = (() => { try { return JSON.parse(raw); } catch { return null; } })();
       // Korapay signs JSON.stringify(data) with the secret key. An invalid

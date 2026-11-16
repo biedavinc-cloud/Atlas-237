@@ -7,6 +7,7 @@
 // after re-querying the provider's own API with server-side secrets and
 // comparing the real paid amount/currency against that row.
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { getSecret, getSecrets } from "./secrets.ts";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,16 +41,17 @@ export function userClient(authHeader: string): SupabaseClient {
 }
 
 /** Which providers have their server-side secrets set. */
-export function configuredProviders(): Record<BillingProvider, boolean> {
+export async function configuredProviders(): Promise<Record<BillingProvider, boolean>> {
+  const k = await getSecrets(["KORAPAY_SECRET_KEY", "CINETPAY_API_KEY", "CINETPAY_SITE_ID"]);
   return {
-    korapay: Boolean(Deno.env.get("KORAPAY_SECRET_KEY")),
-    cinetpay: Boolean(Deno.env.get("CINETPAY_API_KEY") && Deno.env.get("CINETPAY_SITE_ID")),
+    korapay: Boolean(k.KORAPAY_SECRET_KEY),
+    cinetpay: Boolean(k.CINETPAY_API_KEY && k.CINETPAY_SITE_ID),
   };
 }
 
 /** Settlement currency per provider (overridable with a secret). */
-export function chargeCurrency(provider: BillingProvider): string {
-  const env = provider === "korapay" ? Deno.env.get("KORAPAY_CURRENCY") : Deno.env.get("CINETPAY_CURRENCY");
+export async function chargeCurrency(provider: BillingProvider): Promise<string> {
+  const env = await getSecret(provider === "korapay" ? "KORAPAY_CURRENCY" : "CINETPAY_CURRENCY");
   return (env || "XAF").toUpperCase();
 }
 
@@ -78,10 +80,10 @@ export async function convertUsd(usd: number, currency: string): Promise<number>
 }
 
 /** Atlas origins a checkout may return to (prevents open redirects). */
-export function isAllowedReturnUrl(url: string): boolean {
+export async function isAllowedReturnUrl(url: string): Promise<boolean> {
   try {
     const u = new URL(url);
-    const extra = (Deno.env.get("APP_ORIGINS") || "").split(",").map((s) => s.trim()).filter(Boolean);
+    const extra = ((await getSecret("APP_ORIGINS")) || "").split(",").map((s) => s.trim()).filter(Boolean);
     const allowed = new Set([
       "https://atlas.liafrik.com",
       "https://atlas-237.pages.dev",
@@ -107,7 +109,7 @@ export interface ProviderStatus {
 export async function korapayStatus(reference: string): Promise<ProviderStatus> {
   const base = Deno.env.get("KORAPAY_BASE_URL") || "https://api.korapay.com/merchant/api/v1";
   const res = await fetch(`${base}/charges/${encodeURIComponent(reference)}`, {
-    headers: { Authorization: `Bearer ${Deno.env.get("KORAPAY_SECRET_KEY")}` },
+    headers: { Authorization: `Bearer ${await getSecret("KORAPAY_SECRET_KEY")}` },
   });
   const body = await res.json().catch(() => null);
   const d = body?.data || {};
@@ -127,8 +129,8 @@ export async function cinetpayStatus(transactionId: string): Promise<ProviderSta
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      apikey: Deno.env.get("CINETPAY_API_KEY"),
-      site_id: Deno.env.get("CINETPAY_SITE_ID"),
+      apikey: await getSecret("CINETPAY_API_KEY"),
+      site_id: await getSecret("CINETPAY_SITE_ID"),
       transaction_id: transactionId,
     }),
   });

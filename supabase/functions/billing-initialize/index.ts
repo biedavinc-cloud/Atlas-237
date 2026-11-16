@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { getSecret } from "../_shared/secrets.ts";
 import {
   corsHeaders, json, PLAN_PRICES_USD, adminClient, userClient, configuredProviders,
   chargeCurrency, convertUsd, isAllowedReturnUrl, type BillingProvider,
@@ -17,7 +18,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const configured = configuredProviders();
+    const configured = await configuredProviders();
 
     if (body?.check === true) return json({ ok: true, providers: configured });
 
@@ -34,7 +35,7 @@ Deno.serve(async (req: Request) => {
     const cycle = body.billing_cycle === "annual" ? "annual" : "monthly";
     const prices = PLAN_PRICES_USD[plan];
     if (!prices) return json({ ok: false, msg: `Unknown plan: ${plan}` }, 400);
-    if (!return_url || !isAllowedReturnUrl(return_url)) return json({ ok: false, msg: "Invalid return URL" }, 400);
+    if (!return_url || !(await isAllowedReturnUrl(return_url))) return json({ ok: false, msg: "Invalid return URL" }, 400);
 
     const { data: profile } = await sb.from("profiles").select("org_id, role, first_name, last_name, email").eq("id", userData.user.id).maybeSingle();
     if (!profile || profile.org_id !== org_id) return json({ ok: false, msg: "You do not belong to this organization" }, 403);
@@ -43,7 +44,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const priceUsd = prices[cycle];
-    const currency = chargeCurrency(provider);
+    const currency = await chargeCurrency(provider);
     const amount = await convertUsd(priceUsd, currency);
     // Alphanumeric only: CinetPay and some mobile-money operators reject symbols.
     const reference = `atl${org_id.replace(/-/g, "").slice(0, 10)}${Date.now()}${Math.floor(Math.random() * 1000)}`;
@@ -67,7 +68,7 @@ Deno.serve(async (req: Request) => {
       back.searchParams.set("billing_ref", reference);
       const res = await fetch(`${base}/charges/initialize`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("KORAPAY_SECRET_KEY")}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${(await getSecret("KORAPAY_SECRET_KEY"))}` },
         body: JSON.stringify({
           reference,
           amount,
@@ -90,8 +91,8 @@ Deno.serve(async (req: Request) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          apikey: Deno.env.get("CINETPAY_API_KEY"),
-          site_id: Deno.env.get("CINETPAY_SITE_ID"),
+          apikey: (await getSecret("CINETPAY_API_KEY")),
+          site_id: (await getSecret("CINETPAY_SITE_ID")),
           transaction_id: reference,
           amount,
           currency,

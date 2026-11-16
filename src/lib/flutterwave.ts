@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { publicKey } from '@/lib/platformConfig';
 import { useAuth } from '@/context/AuthContext';
 
 interface FlutterwaveCallbackResponse {
@@ -39,7 +40,8 @@ export const PLAN_PRICES: Record<string, { cents: number; annualCents: number; l
   enterprise: { cents: 21900, annualCents: 219000, label: 'Enterprise' },
 };
 
-export const FLW_PUBLIC_KEY = import.meta.env.VITE_FLW_PUBLIC_KEY as string | undefined;
+/** Public key: dashboard value (/super-admin/keys) first, build-time VITE_ value as fallback. */
+export const flwPublicKey = () => publicKey('FLW_PUBLIC_KEY', import.meta.env.VITE_FLW_PUBLIC_KEY as string | undefined);
 // NOTE: there is intentionally no client-side "FLW_SECRET_KEY" export here.
 // A payment provider's secret key can charge cards, issue refunds, and
 // read full transaction history — it must never be bundled into
@@ -49,7 +51,7 @@ export const FLW_PUBLIC_KEY = import.meta.env.VITE_FLW_PUBLIC_KEY as string | un
 // server-only Deno.env var with no VITE_ prefix.
 
 export function isFlutterwaveConfigured() {
-  return Boolean(FLW_PUBLIC_KEY);
+  return Boolean(flwPublicKey());
 }
 
 /**
@@ -122,7 +124,7 @@ export function initiateFlutterwaveCheckout(params: {
 
   loadScript().then(() => {
     const modal = window.FlutterwaveCheckout?.({
-      public_key: FLW_PUBLIC_KEY,
+      public_key: flwPublicKey(),
       tx_ref: txRef,
       amount: (cents / 100).toFixed(2),
       currency: 'USD',

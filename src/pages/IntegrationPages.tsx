@@ -16,6 +16,7 @@ import { validateKeyFormat, LIVE_VERIFIABLE_PROVIDERS } from '@/lib/integrationV
 import { WEBHOOK_EVENTS } from '@/lib/webhooks';
 import { APP_USAGE, APP_PURPOSE, isUsableApp } from '@/lib/appUsage';
 import { Link } from 'react-router-dom';
+import { loadPublicConfig, publicKey } from '@/lib/platformConfig';
 
 interface AppDef {
   provider: string;
@@ -196,6 +197,8 @@ export function MarketplacePage() {
   });
   const [customConnecting, setCustomConnecting] = useState(false);
   const [customError, setCustomError] = useState('');
+  const [publicConfigVersion, setPublicConfigVersion] = useState(0);
+  useEffect(() => { loadPublicConfig().then(() => setPublicConfigVersion(v => v + 1)); }, []);
 
   async function confirmCustomConnect() {
     if (!customApp.name.trim() || !customApp.baseUrl.trim()) return;
@@ -335,31 +338,33 @@ export function MarketplacePage() {
   // requires a real app registered in its developer console before it can work.
   // Set these as VITE_<PROVIDER>_CLIENT_ID environment variables once registered;
   // until then, we show an honest "setup required" state instead of a doomed popup.
+  // Dashboard values (/super-admin/keys) win over the build-time VITE_ ones.
+  void publicConfigVersion;
   const OAUTH_CLIENT_IDS: Record<string, string | undefined> = {
-    gmail: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-    google_meet: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-    slack: import.meta.env.VITE_SLACK_CLIENT_ID,
-    zoom: import.meta.env.VITE_ZOOM_CLIENT_ID,
-    outlook: import.meta.env.VITE_MICROSOFT_CLIENT_ID,
-    quickbooks: import.meta.env.VITE_QUICKBOOKS_CLIENT_ID,
-    paypal: import.meta.env.VITE_PAYPAL_CLIENT_ID,
-    gocardless: import.meta.env.VITE_GOCARDLESS_CLIENT_ID,
-    revolut_business: import.meta.env.VITE_REVOLUT_CLIENT_ID,
-    xero: import.meta.env.VITE_XERO_CLIENT_ID,
-    intercom: import.meta.env.VITE_INTERCOM_CLIENT_ID,
-    facebook_messenger: import.meta.env.VITE_FACEBOOK_CLIENT_ID,
-    instagram_dm: import.meta.env.VITE_FACEBOOK_CLIENT_ID,
-    meta_ads: import.meta.env.VITE_FACEBOOK_CLIENT_ID,
-    microsoft_teams: import.meta.env.VITE_MICROSOFT_CLIENT_ID,
-    google_calendar: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-    google_ads: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-    google_drive: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-    linkedin_ads: import.meta.env.VITE_LINKEDIN_CLIENT_ID,
-    dropbox: import.meta.env.VITE_DROPBOX_CLIENT_ID,
-    docusign: import.meta.env.VITE_DOCUSIGN_CLIENT_ID,
-    notion: import.meta.env.VITE_NOTION_CLIENT_ID,
-    asana: import.meta.env.VITE_ASANA_CLIENT_ID,
-    trello: import.meta.env.VITE_TRELLO_CLIENT_ID,
+    gmail: publicKey('GOOGLE_CLIENT_ID', import.meta.env.VITE_GOOGLE_CLIENT_ID),
+    google_meet: publicKey('GOOGLE_CLIENT_ID', import.meta.env.VITE_GOOGLE_CLIENT_ID),
+    slack: publicKey('SLACK_CLIENT_ID', import.meta.env.VITE_SLACK_CLIENT_ID),
+    zoom: publicKey('ZOOM_CLIENT_ID', import.meta.env.VITE_ZOOM_CLIENT_ID),
+    outlook: publicKey('MICROSOFT_CLIENT_ID', import.meta.env.VITE_MICROSOFT_CLIENT_ID),
+    quickbooks: publicKey('QUICKBOOKS_CLIENT_ID', import.meta.env.VITE_QUICKBOOKS_CLIENT_ID),
+    paypal: publicKey('PAYPAL_CLIENT_ID', import.meta.env.VITE_PAYPAL_CLIENT_ID),
+    gocardless: publicKey('GOCARDLESS_CLIENT_ID', import.meta.env.VITE_GOCARDLESS_CLIENT_ID),
+    revolut_business: publicKey('REVOLUT_CLIENT_ID', import.meta.env.VITE_REVOLUT_CLIENT_ID),
+    xero: publicKey('XERO_CLIENT_ID', import.meta.env.VITE_XERO_CLIENT_ID),
+    intercom: publicKey('INTERCOM_CLIENT_ID', import.meta.env.VITE_INTERCOM_CLIENT_ID),
+    facebook_messenger: publicKey('FACEBOOK_CLIENT_ID', import.meta.env.VITE_FACEBOOK_CLIENT_ID),
+    instagram_dm: publicKey('FACEBOOK_CLIENT_ID', import.meta.env.VITE_FACEBOOK_CLIENT_ID),
+    meta_ads: publicKey('FACEBOOK_CLIENT_ID', import.meta.env.VITE_FACEBOOK_CLIENT_ID),
+    microsoft_teams: publicKey('MICROSOFT_CLIENT_ID', import.meta.env.VITE_MICROSOFT_CLIENT_ID),
+    google_calendar: publicKey('GOOGLE_CLIENT_ID', import.meta.env.VITE_GOOGLE_CLIENT_ID),
+    google_ads: publicKey('GOOGLE_CLIENT_ID', import.meta.env.VITE_GOOGLE_CLIENT_ID),
+    google_drive: publicKey('GOOGLE_CLIENT_ID', import.meta.env.VITE_GOOGLE_CLIENT_ID),
+    linkedin_ads: publicKey('LINKEDIN_CLIENT_ID', import.meta.env.VITE_LINKEDIN_CLIENT_ID),
+    dropbox: publicKey('DROPBOX_CLIENT_ID', import.meta.env.VITE_DROPBOX_CLIENT_ID),
+    docusign: publicKey('DOCUSIGN_CLIENT_ID', import.meta.env.VITE_DOCUSIGN_CLIENT_ID),
+    notion: publicKey('NOTION_CLIENT_ID', import.meta.env.VITE_NOTION_CLIENT_ID),
+    asana: publicKey('ASANA_CLIENT_ID', import.meta.env.VITE_ASANA_CLIENT_ID),
+    trello: publicKey('TRELLO_CLIENT_ID', import.meta.env.VITE_TRELLO_CLIENT_ID),
     // Zendesk requires a per-account subdomain before an authorize URL can be built,
     // so it intentionally has no client id here and always shows the "setup required" panel.
   };

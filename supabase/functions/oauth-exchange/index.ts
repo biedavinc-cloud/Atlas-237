@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { getSecret } from "../_shared/secrets.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -82,12 +83,12 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const clientId = Deno.env.get(cfg.clientIdEnv);
-    const clientSecret = Deno.env.get(cfg.clientSecretEnv);
+    const clientId = (await getSecret(cfg.clientIdEnv));
+    const clientSecret = (await getSecret(cfg.clientSecretEnv));
     if (!clientId || !clientSecret) {
       return new Response(JSON.stringify({
         ok: false,
-        msg: `${provider} is not configured yet. An admin needs to set ${cfg.clientIdEnv} and ${cfg.clientSecretEnv} as Edge Function secrets.`,
+        msg: `${provider} is not configured yet. A platform super admin needs to set ${cfg.clientIdEnv} and ${cfg.clientSecretEnv} in Super Admin → Platform keys.`,
       }), { status: 501, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 

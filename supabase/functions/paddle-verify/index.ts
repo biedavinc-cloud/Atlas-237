@@ -1,4 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { getSecret } from "../_shared/secrets.ts";
+import { claimReceipt, nextPeriod, releaseReceipt } from "../_shared/receipts.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 // Same pattern as flutterwave-verify/paystack-verify: the checkout overlay's
@@ -19,19 +21,31 @@ const PLAN_PRICES_USD: Record<string, { monthly: number; annual: number }> = {
   enterprise: { monthly: 219, annual: 2190 },
 };
 
+// Same defaults as src/lib/paddle.ts; a value set in /super-admin/keys wins.
+const DEFAULT_PRICE_IDS: Record<string, string> = {
+  PADDLE_PRICE_STARTER: "pri_01m1m7t4b0ssysw2tq8tw8fc0j",
+  PADDLE_PRICE_GROWTH: "pri_01m1m7xjf76rjm1zws3xz9jcv3",
+  PADDLE_PRICE_PRO: "pri_01m1m7z8mg4v3kvnctkjvr71yw",
+  PADDLE_PRICE_ENTERPRISE: "pri_01m1m810d2pv6njj4dat4enr5d",
+  PADDLE_PRICE_STARTER_ANNUAL: "pri_01m219ewv01df2azda6p2s21fg",
+  PADDLE_PRICE_GROWTH_ANNUAL: "pri_01m219g8ejmh03bntqcfhx1rwf",
+  PADDLE_PRICE_PRO_ANNUAL: "pri_01m219hdz50gsc3hbvc2s4y05h",
+  PADDLE_PRICE_ENTERPRISE_ANNUAL: "pri_01m219jf6jvz5wmngpx06p8znd",
+};
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
-    const apiKey = Deno.env.get("PADDLE_API_KEY");
+    const apiKey = (await getSecret("PADDLE_API_KEY"));
     if (!apiKey) {
       return new Response(JSON.stringify({ ok: false, msg: "Paddle not configured (missing PADDLE_API_KEY)" }), {
         status: 501, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const apiBase = Deno.env.get("PADDLE_ENVIRONMENT") === "sandbox"
+    const apiBase = (await getSecret("PADDLE_ENVIRONMENT")) === "sandbox"
       ? "https://sandbox-api.paddle.com"
       : "https://api.paddle.com";
 
@@ -86,14 +100,20 @@ Deno.serve(async (req: Request) => {
         status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (tx.custom_data?.org_id && tx.custom_data.org_id !== org_id) {
+    if (tx.custom_data?.org_id !== org_id) {
       return new Response(JSON.stringify({ ok: false, msg: "Organization mismatch." }), {
         status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    // Paddle localises the charge into the buyer's currency, so the proof
+    // of price is the catalogue Price ID on the transaction (its amount is
+    // set in Paddle, not by the browser). A plain USD total also passes.
+    const priceKey = `PADDLE_PRICE_${String(plan).toUpperCase()}${cycle === "annual" ? "_ANNUAL" : ""}`;
+    const expectedPriceId = (await getSecret(priceKey)) || DEFAULT_PRICE_IDS[priceKey];
+    const hasExpectedPrice = Array.isArray(tx.items) && tx.items.some((it: { price?: { id?: string }; price_id?: string }) => (it.price?.id || it.price_id) === expectedPriceId);
     const paidUsd = Number(tx.details?.totals?.grand_total || 0) / 100;
     const paidCurrency = (tx.currency_code || "").toUpperCase();
-    if (paidCurrency !== "USD" || paidUsd < expectedUsd) {
+    if (!hasExpectedPrice && (paidCurrency !== "USD" || paidUsd < expectedUsd)) {
       return new Response(JSON.stringify({ ok: false, msg: "Paid amount/currency does not match the plan price." }), {
         status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -104,10 +124,15 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const now = new Date();
-    const periodEnd = new Date(now);
-    if (cycle === "annual") periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-    else periodEnd.setMonth(periodEnd.getMonth() + 1);
+    // A payment reference activates exactly one period (replay protection).
+    const claim = await claimReceipt(adminClient, "paddle", String(transaction_id), org_id, plan, cycle);
+    if (claim === "other") {
+      return new Response(JSON.stringify({ ok: false, msg: "This payment was already used by another organization." }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (claim === "same") {
+      return new Response(JSON.stringify({ ok: true, already_applied: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const { now, end: periodEnd } = await nextPeriod(adminClient, org_id, cycle);
 
     const { error: subError } = await adminClient.from("subscriptions").upsert({
       org_id,
@@ -122,6 +147,7 @@ Deno.serve(async (req: Request) => {
       current_period_end: periodEnd.toISOString(),
     }, { onConflict: "org_id" });
     if (subError) {
+      await releaseReceipt(adminClient, "paddle", String(transaction_id));
       return new Response(JSON.stringify({ ok: false, msg: subError.message }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

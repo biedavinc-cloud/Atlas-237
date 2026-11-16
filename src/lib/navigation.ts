@@ -6,6 +6,7 @@ import {
   Brain, BookOpen, CheckSquare, BarChart3, LayoutGrid, Lightbulb,
   UserCog, UsersRound, ShieldCheck, Store, Plug, Webhook, Bell,
   ScrollText, Settings, Wallet, Gauge, Sparkles, Briefcase, ListChecks,
+  KeyRound,
 } from 'lucide-react';
 
 /**
@@ -128,6 +129,7 @@ export const SUPER_ADMIN_ITEMS: NavItem[] = [
   { to: '/super-admin/audit', labelKey: 'superAdmin.auditLog', icon: ScrollText },
   { to: '/super-admin/staff', labelKey: 'superAdmin.staff', icon: Briefcase },
   { to: '/super-admin/accounting', labelKey: 'superAdmin.accounting', icon: Wallet },
+  { to: '/super-admin/keys', labelKey: 'superAdmin.platformKeys', icon: KeyRound, keywords: 'psp paiement payment api secret flutterwave paystack paddle payunit cinetpay korapay resend gemini oauth clé key' },
 ];
 
 /**

@@ -14,6 +14,7 @@ import { Loading } from '@/components/Loading';
 import type { Language } from '@/lib/i18n';
 
 // Lazy-load protected pages for faster initial load (smaller main bundle)
+const PlatformKeysPage = lazy(() => import('@/pages/PlatformKeysPage').then(m => ({ default: m.PlatformKeysPage })));
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const AskAtlasPage = lazy(() => import('@/pages/SystemPages').then(m => ({ default: m.AskAtlasPage })));
 const NotificationsPage = lazy(() => import('@/pages/SystemPages').then(m => ({ default: m.NotificationsPage })));
@@ -180,6 +181,7 @@ export default function App() {
             <Route path="audit" element={<Suspense fallback={<PageFallback />}><SuperAdminAuditPage /></Suspense>} />
             <Route path="staff" element={<Suspense fallback={<PageFallback />}><SuperAdminStaffPage /></Suspense>} />
             <Route path="accounting" element={<Suspense fallback={<PageFallback />}><SuperAdminAccountingPage /></Suspense>} />
+            <Route path="keys" element={<Suspense fallback={<PageFallback />}><PlatformKeysPage /></Suspense>} />
           </Route>
           <Route path="/demo" element={<DemoEntry />} />
           <Route path="/en/demo" element={<DemoEntry lang="en" />} />

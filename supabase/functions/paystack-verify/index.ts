@@ -1,4 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { getSecret } from "../_shared/secrets.ts";
+import { claimReceipt, nextPeriod, releaseReceipt } from "../_shared/receipts.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 // Same pattern as flutterwave-verify: the checkout popup's client-side
@@ -25,7 +27,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const secretKey = Deno.env.get("PAYSTACK_SECRET_KEY");
+    const secretKey = (await getSecret("PAYSTACK_SECRET_KEY"));
     if (!secretKey) {
       return new Response(JSON.stringify({ ok: false, msg: "Paystack not configured (missing PAYSTACK_SECRET_KEY)" }), {
         status: 501, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -88,7 +90,7 @@ Deno.serve(async (req: Request) => {
         status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (tx.metadata?.org_id && tx.metadata.org_id !== org_id) {
+    if (tx.metadata?.org_id !== org_id) {
       return new Response(JSON.stringify({ ok: false, msg: "Organization mismatch." }), {
         status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -99,10 +101,15 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const now = new Date();
-    const periodEnd = new Date(now);
-    if (cycle === "annual") periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-    else periodEnd.setMonth(periodEnd.getMonth() + 1);
+    // A payment reference activates exactly one period (replay protection).
+    const claim = await claimReceipt(adminClient, "paystack", String(reference), org_id, plan, cycle);
+    if (claim === "other") {
+      return new Response(JSON.stringify({ ok: false, msg: "This payment was already used by another organization." }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (claim === "same") {
+      return new Response(JSON.stringify({ ok: true, already_applied: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const { now, end: periodEnd } = await nextPeriod(adminClient, org_id, cycle);
 
     const { error: subError } = await adminClient.from("subscriptions").upsert({
       org_id,
@@ -111,11 +118,13 @@ Deno.serve(async (req: Request) => {
       price_cents: expectedUsd * 100,
       currency: "USD",
       billing_cycle: cycle,
+      payment_provider: "paystack",
       paystack_reference: reference,
       current_period_start: now.toISOString(),
       current_period_end: periodEnd.toISOString(),
     }, { onConflict: "org_id" });
     if (subError) {
+      await releaseReceipt(adminClient, "paystack", String(reference));
       return new Response(JSON.stringify({ ok: false, msg: subError.message }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

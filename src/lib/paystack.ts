@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { publicKey } from '@/lib/platformConfig';
 
 /**
  * Paystack Inline (like Flutterwave's checkout) uses a PUBLIC key that is
@@ -6,10 +7,10 @@ import { supabase } from '@/lib/supabase';
  * charge or read anything on its own. The actual charge confirmation
  * happens in paystack-verify (server-side, secret key, never exposed).
  */
-export const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY as string | undefined;
+export const paystackPublicKey = () => publicKey('PAYSTACK_PUBLIC_KEY', import.meta.env.VITE_PAYSTACK_PUBLIC_KEY as string | undefined);
 
 export function isPaystackConfigured() {
-  return Boolean(PAYSTACK_PUBLIC_KEY);
+  return Boolean(paystackPublicKey());
 }
 
 const PLAN_PRICES_USD: Record<string, { monthly: number; annual: number }> = {
@@ -49,7 +50,8 @@ export function initiatePaystackCheckout(params: {
 }) {
   const { plan, email, orgId, billingCycle = 'monthly', onSuccess, onClose } = params;
   const prices = PLAN_PRICES_USD[plan];
-  if (!prices || !PAYSTACK_PUBLIC_KEY) return;
+  const pk = paystackPublicKey();
+  if (!prices || !pk) return;
   const usd = prices[billingCycle];
 
   const ref = `atlas_${orgId}_${plan}_${Date.now()}`;
@@ -67,7 +69,7 @@ export function initiatePaystackCheckout(params: {
 
   loadScript().then(() => {
     const handler = window.PaystackPop?.setup({
-      key: PAYSTACK_PUBLIC_KEY,
+      key: pk,
       email,
       amount: usd * 100, // Paystack expects the smallest currency unit
       currency: 'USD',

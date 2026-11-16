@@ -5,7 +5,7 @@ import {
   Receipt, ScrollText, Plus, Trash2, Ban, CheckCircle2, Loader2,
   AlertTriangle, TrendingUp, DollarSign, Activity, Search, CalendarPlus,
   Briefcase, Wallet, PiggyBank, ArrowUpRight, ArrowDownRight,
-  UserPlus, Pencil, X, Calendar,
+  UserPlus, Pencil, X, Calendar, KeyRound,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
@@ -184,12 +184,12 @@ export function SuperAdminDashboard() {
       </div>
 
       {/* Quick links */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
           { label: language === 'fr' ? 'Personnel' : 'Staff', icon: Briefcase, to: '/super-admin/staff', count: staffCount },
           { label: language === 'fr' ? 'Comptabilité' : 'Accounting', icon: Wallet, to: '/super-admin/accounting' },
           { label: t('superAdmin.salesCodes', language), icon: Receipt, to: '/super-admin/sales-codes' },
-          { label: t('superAdmin.auditLog', language), icon: ScrollText, to: '/super-admin/audit' },
+          { label: t('superAdmin.platformKeys', language), icon: KeyRound, to: '/super-admin/keys' },
         ].map((q) => (
           <button key={q.to} onClick={() => window.location.assign(q.to)} className="card p-4 text-start hover:shadow-card-hover transition-shadow">
             <q.icon size={20} className="text-primary-600" />

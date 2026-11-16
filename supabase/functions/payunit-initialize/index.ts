@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { getSecret } from "../_shared/secrets.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -21,18 +22,12 @@ const PLAN_PRICES_USD: Record<string, { monthly: number; annual: number }> = {
 };
 
 async function convertUsdToXaf(usdAmount: number): Promise<number> {
-  try {
-    const res = await fetch("https://open.er-api.com/v6/latest/USD");
-    const data = await res.json();
-    const rate = data?.rates?.XAF;
-    if (!rate || typeof rate !== "number") throw new Error("XAF rate unavailable");
-    // XAF is zero-decimal — round to the nearest whole franc.
-    return Math.round(usdAmount * rate);
-  } catch {
-    // Fallback only if the live FX API is unreachable — approximate peg,
-    // clearly a degraded path, not the primary pricing mechanism.
-    return Math.round(usdAmount * 600);
-  }
+  const res = await fetch("https://open.er-api.com/v6/latest/USD");
+  const data = await res.json().catch(() => null);
+  const rate = data?.rates?.XAF;
+  // No guessed peg: without a live rate we refuse rather than misprice.
+  if (typeof rate !== "number" || rate <= 0) throw new Error("Exchange rate USD→XAF unavailable, try again in a moment.");
+  return Math.round(usdAmount * rate);
 }
 
 Deno.serve(async (req: Request) => {
@@ -41,10 +36,10 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const apiUser = Deno.env.get("PAYUNIT_API_USER");
-    const apiPassword = Deno.env.get("PAYUNIT_API_PASSWORD");
-    const apiKey = Deno.env.get("PAYUNIT_API_KEY");
-    const mode = Deno.env.get("PAYUNIT_MODE") || "test";
+    const apiUser = (await getSecret("PAYUNIT_API_USER"));
+    const apiPassword = (await getSecret("PAYUNIT_API_PASSWORD"));
+    const apiKey = (await getSecret("PAYUNIT_API_KEY"));
+    const mode = (await getSecret("PAYUNIT_MODE")) || "test";
     if (!apiUser || !apiPassword || !apiKey) {
       return new Response(JSON.stringify({ ok: false, msg: "PayUnit not configured (missing PAYUNIT_API_USER / PAYUNIT_API_PASSWORD / PAYUNIT_API_KEY)" }), {
         status: 501, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -135,27 +130,27 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // The subscription's currency of record is always USD (consistent with
-    // Flutterwave subscriptions and platform-wide MRR calculations, which
-    // sum price_cents assuming USD) — only the actual charge rail differs.
-    // Uses the service role: regular authenticated users no longer have
-    // direct write access to subscriptions (see migration 025) — org
-    // membership was already verified above, so this pending placeholder
-    // row is safe to create server-side.
+    // Record what this transaction is for. The org's subscription is only
+    // touched once PayUnit confirms the payment (payunit-verify / -webhook),
+    // so opening and abandoning a checkout never cuts off a paying customer.
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
-    const { error: subErr } = await adminClient.from("subscriptions").upsert({
+    const { error: subErr } = await adminClient.from("billing_payment_intents").insert({
       org_id,
+      created_by: userData.user.id,
+      provider: "payunit",
+      reference: transactionId,
       plan,
-      status: "pending",
-      price_cents: usdPrice * 100,
-      currency: "USD",
       billing_cycle: cycle,
-      payment_provider: "payunit",
-      payunit_transaction_id: transactionId,
-    }, { onConflict: "org_id" });
+      price_usd: usdPrice,
+      charge_amount: amount,
+      charge_currency: "XAF",
+      status: "pending",
+      checkout_url: initData.data?.transaction_url ?? null,
+      return_url: return_url ?? null,
+    });
     if (subErr) {
       return new Response(JSON.stringify({ ok: false, msg: subErr.message }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },

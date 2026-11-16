@@ -135,7 +135,7 @@ and individual pages. Tables expected: contacts, companies, leads, deals, pipeli
 activities, products, quotes, orders, invoices, payments, campaigns, tickets, ai_agents,
 ai_tasks, approvals, workflows, ai_memory, knowledge_documents, integrations, api_keys,
 webhooks, notifications, audit_logs, profiles, organizations. SQL migrations are at
-`supabase/migrations/` (latest: `20261115190717_047_ticket_sla.sql`).
+`supabase/migrations/` (latest: `20261116081153_051_super_admin_requires_confirmed_email.sql`).
 - Whenever you add or edit a `ListPage` `formFields` array, or a direct
   `supabase.from(table).insert({...})` / `.update({...})` call anywhere else,
   double-check every key against the table's real columns in
@@ -1254,3 +1254,53 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   `BlogChrome`. No logo marquee: the integrations copy promises "no logo
   wall", keep it that way. All frozen in the reduced-motion block at the
   end of `src/index.css`.
+
+## Platform keys in the super-admin dashboard (048, Nov 2026)
+- `/super-admin/keys` (`src/pages/PlatformKeysPage.tsx`): PSP keys
+  (Flutterwave, Paystack, Paddle, PayUnit, CinetPay, Korapay), Resend,
+  Gemini, extra return origins and OAuth app credentials. Fields follow each
+  provider's docs (format regex in `platform_setting_defs.pattern`, closed
+  lists in `allowed`); each card links the doc, says where to find the key,
+  and has "Test connection" (edge function `platform-keys`, super admin
+  only, calls the provider's authenticated read endpoint and reports
+  test/live mode and mismatches such as a sandbox key with production).
+- Storage: scope `secret` → Supabase Vault (`vault.secrets`, name
+  `platform.<KEY>`), never returned to a browser (only last 4 chars);
+  `server` → clear text, super admins only; `public` → readable by anyone
+  through `get_public_platform_config()`. RPCs: `admin_platform_settings_list`,
+  `admin_platform_setting_set`, `admin_platform_setting_clear` (super admin
+  only, audit-logged without the value); `platform_secrets(keys)` is
+  service_role only. Adding a key = one row in `platform_setting_defs` +
+  a field in `GROUPS` on the page.
+- Edge functions read keys with `getSecret()/getSecrets()` from
+  `supabase/functions/_shared/secrets.ts`: dashboard value first, env var
+  fallback, 60 s cache. The browser reads public keys with
+  `loadPublicConfig()/publicKey()` (`src/lib/platformConfig.ts`), build-time
+  VITE_* (or Paddle's code defaults) as fallback — so changing a key no
+  longer needs a Cloudflare rebuild.
+
+## Payment hardening (049–051, Nov 2026) — found during the launch audit
+- Replay: flutterwave/paystack/paddle/payunit verify re-activated a
+  subscription each time they were called with the same successful
+  transaction (one payment = unlimited periods). Now every payment
+  reference goes through `claim_payment_receipt()` (`payment_receipts`,
+  PK provider+reference): 'new' extends, 'same' answers ok without
+  extending, 'other' (used by another org) is refused.
+  `_shared/receipts.ts` also makes renewals start at the current period end
+  (no lost days), like Korapay/CinetPay already did.
+- Org binding is now mandatory: Flutterwave tx_ref must start with
+  `atlas_<org8>_`, Paystack `metadata.org_id` and Paddle `custom_data.org_id`
+  must equal the org (they were only checked when present).
+- Paddle charges in the buyer's local currency: a transaction carrying the
+  plan's Price ID is accepted (amount comes from the Paddle catalogue);
+  before, any non-USD payment was rejected.
+- PayUnit: `payunit-initialize` wrote a 'pending' subscription row over
+  the org's active one, cutting a paying customer off as soon as they
+  opened a checkout. Now it records a `billing_payment_intents` row
+  (provider 'payunit', 050) and `_shared/payunit.ts` settles it from
+  payunit-verify and payunit-webhook (the webhook used to force 1 month even
+  for annual). No more guessed 600 XAF/USD fallback rate: no live rate →
+  refused.
+- `is_super_admin()` / `link_super_admin()` only honour an e-mail match
+  once that e-mail is confirmed (051): a listed super-admin address with no
+  account yet could otherwise be claimed by signing up with it.

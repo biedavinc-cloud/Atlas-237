@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { getSecret } from "../_shared/secrets.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -137,7 +138,7 @@ Deno.serve(async (req: Request) => {
     let result: CallResult;
 
     if (provider === "platform_free") {
-      const freeKey = Deno.env.get("GEMINI_API_KEY");
+      const freeKey = (await getSecret("GEMINI_API_KEY"));
       if (!freeKey) {
         return new Response(JSON.stringify({ ok: false, msg: "AI assistant not configured (missing GEMINI_API_KEY)" }), {
           status: 501, headers: { ...corsHeaders, "Content-Type": "application/json" },

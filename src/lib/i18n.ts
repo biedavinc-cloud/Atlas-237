@@ -318,6 +318,7 @@ export const translations: Translation = {
   'superAdmin.permissions': { en: 'Permissions', fr: 'Permissions', es: 'Permisos', pt: 'Permissões', ar: 'الأذونات' },
   'superAdmin.auditLog': { en: 'Audit Log', fr: "Journal d'audit", es: 'Registro de auditoría', pt: 'Registro de auditoria', ar: 'سجل التدقيق' },
   'superAdmin.staff': { en: 'Staff', fr: 'Personnel', es: 'Personal', pt: 'Equipe', ar: 'الموظفون' },
+  'superAdmin.platformKeys': { en: 'Platform keys', fr: 'Clés de la plateforme', es: 'Claves de la plataforma', pt: 'Chaves da plataforma', ar: 'مفاتيح المنصة' },
   'superAdmin.accounting': { en: 'Accounting', fr: 'Comptabilité', es: 'Contabilidad', pt: 'Contabilidade', ar: 'المحاسبة' },
   'superAdmin.backToApp': { en: 'Back to App', fr: "Retour à l'app", es: 'Volver a la app', pt: 'Voltar ao app', ar: 'العودة للتطبيق' },
   'superAdmin.platformControl': { en: 'Platform Control Center', fr: 'Centre de contrôle plateforme', es: 'Centro de control de plataforma', pt: 'Centro de controle da plataforma', ar: 'مركز التحكم بالمنصة' },

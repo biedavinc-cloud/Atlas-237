@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { getSecret } from "../_shared/secrets.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -15,7 +16,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const resendKey = Deno.env.get("RESEND_API_KEY");
+    const resendKey = (await getSecret("RESEND_API_KEY"));
     if (!resendKey) {
       return new Response(JSON.stringify({ ok: false, msg: "Email notifications not configured (missing RESEND_API_KEY)" }), {
         status: 501, headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -4,6 +4,7 @@ import { isPaystackConfigured, initiatePaystackCheckout, confirmPaystackPayment 
 import { isPaddleConfigured, initiatePaddleCheckout, confirmPaddlePayment } from '@/lib/paddle';
 import { redirectProvidersAvailable, startRedirectCheckout } from '@/lib/redirectBilling';
 import { IS_DEMO } from '@/lib/demo/mode';
+import { loadPublicConfig } from '@/lib/platformConfig';
 
 /**
  * Payment Service Provider registry.
@@ -36,7 +37,7 @@ export const PSP_REGISTRY: PspOption[] = [
     key: 'flutterwave',
     label: 'Flutterwave',
     method: 'Card / bank transfer',
-    checkAvailable: async () => isFlutterwaveConfigured(),
+    checkAvailable: async () => { await loadPublicConfig(); return isFlutterwaveConfigured(); },
   },
   {
     key: 'payunit',
@@ -48,13 +49,13 @@ export const PSP_REGISTRY: PspOption[] = [
     key: 'paystack',
     label: 'Paystack',
     method: 'Card / bank / mobile money',
-    checkAvailable: async () => isPaystackConfigured(),
+    checkAvailable: async () => { await loadPublicConfig(); return isPaystackConfigured(); },
   },
   {
     key: 'paddle',
     label: 'Paddle',
     method: 'Card / PayPal / Apple Pay (global, Merchant of Record)',
-    checkAvailable: async () => isPaddleConfigured(),
+    checkAvailable: async () => { await loadPublicConfig(); return isPaddleConfigured(); },
   },
   {
     key: 'cinetpay',

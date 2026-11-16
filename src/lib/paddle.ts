@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { publicKey } from '@/lib/platformConfig';
 
 /**
  * Paddle Billing checkout. The "client-side token" (pt_...) is safe to
@@ -13,10 +14,12 @@ import { supabase } from '@/lib/supabase';
  * Paddle simply doesn't appear as a payment option, same as any other PSP
  * in this registry when it isn't configured.
  */
-export const PADDLE_CLIENT_TOKEN = (import.meta.env.VITE_PADDLE_CLIENT_TOKEN as string | undefined) || 'live_9743c25ef8324a998b966c0bc8d';
-export const PADDLE_ENVIRONMENT = (import.meta.env.VITE_PADDLE_ENVIRONMENT as string | undefined) || 'production';
+const PADDLE_CLIENT_TOKEN_BUILD = (import.meta.env.VITE_PADDLE_CLIENT_TOKEN as string | undefined) || 'live_9743c25ef8324a998b966c0bc8d';
+const PADDLE_ENVIRONMENT_BUILD = (import.meta.env.VITE_PADDLE_ENVIRONMENT as string | undefined) || 'production';
+const paddleClientToken = () => publicKey('PADDLE_CLIENT_TOKEN', PADDLE_CLIENT_TOKEN_BUILD);
+const paddleEnvironment = () => publicKey('PADDLE_ENVIRONMENT', PADDLE_ENVIRONMENT_BUILD);
 
-const PADDLE_PRICE_IDS: Record<string, string | undefined> = {
+const PADDLE_PRICE_IDS_BUILD: Record<string, string | undefined> = {
   starter: (import.meta.env.VITE_PADDLE_PRICE_STARTER as string | undefined) || 'pri_01m1m7t4b0ssysw2tq8tw8fc0j',
   growth: (import.meta.env.VITE_PADDLE_PRICE_GROWTH as string | undefined) || 'pri_01m1m7xjf76rjm1zws3xz9jcv3',
   pro: (import.meta.env.VITE_PADDLE_PRICE_PRO as string | undefined) || 'pri_01m1m7z8mg4v3kvnctkjvr71yw',
@@ -32,19 +35,37 @@ const PADDLE_PRICE_IDS: Record<string, string | undefined> = {
  * doesn't offer Paddle as an option — same "never claim available
  * without real config" rule as everywhere else in this PSP registry.
  */
-const PADDLE_PRICE_IDS_ANNUAL: Record<string, string | undefined> = {
+const PADDLE_PRICE_IDS_ANNUAL_BUILD: Record<string, string | undefined> = {
   starter: (import.meta.env.VITE_PADDLE_PRICE_STARTER_ANNUAL as string | undefined) || 'pri_01m219ewv01df2azda6p2s21fg',
   growth: (import.meta.env.VITE_PADDLE_PRICE_GROWTH_ANNUAL as string | undefined) || 'pri_01m219g8ejmh03bntqcfhx1rwf',
   pro: (import.meta.env.VITE_PADDLE_PRICE_PRO_ANNUAL as string | undefined) || 'pri_01m219hdz50gsc3hbvc2s4y05h',
   enterprise: (import.meta.env.VITE_PADDLE_PRICE_ENTERPRISE_ANNUAL as string | undefined) || 'pri_01m219jf6jvz5wmngpx06p8znd',
 };
 
+
+/** Price ID for a plan: dashboard value (/super-admin/keys) first, then the build-time one. */
+function priceId(plan: string, cycle: 'monthly' | 'annual'): string | undefined {
+  const name = `PADDLE_PRICE_${plan.toUpperCase()}${cycle === 'annual' ? '_ANNUAL' : ''}`;
+  return publicKey(name, (cycle === 'annual' ? PADDLE_PRICE_IDS_ANNUAL_BUILD : PADDLE_PRICE_IDS_BUILD)[plan]);
+}
+const PLANS = ['starter', 'growth', 'pro', 'enterprise'];
+
+/** Values baked into this build (Cloudflare VITE_* or code defaults), shown in /super-admin/keys. */
+export function paddleBuildValues(): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = { PADDLE_CLIENT_TOKEN: PADDLE_CLIENT_TOKEN_BUILD, PADDLE_ENVIRONMENT: PADDLE_ENVIRONMENT_BUILD };
+  for (const p of PLANS) {
+    out[`PADDLE_PRICE_${p.toUpperCase()}`] = PADDLE_PRICE_IDS_BUILD[p];
+    out[`PADDLE_PRICE_${p.toUpperCase()}_ANNUAL`] = PADDLE_PRICE_IDS_ANNUAL_BUILD[p];
+  }
+  return out;
+}
+
 export function isPaddleAnnualConfigured() {
-  return Object.values(PADDLE_PRICE_IDS_ANNUAL).every(Boolean);
+  return PLANS.every((p) => Boolean(priceId(p, 'annual')));
 }
 
 export function isPaddleConfigured() {
-  return Boolean(PADDLE_CLIENT_TOKEN) && Object.values(PADDLE_PRICE_IDS).every(Boolean);
+  return Boolean(paddleClientToken()) && PLANS.every((p) => Boolean(priceId(p, 'monthly')));
 }
 
 interface PaddleCheckoutEvent {
@@ -87,15 +108,16 @@ export function initiatePaddleCheckout(params: {
   onClose: () => void;
 }) {
   const { plan, email, orgId, billingCycle = 'monthly', onSuccess, onClose } = params;
-  const priceId = billingCycle === 'annual' ? PADDLE_PRICE_IDS_ANNUAL[plan] : PADDLE_PRICE_IDS[plan];
-  if (!priceId || !PADDLE_CLIENT_TOKEN) return;
+  const price = priceId(plan, billingCycle === 'annual' ? 'annual' : 'monthly');
+  const token = paddleClientToken();
+  if (!price || !token) return;
 
   loadPaddleScript().then(() => {
     if (!window.Paddle) return;
     if (!paddleInitialized) {
-      if (PADDLE_ENVIRONMENT === 'sandbox') window.Paddle.Environment.set('sandbox');
+      if (paddleEnvironment() === 'sandbox') window.Paddle.Environment.set('sandbox');
       window.Paddle.Initialize({
-        token: PADDLE_CLIENT_TOKEN,
+        token,
         eventCallback: (event) => {
           if (event.name === 'checkout.completed') {
             const txId = event.data?.transaction_id || event.data?.id;
@@ -108,7 +130,7 @@ export function initiatePaddleCheckout(params: {
       paddleInitialized = true;
     }
     window.Paddle.Checkout.open({
-      items: [{ priceId, quantity: 1 }],
+      items: [{ priceId: price, quantity: 1 }],
       customData: { org_id: orgId, plan, billing_cycle: billingCycle },
       customer: { email },
       // Paddle's account-wide "Default payment link" setting can't work
