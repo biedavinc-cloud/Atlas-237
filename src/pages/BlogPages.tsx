@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check, Globe, GraduationCap, Layers, Link2,
-  Linkedin, MessageCircle, PlayCircle, ShoppingBag, ShoppingCart, Store,
+  Linkedin, MessageCircle, PlayCircle, ShoppingBag, ShoppingCart, Sparkles, Store,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Logo } from '@/components/Logo';
@@ -23,9 +23,12 @@ const base = (lang: Lang) => (lang === 'en' ? '/en' : '');
 
 /* ───────────────────────── Product identity ───────────────────────── */
 
+/** Official icon when Liafrik provided one (public/brands), otherwise a neutral pictogram. */
 function ProductIcon({ product, size = 22, className = '' }: { product: Product; size?: number; className?: string }) {
   if (product === 'atlas') return <Logo size={size + 4} className={className} />;
-  const Icon = { pos: Store, sukulu: GraduationCap, zanldo: ShoppingBag, liafrik: Layers, libooks: BookOpen, sellia: ShoppingCart }[product];
+  const icon = PRODUCT_INFO[product].icon;
+  if (icon) return <img src={icon} alt="" width={size + 6} height={size + 6} loading="lazy" className={`object-contain ${className}`} style={{ width: size + 6, height: size + 6 }} />;
+  const Icon = { pos: Store, sukulu: GraduationCap, zanldo: ShoppingBag, liafrik: Layers, libooks: BookOpen, sellia: ShoppingCart, healthcloud: Layers, nutro: Store, stella: Sparkles }[product];
   return <Icon size={size} className={className} />;
 }
 
@@ -141,13 +144,14 @@ function BlogChrome({ lang, children, path }: { lang: Lang; children: ReactNode;
       <footer className="border-t border-ink-100 bg-navy-900 text-navy-200">
         <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:px-8 md:grid-cols-[1.2fr_2fr]">
           <div>
-            <p className="text-base font-bold text-white">Liafrik Tech</p>
+            <span className="inline-flex rounded-lg bg-white px-3 py-2"><img src="/brands/liafrik-logo.png" alt="Liafrik" className="h-8 w-auto" loading="lazy" /></span>
+            <p className="mt-3 text-base font-bold text-white">Liafrik Tech</p>
             <p className="mt-1 text-sm">{fr ? 'Des logiciels pour l’Afrique et le Golfe' : 'Software for Africa and the Gulf'} · {fr ? 'Dubaï – Yaoundé' : 'Dubai – Yaoundé'}</p>
           </div>
           <div className="grid grid-cols-2 gap-6 text-sm sm:grid-cols-3">
             <div className="space-y-2">
               <p className="font-semibold text-white">{fr ? 'Produits' : 'Products'}</p>
-              {(['atlas', 'pos', 'sukulu', 'zanldo'] as Product[]).map(p => (
+              {(['atlas', 'pos', 'sukulu', 'zanldo', 'healthcloud', 'nutro', 'stella'] as Product[]).map(p => (
                 <ProductLink key={p} product={p} lang={lang} className="block hover:text-white">{PRODUCT_LABEL[p]}</ProductLink>
               ))}
             </div>
@@ -184,7 +188,7 @@ function useMeta(title: string, description: string) {
 
 /* ───────────────────────── Index ───────────────────────── */
 
-const SHOWCASE: Product[] = ['atlas', 'pos', 'sukulu', 'zanldo'];
+const SHOWCASE: Product[] = ['atlas', 'pos', 'sukulu', 'zanldo', 'healthcloud', 'nutro', 'stella', 'libooks', 'sellia'];
 
 export function BlogIndexPage({ lang: forced = 'fr' }: { lang?: Language }) {
   const lang = useBlogLang(forced);
@@ -213,7 +217,8 @@ export function BlogIndexPage({ lang: forced = 'fr' }: { lang?: Language }) {
             <p className="mt-5 max-w-2xl text-lg leading-8 text-ink-600">
               {fr ? 'Le blog de Liafrik Tech. Chaque article parle d’un produit que vous pouvez ouvrir tout de suite.' : 'The Liafrik Tech blog. Every article covers a product you can open right now.'}
             </p>
-            <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <p className="mt-10 text-sm font-semibold text-ink-500">{fr ? 'La suite Liafrik' : 'The Liafrik suite'}</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {SHOWCASE.map(p => {
                 const info = PRODUCT_INFO[p];
                 return (
@@ -319,13 +324,20 @@ function ProductCard({ product, lang, compact }: { product: Product; lang: Lang;
   const info = PRODUCT_INFO[product];
   return (
     <div className={`rounded-2xl border border-ink-100 bg-white p-5 shadow-sm ${compact ? '' : 'ring-1 ring-black/[0.02]'}`}>
-      <div className="flex items-center gap-3">
-        <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl" style={{ backgroundColor: `${info.accent}14`, color: info.accent }}><ProductIcon product={product} size={20} /></span>
-        <div className="min-w-0">
-          <p className="font-bold text-ink-900">{PRODUCT_LABEL[product]}</p>
-          <p className="text-xs font-semibold" style={{ color: info.accent }}>{info.domain}</p>
+      {info.logo ? (
+        <div>
+          <img src={info.logo} alt={PRODUCT_LABEL[product]} className="h-10 w-auto max-w-full object-contain object-left" loading="lazy" />
+          <p className="mt-2 text-xs font-semibold" style={{ color: info.accent }}>{info.domain}</p>
         </div>
-      </div>
+      ) : (
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl" style={{ backgroundColor: `${info.accent}14`, color: info.accent }}><ProductIcon product={product} size={20} /></span>
+          <div className="min-w-0">
+            <p className="font-bold text-ink-900">{PRODUCT_LABEL[product]}</p>
+            <p className="text-xs font-semibold" style={{ color: info.accent }}>{info.domain}</p>
+          </div>
+        </div>
+      )}
       <p className="mt-3 text-sm leading-6 text-ink-600">{info.tagline[lang]}</p>
       <ProductLink product={product} lang={lang} style={{ backgroundColor: info.accent }} className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90">
         {info.cta[lang]} {info.internal ? <ArrowRight size={15} className="rtl:rotate-180" /> : <ArrowUpRight size={15} className="rtl:-scale-x-100" />}
@@ -401,6 +413,7 @@ export function BlogArticlePage({ lang: forced = 'fr' }: { lang?: Language }) {
   useMeta(post ? `${post[lang].title} — Blog Liafrik` : 'Blog Liafrik', post ? post[lang].dek : '');
   useEffect(() => { window.scrollTo(0, 0); }, [slug]);
   if (!post) return <Navigate to={`${base(lang)}/blog`} replace />;
+  if (slug !== post.slug) return <Navigate to={`${base(lang)}/blog/${post.slug}`} replace />;
 
   const info = PRODUCT_INFO[post.product];
   const toc = post[lang].body.filter((b): b is Extract<Block, { t: 'h2' }> => b.t === 'h2');

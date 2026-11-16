@@ -10,7 +10,7 @@ export type Block =
   | { t: 'quote'; text: string }
   | { t: 'callout'; title: string; text: string };
 
-export type Product = 'atlas' | 'libooks' | 'sellia' | 'liafrik' | 'pos' | 'sukulu' | 'zanldo';
+export type Product = 'atlas' | 'libooks' | 'sellia' | 'liafrik' | 'pos' | 'sukulu' | 'zanldo' | 'healthcloud' | 'nutro' | 'stella';
 
 export interface Post {
   slug: string;
@@ -27,9 +27,12 @@ export const PRODUCT_LABEL: Record<Product, string> = {
   libooks: 'Libooks',
   sellia: 'Sellia',
   liafrik: 'Liafrik',
-  pos: 'Liafrik POS',
+  pos: 'POS Flow',
   sukulu: 'Sukulu',
   zanldo: 'Zanldo',
+  healthcloud: 'Health Cloud',
+  nutro: 'Nutro',
+  stella: 'Stella',
 };
 
 /**
@@ -40,6 +43,9 @@ export const PRODUCT_LABEL: Record<Product, string> = {
  */
 export interface ProductInfo {
   url: string;
+  /** Square icon and full wordmark in public/brands/ (official files provided by Liafrik). */
+  icon?: string;
+  logo?: string;
   /** Internal route (Atlas) vs. external site. */
   internal: boolean;
   domain: string;
@@ -55,9 +61,10 @@ export const PRODUCT_INFO: Record<Product, ProductInfo> = {
     cta: { fr: 'Essayer Atlas gratuitement', en: 'Try Atlas for free' },
   },
   pos: {
-    url: 'https://liafrik.com/en/products/pos', internal: false, domain: 'liafrik.com', accent: '#16a34a',
+    url: 'https://liafrik.com/en/products/pos', internal: false, domain: 'liafrik.com', accent: '#1150b0',
+    icon: '/brands/posflow-icon.png', logo: '/brands/posflow-logo.png',
     tagline: { fr: 'La caisse qui continue de vendre quand le réseau tombe.', en: 'The till that keeps selling when the network drops.' },
-    cta: { fr: 'Découvrir Liafrik POS', en: 'Discover Liafrik POS' },
+    cta: { fr: 'Découvrir POS Flow', en: 'Discover POS Flow' },
   },
   sukulu: {
     url: 'https://gosukulu.com', internal: false, domain: 'gosukulu.com', accent: '#7c3aed',
@@ -65,41 +72,62 @@ export const PRODUCT_INFO: Record<Product, ProductInfo> = {
     cta: { fr: 'Découvrir Sukulu', en: 'Discover Sukulu' },
   },
   zanldo: {
-    url: 'https://zanldo.com', internal: false, domain: 'zanldo.com', accent: '#ea580c',
+    url: 'https://zanldo.com', internal: false, domain: 'zanldo.com', accent: '#ea7a12',
+    icon: '/brands/zanldo-icon.png', logo: '/brands/zanldo-logo.png',
     tagline: { fr: 'Vendez en ligne, payé directement, sans commission.', en: 'Sell online, get paid directly, no commission.' },
     cta: { fr: 'Ouvrir ma boutique sur Zanldo', en: 'Open my Zanldo store' },
   },
   liafrik: {
-    url: 'https://liafrik.com', internal: false, domain: 'liafrik.com', accent: '#0d1c33',
+    url: 'https://liafrik.com', internal: false, domain: 'liafrik.com', accent: '#06173a',
+    icon: '/brands/liafrik-icon.png', logo: '/brands/liafrik-logo.png',
     tagline: { fr: 'La suite logicielle de Liafrik Tech, Dubaï – Yaoundé.', en: 'The Liafrik Tech software suite, Dubai – Yaoundé.' },
     cta: { fr: 'Voir toute la suite Liafrik', en: 'See the whole Liafrik suite' },
   },
   libooks: {
     url: 'https://liafrik.com', internal: false, domain: 'liafrik.com', accent: '#0f766e',
+    icon: '/brands/libooks-icon.png',
     tagline: { fr: 'La comptabilité de la suite Liafrik.', en: 'Accounting in the Liafrik suite.' },
     cta: { fr: 'En savoir plus sur liafrik.com', en: 'Learn more on liafrik.com' },
   },
   sellia: {
-    url: 'https://liafrik.com', internal: false, domain: 'liafrik.com', accent: '#be185d',
+    url: 'https://liafrik.com', internal: false, domain: 'liafrik.com', accent: '#037557',
+    icon: '/brands/sellia-icon.png', logo: '/brands/sellia-logo.png',
     tagline: { fr: 'Le commerce de la suite Liafrik.', en: 'Commerce in the Liafrik suite.' },
+    cta: { fr: 'En savoir plus sur liafrik.com', en: 'Learn more on liafrik.com' },
+  },
+  healthcloud: {
+    url: 'https://liafrik.com', internal: false, domain: 'liafrik.com', accent: '#ff3b62',
+    icon: '/brands/healthcloud-icon.png', logo: '/brands/healthcloud-logo.png',
+    tagline: { fr: 'La gestion des hôpitaux et des cliniques.', en: 'Hospital and clinic management.' },
+    cta: { fr: 'En savoir plus sur liafrik.com', en: 'Learn more on liafrik.com' },
+  },
+  nutro: {
+    url: 'https://liafrik.com', internal: false, domain: 'liafrik.com', accent: '#111827',
+    icon: '/brands/nutro-icon.png',
+    tagline: { fr: 'La caisse des restaurants, en version Pro et Premium.', en: 'The restaurant till, in Pro and Premium editions.' },
+    cta: { fr: 'En savoir plus sur liafrik.com', en: 'Learn more on liafrik.com' },
+  },
+  stella: {
+    url: 'https://liafrik.com', internal: false, domain: 'liafrik.com', accent: '#c026d3',
+    tagline: { fr: 'Rendez-vous et caisse pour salons de beauté, coiffure et spas.', en: 'Bookings and checkout for beauty salons, hair salons and spas.' },
     cta: { fr: 'En savoir plus sur liafrik.com', en: 'Learn more on liafrik.com' },
   },
 };
 
 export const POSTS: Post[] = [
   {
-    slug: 'liafrik-pos-la-caisse-qui-ne-lache-pas',
+    slug: 'pos-flow-la-caisse-qui-ne-lache-pas',
     product: 'pos',
     date: '2026-11-14',
     readMin: 4,
     cover: { from: '#0d1c33', to: '#16a34a', motif: 'grid' },
     fr: {
-      title: 'Liafrik POS : la caisse qui continue de vendre quand le réseau tombe',
-      dek: 'Une boutique africaine ne peut pas fermer parce que la connexion a sauté. Liafrik POS a été pensé pour ça, et pour le reste de la journée du commerçant.',
+      title: 'POS Flow : la caisse qui continue de vendre quand le réseau tombe',
+      dek: 'Une boutique africaine ne peut pas fermer parce que la connexion a sauté. POS Flow a été pensé pour ça, et pour le reste de la journée du commerçant.',
       body: [
-        { t: 'p', text: 'Il est 18 h, la file s’allonge devant la caisse, et la connexion décroche. Avec une caisse cloud classique, la vente s’arrête. Avec Liafrik POS, elle continue : le mode hors ligne enregistre chaque vente et tout se resynchronise dès que le réseau revient.' },
+        { t: 'p', text: 'Il est 18 h, la file s’allonge devant la caisse, et la connexion décroche. Avec une caisse cloud classique, la vente s’arrête. Avec POS Flow, elle continue : le mode hors ligne enregistre chaque vente et tout se resynchronise dès que le réseau revient.' },
         { t: 'h2', text: 'Une caisse, un stock, des chiffres en direct' },
-        { t: 'p', text: 'Liafrik POS réunit ce qu’un commerçant gère aujourd’hui avec trois outils et un cahier : encaisser, suivre le stock et comprendre ses ventes.' },
+        { t: 'p', text: 'POS Flow réunit ce qu’un commerçant gère aujourd’hui avec trois outils et un cahier : encaisser, suivre le stock et comprendre ses ventes.' },
         { t: 'ul', items: [
           'Un tableau de bord des ventes en temps réel.',
           'Un suivi de stock intelligent pour éviter les ruptures.',
@@ -109,7 +137,7 @@ export const POSTS: Post[] = [
           'La gestion de plusieurs points de vente.',
         ] },
         { t: 'h2', text: 'Fait pour le commerce de tous les jours' },
-        { t: 'p', text: 'Boutiques, supermarchés, pharmacies, PME : Liafrik POS vise les commerces où chaque minute de file d’attente coûte une vente. Le soir, une seule action suffit pour clôturer la journée.' },
+        { t: 'p', text: 'Boutiques, supermarchés, pharmacies, PME : POS Flow vise les commerces où chaque minute de file d’attente coûte une vente. Le soir, une seule action suffit pour clôturer la journée.' },
         { t: 'callout', title: 'Des prix lisibles', text: 'Liafrik annonce deux formules : Starter à 19 $ par mois et Growth à 49 $ par mois.' },
         { t: 'h2', text: 'Et avec Atlas ?' },
         { t: 'p', text: 'La caisse sait ce qui se vend. Le CRM sait à qui. Dans l’écosystème Liafrik, POS gère le comptoir pendant qu’Atlas suit les clients professionnels, les devis et les relances.' },
@@ -117,12 +145,12 @@ export const POSTS: Post[] = [
       ],
     },
     en: {
-      title: 'Liafrik POS: the till that keeps selling when the network drops',
-      dek: 'An African shop can’t close because the connection went down. Liafrik POS was built for that, and for the rest of the shopkeeper’s day.',
+      title: 'POS Flow: the till that keeps selling when the network drops',
+      dek: 'An African shop can’t close because the connection went down. POS Flow was built for that, and for the rest of the shopkeeper’s day.',
       body: [
-        { t: 'p', text: 'It’s 6 pm, the queue is growing at the till, and the connection drops. With a typical cloud till, sales stop. With Liafrik POS they carry on: offline mode records every sale and everything syncs back as soon as the network returns.' },
+        { t: 'p', text: 'It’s 6 pm, the queue is growing at the till, and the connection drops. With a typical cloud till, sales stop. With POS Flow they carry on: offline mode records every sale and everything syncs back as soon as the network returns.' },
         { t: 'h2', text: 'One till, one stock, live numbers' },
-        { t: 'p', text: 'Liafrik POS brings together what a shopkeeper handles today with three tools and a notebook: taking payment, tracking stock and understanding sales.' },
+        { t: 'p', text: 'POS Flow brings together what a shopkeeper handles today with three tools and a notebook: taking payment, tracking stock and understanding sales.' },
         { t: 'ul', items: [
           'A real-time sales dashboard.',
           'Smart inventory tracking to avoid stockouts.',
@@ -132,7 +160,7 @@ export const POSTS: Post[] = [
           'Multi-branch support.',
         ] },
         { t: 'h2', text: 'Built for everyday retail' },
-        { t: 'p', text: 'Shops, supermarkets, pharmacies, SMEs: Liafrik POS targets businesses where every minute in the queue costs a sale. In the evening, a single action closes the day.' },
+        { t: 'p', text: 'Shops, supermarkets, pharmacies, SMEs: POS Flow targets businesses where every minute in the queue costs a sale. In the evening, a single action closes the day.' },
         { t: 'callout', title: 'Readable prices', text: 'Liafrik lists two plans: Starter at $19 a month and Growth at $49 a month.' },
         { t: 'h2', text: 'And with Atlas?' },
         { t: 'p', text: 'The till knows what sells. The CRM knows who buys. In the Liafrik ecosystem, POS runs the counter while Atlas follows business customers, quotes and follow-ups.' },
@@ -198,7 +226,7 @@ export const POSTS: Post[] = [
     product: 'zanldo',
     date: '2026-11-11',
     readMin: 4,
-    cover: { from: '#132745', to: '#c026d3', motif: 'waves' },
+    cover: { from: '#3f1f02', to: '#f08c22', motif: 'waves' },
     fr: {
       title: 'Zanldo : la marketplace qui ne prend rien sur vos ventes',
       dek: 'Sur la plupart des places de marché, chaque vente laisse une commission en route. Zanldo, la marketplace de Liafrik, a choisi un autre modèle : vous êtes payé directement, en entier.',
@@ -513,14 +541,14 @@ export const POSTS: Post[] = [
         { t: 'h2', text: 'Atlas pour la relation client' },
         { t: 'p', text: 'Atlas est le CRM de la suite : contacts, pipeline, devis, factures, support, automatisations et IA. C’est là que vit la relation avec chaque client.' },
         { t: 'h2', text: 'Libooks pour la comptabilité' },
-        { t: 'p', text: 'Libooks est la solution de comptabilité de Liafrik. Dans la Marketplace d’Atlas, elle se connecte avec une clé API et l’identifiant de votre espace Libooks.' },
+        { t: 'p', text: 'Libooks est la solution de comptabilité de Liafrik : la tenue des comptes de l’entreprise, à côté de la relation client gérée dans Atlas.' },
         { t: 'h2', text: 'Sellia pour le commerce en ligne' },
-        { t: 'p', text: 'Sellia est la plateforme e-commerce de Liafrik. Elle se connecte elle aussi depuis la Marketplace d’Atlas, avec une clé API et l’identifiant de votre boutique.' },
+        { t: 'p', text: 'Sellia est la plateforme e-commerce de Liafrik, pour vendre en ligne avec sa propre boutique.' },
         { t: 'callout', title: 'Où les trouver', text: 'Toute la suite : liafrik.com. Sukulu : gosukulu.com. Zanldo : zanldo.com. Atlas : atlas.liafrik.com, avec une démo ouverte sans compte.' },
         { t: 'h2', text: 'Une suite qui couvre toute l’entreprise' },
-        { t: 'p', text: 'Au-delà d’Atlas, Libooks et Sellia, Liafrik développe POS pour le commerce de détail, Sukulu pour les écoles, Zanldo pour la vente en ligne, Faka pour les RH, Nutro pour la restauration, Health pour les cliniques, Bailly pour l’immobilier, Kolo pour les finances familiales, Skills pour la formation, Mafo pour la santé des femmes, Z. Express pour la logistique, Litrek pour le transport, Hostrek pour l’hôtellerie, Nkapo pour les artisans et ID pour la vérification d’identité.' },
+        { t: 'p', text: 'Au-delà d’Atlas, Libooks et Sellia, Liafrik développe POS Flow pour le commerce de détail, Sukulu pour les écoles, Zanldo pour la vente en ligne, Nutro (en versions Pro et Premium) pour la restauration, Health Cloud pour la gestion des hôpitaux, Stella pour les salons de beauté et les spas, Faka pour les RH, Bailly pour l’immobilier, Kolo pour les finances familiales, Skills pour la formation, Mafo pour la santé des femmes, Z. Express pour la logistique, Litrek pour le transport, Hostrek pour l’hôtellerie, Nkapo pour les artisans et ID pour la vérification d’identité.' },
         { t: 'h2', text: 'Ouverts aux autres aussi' },
-        { t: 'p', text: 'Choisir Liafrik ne vous oblige pas à tout changer. Atlas se connecte aussi à des dizaines d’outils du marché, des passerelles de paiement africaines aux plateformes d’automatisation, et expose ses propres webhooks signés.' },
+        { t: 'p', text: 'Choisir Liafrik ne vous oblige pas à tout changer. Atlas se connecte aussi aux outils du marché là où ils servent (WhatsApp, Resend, HubSpot, Freshdesk, les passerelles de paiement africaines…), et expose une API REST et des webhooks signés.' },
         { t: 'p', text: 'L’ambition est simple : que la technologie construite pour l’Afrique et le Golfe soit au niveau des meilleurs outils mondiaux, sans en copier les angles morts.' },
       ],
     },
@@ -532,20 +560,26 @@ export const POSTS: Post[] = [
         { t: 'h2', text: 'Atlas for customer relationships' },
         { t: 'p', text: 'Atlas is the suite’s CRM: contacts, pipeline, quotes, invoices, support, automation and AI. It is where the relationship with every customer lives.' },
         { t: 'h2', text: 'Libooks for accounting' },
-        { t: 'p', text: 'Libooks is Liafrik’s accounting product. In the Atlas Marketplace it connects with an API key and your Libooks workspace ID.' },
+        { t: 'p', text: 'Libooks is Liafrik’s accounting product: the company’s books, alongside the customer relationship managed in Atlas.' },
         { t: 'h2', text: 'Sellia for e-commerce' },
-        { t: 'p', text: 'Sellia is Liafrik’s e-commerce platform. It also connects from the Atlas Marketplace, with an API key and your store ID.' },
+        { t: 'p', text: 'Sellia is Liafrik’s e-commerce platform, for selling online with your own store.' },
         { t: 'callout', title: 'Where to find them', text: 'The whole suite: liafrik.com. Sukulu: gosukulu.com. Zanldo: zanldo.com. Atlas: atlas.liafrik.com, with a demo that opens without an account.' },
         { t: 'h2', text: 'A suite that covers the whole business' },
-        { t: 'p', text: 'Beyond Atlas, Libooks and Sellia, Liafrik builds POS for retail, Sukulu for schools, Zanldo for online selling, Faka for HR, Nutro for restaurants, Health for clinics, Bailly for real estate, Kolo for family finances, Skills for learning, Mafo for women’s health, Z. Express for logistics, Litrek for transport, Hostrek for hotels, Nkapo for tradespeople and ID for identity verification.' },
+        { t: 'p', text: 'Beyond Atlas, Libooks and Sellia, Liafrik builds POS Flow for retail, Sukulu for schools, Zanldo for online selling, Nutro (Pro and Premium editions) for restaurants, Health Cloud for hospital management, Stella for beauty salons and spas, Faka for HR, Bailly for real estate, Kolo for family finances, Skills for learning, Mafo for women’s health, Z. Express for logistics, Litrek for transport, Hostrek for hotels, Nkapo for tradespeople and ID for identity verification.' },
         { t: 'h2', text: 'Open to others too' },
-        { t: 'p', text: 'Choosing Liafrik doesn’t force you to replace everything. Atlas also connects to dozens of market tools, from African payment gateways to automation platforms, and exposes its own signed webhooks.' },
+        { t: 'p', text: 'Choosing Liafrik doesn’t force you to replace everything. Atlas also connects to market tools where they are useful (WhatsApp, Resend, HubSpot, Freshdesk, African payment gateways…), and exposes a REST API and signed webhooks.' },
         { t: 'p', text: 'The ambition is simple: technology built for Africa and the Gulf should match the best tools in the world, without copying their blind spots.' },
       ],
     },
   },
 ];
 
+/** Old slugs that must keep working (shared links, search engines). */
+export const SLUG_ALIASES: Record<string, string> = {
+  'liafrik-pos-la-caisse-qui-ne-lache-pas': 'pos-flow-la-caisse-qui-ne-lache-pas',
+};
+
 export function getPost(slug: string | undefined): Post | undefined {
-  return POSTS.find(p => p.slug === slug);
+  const s = slug && SLUG_ALIASES[slug] ? SLUG_ALIASES[slug] : slug;
+  return POSTS.find(p => p.slug === s);
 }

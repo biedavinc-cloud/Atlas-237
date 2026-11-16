@@ -21,7 +21,8 @@ Four flat monthly plans per organization, in USD: Starter ($19), Growth ($49), P
 - Full suite: https://liafrik.com
 - Sukulu (school management): https://gosukulu.com
 - Zanldo (online marketplace): https://zanldo.com
-- POS (retail): https://liafrik.com/en/products/pos
+- POS Flow (retail point of sale): https://liafrik.com/en/products/pos
+- Health Cloud (hospital management), Nutro (restaurant POS, Pro and Premium), Stella (salon and spa bookings), Libooks (accounting), Sellia (e-commerce): https://liafrik.com
 - Libooks (accounting): https://libooks.liafrik.com
 - Sellia (commerce operating system): https://sellia.liafrik.com
 

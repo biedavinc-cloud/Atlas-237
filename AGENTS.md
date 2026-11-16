@@ -1083,6 +1083,16 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   share buttons (WhatsApp, LinkedIn, copy) and a reading progress bar.
   Official addresses written in the text are turned into links by
   `linkify()` in BlogPages.tsx — keep writing them as plain domains.
+- Product names: the retail till is **POS Flow** (not "Liafrik POS"); old
+  slug `liafrik-pos-…` redirects via `SLUG_ALIASES`. Suite also includes
+  Health Cloud (hospital management), Nutro (restaurant POS, Pro and
+  Premium), Stella (salon/spa bookings and checkout), Libooks, Sellia.
+  Official logos/icons live in `public/brands/` (`PRODUCT_INFO.icon/logo`).
+  Health Cloud, Nutro and Stella have no public page or feature list yet:
+  they appear in the suite grid/footer with the owner's one-line
+  description and link to liafrik.com, but get no article until real
+  feature descriptions and URLs are provided. The Sukulu icon file
+  received was blank, so Sukulu still uses a generic pictogram.
 
 ## Branding
 - The company name is written "Liafrik" (not "LiAfrik"). Credit line:
