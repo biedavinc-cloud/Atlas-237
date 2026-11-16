@@ -23,6 +23,9 @@ import { VideoBackground } from '@/components/VideoBackground';
 import { HERO_VIDEO_SOURCES, HERO_VIDEO_POSTER, FINAL_CTA_VIDEO_SOURCES, FINAL_CTA_VIDEO_POSTER } from '@/lib/media';
 import { useAuth } from '@/context/AuthContext';
 import { useScrollReveal } from '@/lib/useScrollReveal';
+import { useLandingMotion } from '@/lib/landingMotion';
+import { HeroPreview } from '@/components/landing/HeroPreview';
+import { InstallAppButton } from '@/components/PwaPrompts';
 
 /**
  * The integrations section shows only apps that do something in Atlas,
@@ -90,6 +93,8 @@ const plans = [
 type Row = { label: { fr: string; en: string }; values: (boolean | string)[] };
 
 const faqs = [
+  { q: 'Mes données sont-elles séparées de celles des autres entreprises ?', qEn: 'Is my data kept separate from other companies?', a: 'Oui. Atlas est multi-entreprise avec un cloisonnement strict : chaque ligne de données appartient à une seule entreprise, et la base de données elle-même refuse toute lecture ou écriture hors de votre espace (règles de sécurité au niveau des lignes), même si quelqu’un contournait l’interface. Les clés API et les webhooks sont, eux aussi, rattachés à une seule entreprise.', aEn: 'Yes. Atlas is multi-tenant with strict isolation: every row of data belongs to a single company, and the database itself refuses any read or write outside your workspace (row-level security), even if someone bypassed the interface. API keys and webhooks are scoped to a single company too.' },
+  { q: 'Peut-on installer Atlas comme une application ?', qEn: 'Can I install Atlas as an app?', a: 'Oui. Atlas est une application web installable (PWA) : depuis Chrome, Edge ou Android, utilisez « Installer l’app » pour l’ajouter à votre écran d’accueil ou à votre bureau, avec son icône et sa propre fenêtre. Sur iPhone, utilisez Partager puis « Sur l’écran d’accueil ». Une connexion internet reste nécessaire pour vos données.', aEn: 'Yes. Atlas is an installable web app (PWA): in Chrome, Edge or on Android, use "Install the app" to add it to your home screen or desktop, with its own icon and window. On iPhone, use Share then "Add to Home Screen". An internet connection is still needed for your data.' },
   { q: 'Qu’est-ce qu’Atlas CRM ?', qEn: 'What is Atlas CRM?', a: 'Atlas CRM est la plateforme de gestion de la relation client de Liafrik Tech, propulsée par l’IA agentique. Elle réunit entreprises et clients via un ensemble unifié d’applications — alimentées par l’IA agentique et la donnée — qui aident chaque département (ventes, service, marketing, commerce, IT) à travailler comme un seul.', aEn: 'Atlas CRM is Liafrik Tech’s customer relationship management platform, powered by agentic AI. It brings together companies and customers through a unified suite of applications — powered by agentic AI and data — that helps every department (sales, service, marketing, commerce, IT) work as one.' },
   { q: 'Qu’est-ce qu’un CRM et pourquoi en ai-je besoin ?', qEn: 'What is a CRM and why do I need one?', a: 'Un CRM gère toutes les relations et interactions de votre entreprise avec ses clients. Il vous aide à organiser les contacts, automatiser les tâches (logs d’appels, relances) et analyser les données pour comprendre le comportement client — vous donnant une vue à 360° de chaque client.', aEn: 'A CRM manages all your company’s relationships and interactions with customers. It helps you organize contacts, automate tasks (call logs, follow-ups), and analyze data to understand customer behavior — giving you a 360° view of every customer.' },
   { q: 'Qu’est-ce que l’IA agentique et comment l’utilise Atlas CRM ?', qEn: 'What is agentic AI and how does Atlas CRM use it?', a: 'L’IA agentique désigne des systèmes d’IA capables d’agir de manière autonome pour atteindre un objectif. Dans Atlas CRM (via Atlas AI Workforce), elle automatise des workflows complexes (qualification de leads, résolution de tickets), prédit les résultats et personnalise chaque interaction client.', aEn: 'Agentic AI refers to AI systems capable of acting autonomously to achieve a goal. In Atlas CRM (via Atlas AI Workforce), it automates complex workflows (lead qualification, ticket resolution), predicts outcomes, and personalizes every customer interaction.' },
@@ -121,6 +126,7 @@ export function LandingPage() {
   // earlier version that showed a discounted annual price with zero
   // connection to what a customer was actually charged at checkout.
   useScrollReveal();
+  useLandingMotion();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const price = (m: number | null) => (m === null ? (lang === 'fr' ? 'Sur devis' : 'Custom') : `$${m}/${billingCycle === 'annual' ? (lang === 'fr' ? 'an' : 'yr') : (lang === 'fr' ? 'mois' : 'mo')}`);
 
@@ -166,8 +172,9 @@ export function LandingPage() {
 
   return (
     <div className="bg-white text-ink-900">
+      <div id="lp-progress" className="lp-progress" aria-hidden="true" />
       {/* ───────── Header ───────── */}
-      <header className="sticky top-0 z-50 border-b border-ink-100 bg-white/95 backdrop-blur-xl">
+      <header id="lp-header" className="lp-header sticky top-0 z-50 border-b border-ink-100 bg-white/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5 md:px-10">
           <Link to="/" className="flex items-center gap-2.5 animate-fade-in">
             <Logo size={36} />
@@ -208,14 +215,17 @@ export function LandingPage() {
             poster={HERO_VIDEO_POSTER}
             overlayClassName="bg-gradient-to-b from-white/92 via-white/90 to-white"
           />
+          <div className="lp-grid" aria-hidden="true" />
+          <span className="lp-beam top-[192px]" aria-hidden="true" />
+          <span className="lp-beam lp-beam-2 top-[384px]" aria-hidden="true" />
           <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-primary-200/40 blur-3xl animate-pulse-slow" />
           <div className="absolute -left-24 top-40 h-80 w-80 rounded-full bg-accent-200/20 blur-3xl" />
-          <div className="relative mx-auto max-w-4xl px-6 pt-20 pb-14 text-center md:px-10 lg:pt-28 lg:pb-16">
+          <div className="relative mx-auto max-w-4xl px-6 pt-20 text-center md:px-10 lg:pt-28">
             <span className="animate-fade-in-up inline-flex items-center gap-2 rounded-full border border-primary-200 bg-white/80 px-4 py-1.5 text-xs font-semibold text-primary-700 shadow-sm backdrop-blur-sm">
               <Zap size={13} className="text-primary-600" /> {lang === 'fr' ? 'Propulsé par l’IA agentique' : 'Powered by agentic AI'}
             </span>
             <h1 className="animate-fade-in-up mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-ink-950 sm:text-6xl" style={{ animationDelay: '0.05s' }}>
-              {lang === 'fr' ? <>Le CRM agentique conçu pour <span className="text-primary-600">l’Afrique et le Golfe</span></> : <>The agentic CRM built for <span className="text-primary-600">Africa and the Gulf</span></>}
+              {lang === 'fr' ? <>Le CRM agentique conçu pour <span className="lp-shine text-primary-600">l’Afrique et le Golfe</span></> : <>The agentic CRM built for <span className="lp-shine text-primary-600">Africa and the Gulf</span></>}
             </h1>
             <p className="animate-fade-in-up mx-auto mt-6 max-w-2xl text-lg leading-8 text-ink-600" style={{ animationDelay: '0.1s' }}>
               {lang === 'fr'
@@ -232,6 +242,9 @@ export function LandingPage() {
             </div>
             <p className="mt-5 text-xs text-ink-500">{lang === 'fr' ? 'Rien à installer · Sans carte bancaire · 14 jours gratuits' : 'Nothing to install · No credit card · 14-day free trial'}</p>
           </div>
+          <div className="relative pb-16">
+            <HeroPreview lang={contentLang} />
+          </div>
           <div className="reveal relative border-t border-ink-100/80 bg-white/60 py-8 backdrop-blur-sm">
             <div className="mx-auto max-w-5xl px-6 md:px-10">
               <p className="text-center text-xs font-semibold uppercase tracking-wide text-ink-400">
@@ -240,13 +253,13 @@ export function LandingPage() {
               <div className="mt-6 grid grid-cols-2 gap-6 sm:grid-cols-4">
                 {[
                   // Product facts only (verifiable in the app), no invented traction numbers.
-                  { v: '195', l: { fr: 'Pays pris en charge', en: 'Countries supported' } },
-                  { v: '50+', l: { fr: 'Devises, dont FCFA', en: 'Currencies, incl. CFA' } },
-                  { v: '5', l: { fr: 'Langues, dont l’arabe', en: 'Languages, incl. Arabic' } },
-                  { v: '14 j', l: { fr: 'D’essai, sans carte', en: 'Trial days, no card' } },
+                  { n: 195, suffix: '', l: { fr: 'Pays pris en charge', en: 'Countries supported' } },
+                  { n: 50, suffix: '+', l: { fr: 'Devises, dont FCFA', en: 'Currencies, incl. CFA' } },
+                  { n: 5, suffix: '', l: { fr: 'Langues, dont l’arabe', en: 'Languages, incl. Arabic' } },
+                  { n: 14, suffix: lang === 'fr' ? ' j' : '', l: { fr: 'D’essai, sans carte', en: 'Trial days, no card' } },
                 ].map((stat) => (
-                  <div key={stat.v} className="text-center">
-                    <p className="text-2xl font-bold text-ink-950 sm:text-3xl">{stat.v}</p>
+                  <div key={stat.n} className="text-center">
+                    <p className="text-2xl font-bold tabular-nums text-ink-950 sm:text-3xl" data-count={stat.n} data-suffix={stat.suffix}>{stat.n}{stat.suffix}</p>
                     <p className="mt-1 text-xs text-ink-500">{stat.l[contentLang]}</p>
                   </div>
                 ))}
@@ -261,9 +274,9 @@ export function LandingPage() {
             <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Bienvenue dans l’Entreprise Agentique' : 'Welcome to the Agentic Enterprise'}</h2>
             <p className="mt-3 text-lg text-ink-600">{lang === 'fr' ? 'Là où les humains, les agents et les plateformes conduisent ensemble la réussite client.' : 'Where humans, agents, and platforms drive customer success together.'}</p>
           </div>
-          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="reveal lp-stagger mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {cloudProducts.map((p) => (
-              <div key={p.name[contentLang]} className="group reveal flex gap-4 rounded-2xl border border-ink-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-primary-200 hover:shadow-xl hover:shadow-primary-600/5">
+              <div key={p.name[contentLang]} className="lp-spot group flex gap-4 rounded-2xl border border-ink-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-primary-200 hover:shadow-xl hover:shadow-primary-600/5">
                 <div className="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-primary-50 text-primary-600 transition group-hover:scale-110 group-hover:bg-primary-600 group-hover:text-white">
                   <p.icon size={22} />
                 </div>
@@ -290,7 +303,7 @@ export function LandingPage() {
               <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Jugez sur pièces, pas sur promesses' : 'Judge for yourself, not by promises'}</h2>
               <p className="mt-4 text-ink-600">{lang === 'fr' ? 'Aucun chiffre gonflé, aucun avis inventé sur cette page. À la place, six choses à vérifier vous-même dans la démo, en cinq minutes, sans créer de compte.' : 'No inflated numbers, no made-up reviews on this page. Instead, six things to check yourself in the demo, in five minutes, without an account.'}</p>
             </div>
-            <ol className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <ol className="reveal lp-stagger mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 { to: '/app/pipelines', fr: 'Glissez une affaire d’une étape à l’autre du pipeline', en: 'Drag a deal from one pipeline stage to the next', frD: 'La probabilité et le statut suivent. Gagnée ou perdue en un geste.', enD: 'Probability and status follow. Won or lost in one move.' },
                 { to: '/app/leads', fr: 'Convertissez un lead en client', en: 'Convert a lead into a customer', frD: 'Contact, entreprise et affaire créés d’un coup, sans doublon.', enD: 'Contact, company and deal created at once, no duplicates.' },
@@ -299,8 +312,8 @@ export function LandingPage() {
                 { to: '/app/ai-workflows', fr: 'Lancez un workflow et lisez son rapport', en: 'Run a workflow and read its report', frD: 'Chaque étape affiche ce qu’elle a vraiment fait, ou pourquoi elle a échoué.', enD: 'Each step shows what it really did, or why it failed.' },
                 { to: '/app/contacts', fr: 'Exportez vos contacts en CSV', en: 'Export your contacts to CSV', frD: 'Vos données sortent quand vous voulez. Import CSV et Excel à l’arrivée.', enD: 'Your data leaves whenever you want. CSV and Excel import on the way in.' },
               ].map((c) => (
-                <li key={c.to} className="reveal">
-                  <a href={`${lang === 'fr' ? '/demo' : '/en/demo'}?to=${c.to}`} className="group flex h-full flex-col rounded-2xl border border-ink-100 bg-white p-6 shadow-sm transition hover:border-primary-200 hover:shadow-md">
+                <li key={c.to}>
+                  <a href={`${lang === 'fr' ? '/demo' : '/en/demo'}?to=${c.to}`} className="lp-spot group flex h-full flex-col rounded-2xl border border-ink-100 bg-white p-6 shadow-sm transition hover:border-primary-200 hover:shadow-md">
                     <CheckCircle2 size={22} className="text-success-600" />
                     <h3 className="mt-3 text-base font-bold text-ink-900">{lang === 'fr' ? c.fr : c.en}</h3>
                     <p className="mt-1.5 flex-1 text-sm leading-6 text-ink-600">{lang === 'fr' ? c.frD : c.enD}</p>
@@ -379,14 +392,14 @@ export function LandingPage() {
                 : 'No logo wall. Each connected app shows up in one precise place in Atlas, and every action is a real call to that app, with its result shown.'}
             </p>
           </div>
-          <div className="mt-14 grid gap-6 md:grid-cols-2">
+          <div className="reveal lp-stagger mt-14 grid gap-6 md:grid-cols-2">
             {INTEGRATION_GROUPS.map((g) => (
-              <div key={g.where.en} className="reveal rounded-2xl border border-ink-100 bg-white p-6 shadow-sm">
+              <div key={g.where.en} className="lp-spot rounded-2xl border border-ink-100 bg-white p-6 shadow-sm">
                 <h3 className="text-lg font-bold text-ink-900">{g.where[contentLang]}</h3>
                 <p className="mt-1.5 text-sm leading-6 text-ink-600">{g.what[contentLang]}</p>
                 <ul className="mt-5 flex flex-wrap gap-2">
                   {g.apps.map((a) => (
-                    <li key={a.id} className="inline-flex items-center gap-2 rounded-full border border-ink-100 bg-ink-50/60 py-1.5 pe-3 ps-1.5 text-sm font-medium text-ink-800">
+                    <li key={a.id} className="inline-flex items-center gap-2 rounded-full border border-ink-100 bg-ink-50/60 py-1.5 pe-3 ps-1.5 text-sm font-medium text-ink-800 transition duration-200 hover:-translate-y-0.5 hover:border-primary-200 hover:bg-white hover:shadow-sm">
                       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white ring-1 ring-ink-100"><BrandLogo provider={a.id} size={18} /></span>
                       {a.name}
                     </li>
@@ -411,7 +424,7 @@ export function LandingPage() {
             </Link>
           </div>
           {/* Layered architecture diagram */}
-          <div className="reveal mx-auto mt-14 max-w-3xl space-y-3">
+          <div className="reveal lp-stagger mx-auto mt-14 max-w-3xl space-y-3">
             {[
               { label: lang === 'fr' ? 'Atlas AI Workforce' : 'Atlas AI Workforce', desc: lang === 'fr' ? 'IA agentique au-dessus de tout' : 'Agentic AI on top of everything', color: 'bg-primary-600 text-white' },
               { label: lang === 'fr' ? 'Produits (Ventes, Service, Marketing, Commerce)' : 'Products (Sales, Service, Marketing, Commerce)', desc: lang === 'fr' ? 'Bâtis sur la donnée et la confiance' : 'Built on data and trust', color: 'bg-primary-100 text-primary-800' },
@@ -430,12 +443,12 @@ export function LandingPage() {
         <section id="industries" className="bg-ink-50 py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-6 md:px-10">
             <div className="reveal mx-auto max-w-2xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Démarrez plus vite avec 16+ solutions, conçues pour votre industrie' : 'Start faster with 16+ solutions, designed for your industry'}</h2>
+              <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Un CRM qui s’adapte à votre secteur' : 'A CRM that fits your industry'}</h2>
               <p className="mt-4 text-ink-600">{lang === 'fr' ? 'Conçues avec une expertise métier, ces solutions prêtes à l’emploi s’alignent sur vos workflows, données et besoins client.' : 'Built with industry expertise, these ready-to-use solutions align with your workflows, data, and customer needs.'}</p>
             </div>
-            <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="reveal lp-stagger mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {industries.map((ind) => (
-                <div key={ind.name[contentLang]} className="group reveal rounded-2xl border border-ink-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                <div key={ind.name[contentLang]} className="lp-spot group rounded-2xl border border-ink-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-600 transition group-hover:scale-110 group-hover:bg-primary-600 group-hover:text-white">
                     <ind.icon size={20} />
                   </div>
@@ -460,9 +473,9 @@ export function LandingPage() {
           <div className="reveal mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{lang === 'fr' ? 'Découvrez Atlas CRM en profondeur' : 'Go deeper with Atlas CRM'}</h2>
           </div>
-          <div className="mt-14 grid gap-6 md:grid-cols-3">
+          <div className="reveal lp-stagger mt-14 grid gap-6 md:grid-cols-3">
             {reports.map((r) => (
-              <div key={r.title[contentLang]} className="reveal flex flex-col rounded-2xl border border-ink-100 bg-white p-7 shadow-sm transition hover:shadow-lg">
+              <div key={r.title[contentLang]} className="lp-spot flex flex-col rounded-2xl border border-ink-100 bg-white p-7 shadow-sm transition hover:shadow-lg">
                 <span className="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700 self-start">{r.tag[contentLang]}</span>
                 <h3 className="mt-4 flex-1 text-lg font-bold leading-7 text-ink-900">{r.title[contentLang]}</h3>
                 <Link to={`${contentLang === 'en' ? '/en' : ''}/blog/${r.slug}`} className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:underline">{r.cta[contentLang]} <ArrowRight size={14} /></Link>
@@ -497,7 +510,7 @@ export function LandingPage() {
             </div>
             <div className="mt-12 grid gap-6 lg:grid-cols-4">
               {plans.map((plan) => (
-                <div key={plan.name} className={`reveal relative flex flex-col rounded-2xl border p-7 transition ${plan.popular ? 'border-primary-600 bg-white shadow-2xl shadow-primary-600/10 lg:-translate-y-3' : 'border-ink-100 bg-white shadow-sm hover:shadow-lg hover:border-ink-200'}`}>
+                <div key={plan.name} className={`reveal relative flex flex-col rounded-2xl border p-7 transition ${plan.popular ? 'lp-ring lp-ring-primary border-primary-600 bg-white shadow-2xl shadow-primary-600/10 lg:-translate-y-3' : 'border-ink-100 bg-white shadow-sm hover:shadow-lg hover:border-ink-200'}`}>
                   {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary-600 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow">{plan.tagline[contentLang]}</span>}
                   <h3 className="text-lg font-bold text-ink-900">{plan.name}</h3>
                   {!plan.popular && <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-primary-600">{plan.tagline[contentLang]}</p>}
@@ -587,9 +600,12 @@ export function LandingPage() {
           <div className="reveal mx-auto max-w-3xl px-6 text-center md:px-10">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{lang === 'fr' ? 'Commencez dès aujourd’hui' : 'Get started today'}</h2>
             <p className="mt-4 text-lg text-primary-100">{lang === 'fr' ? 'Rien à installer. Sans carte bancaire. 14 jours gratuits.' : 'Nothing to install. No credit card. 14-day free trial.'}</p>
-            <Link to="/auth" className="group mt-8 inline-flex items-center gap-2 rounded-lg bg-white px-7 py-3.5 text-base font-semibold text-primary-700 shadow-lg transition hover:bg-primary-50">
-              {lang === 'fr' ? 'Essayer gratuitement' : 'Try for free'} <ArrowRight size={18} className="transition group-hover:translate-x-1" />
-            </Link>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link to="/auth" className="group inline-flex items-center gap-2 rounded-lg bg-white px-7 py-3.5 text-base font-semibold text-primary-700 shadow-lg transition hover:bg-primary-50">
+                {lang === 'fr' ? 'Essayer gratuitement' : 'Try for free'} <ArrowRight size={18} className="transition group-hover:translate-x-1" />
+              </Link>
+              <InstallAppButton variant="solid" className="!bg-white/10 !text-white ring-1 ring-white/30 hover:!bg-white/20" />
+            </div>
           </div>
         </section>
 
@@ -627,12 +643,12 @@ export function LandingPage() {
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-lg text-white/80">
               {lang === 'fr'
-                ? 'Rejoignez les équipes qui pilotent leur croissance avec Atlas — sécurité, fiabilité et performance de niveau entreprise.'
-                : 'Join the teams running their growth on Atlas — enterprise-grade security, reliability, and performance.'}
+                ? 'Chaque entreprise dans son propre espace, cloisonné par la base de données elle-même. Votre équipe, vos clients et vos chiffres ne sont visibles que par vous.'
+                : 'Every company in its own workspace, isolated by the database itself. Your team, your customers and your numbers are visible to you alone.'}
             </p>
-            <Link to="/auth" className="group mt-8 inline-flex items-center gap-2 rounded-lg bg-white px-7 py-3.5 text-base font-semibold text-ink-950 shadow-lg transition hover:bg-white/90">
-              {lang === 'fr' ? 'Demander une démo' : 'Request a demo'} <ArrowRight size={18} className="transition group-hover:translate-x-1" />
-            </Link>
+            <a href={lang === 'fr' ? '/demo' : '/en/demo'} className="group mt-8 inline-flex items-center gap-2 rounded-lg bg-white px-7 py-3.5 text-base font-semibold text-ink-950 shadow-lg transition hover:bg-white/90">
+              {lang === 'fr' ? 'Ouvrir la démo' : 'Open the demo'} <ArrowRight size={18} className="transition group-hover:translate-x-1" />
+            </a>
           </div>
         </section>
       </main>

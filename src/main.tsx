@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/react';
 import App from './App.tsx';
 import { ErrorFallback } from './components/ErrorFallback';
 import './index.css';
+import { registerServiceWorker } from './lib/pwa';
 
 // Only report errors from the real deployed site, never from local dev —
 // a dev server throwing errors while someone is actively coding isn't a
@@ -19,6 +20,8 @@ if (import.meta.env.PROD) {
     tracesSampleRate: 0,
   });
 }
+
+registerServiceWorker();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

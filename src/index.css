@@ -235,3 +235,147 @@
     font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, 'Times New Roman', serif;
   }
 }
+
+/* ───────────────────────── Landing page motion ─────────────────────────
+ * Transform/opacity only, compositor-friendly. Every animation below is
+ * frozen on a readable frame under prefers-reduced-motion (end of block).
+ */
+
+/* Scroll progress bar + compact header */
+.lp-progress {
+  position: fixed; inset-inline: 0; top: 0; z-index: 60; height: 2px;
+  background: linear-gradient(90deg, #0176d3, #1b96ff 60%, #4bca81);
+  transform-origin: 0 50%; transform: scaleX(0); pointer-events: none;
+}
+[dir='rtl'] .lp-progress { transform-origin: 100% 50%; }
+.lp-header { transition: box-shadow .25s ease, background-color .25s ease; }
+.lp-header.lp-scrolled { box-shadow: 0 6px 24px -14px rgba(15, 23, 42, .28); background-color: rgba(255, 255, 255, .86); }
+
+/* Hero: technical grid with a light beam running along it */
+.lp-grid {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(1, 118, 211, .07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(1, 118, 211, .07) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
+          mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
+}
+.lp-beam {
+  position: absolute; left: 0; height: 1px; width: 220px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(1, 118, 211, .55), transparent);
+  filter: drop-shadow(0 0 6px rgba(27, 150, 255, .6));
+  opacity: 0; animation: lp-beam 7s cubic-bezier(.45, 0, .2, 1) infinite;
+}
+.lp-beam-2 { animation-delay: 3.5s; animation-duration: 9s; }
+@keyframes lp-beam {
+  0% { transform: translateX(-240px); opacity: 0; }
+  10% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translateX(calc(100vw + 40px)); opacity: 0; }
+}
+@media (max-width: 767px) { .lp-beam { display: none; } }
+
+/* Gradient sweep inside the accented headline words */
+.lp-shine {
+  background: linear-gradient(100deg, #0176d3 20%, #1b96ff 40%, #57a3fd 50%, #1b96ff 60%, #0176d3 80%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: lp-shine 6s ease-in-out 1.2s infinite;
+}
+@keyframes lp-shine { 0%, 55% { background-position: 100% 0; } 100% { background-position: -150% 0; } }
+
+/* Hero preview: one orchestrated entrance, then calm loops */
+.lp-preview-wrap { perspective: 1600px; }
+.lp-preview {
+  transform-origin: 50% 0;
+  animation: lp-rise 1s cubic-bezier(.16, 1, .3, 1) .35s both;
+}
+@keyframes lp-rise {
+  from { opacity: 0; transform: translateY(40px) rotateX(14deg) scale(.97); }
+  to { opacity: 1; transform: none; }
+}
+.lp-travel { --lp-gap: .5rem; animation: lp-travel 9s cubic-bezier(.65, 0, .35, 1) 1.6s infinite both; }
+@media (min-width: 640px) { .lp-travel { --lp-gap: .75rem; } }
+@keyframes lp-travel {
+  0%, 18% { transform: translateX(0); opacity: 1; }
+  28%, 46% { transform: translateX(calc(100% + var(--lp-gap))); }
+  56%, 86% { transform: translateX(calc(200% + 2 * var(--lp-gap))); opacity: 1; }
+  94% { transform: translateX(calc(200% + 2 * var(--lp-gap))) translateY(-6px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 0; }
+}
+[dir='rtl'] .lp-travel { animation-name: lp-travel-rtl; }
+@keyframes lp-travel-rtl {
+  0%, 18% { transform: translateX(0); opacity: 1; }
+  28%, 46% { transform: translateX(calc(-100% - var(--lp-gap))); }
+  56%, 86% { transform: translateX(calc(-200% - 2 * var(--lp-gap))); opacity: 1; }
+  94% { transform: translateX(calc(-200% - 2 * var(--lp-gap))) translateY(-6px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 0; }
+}
+.lp-won { opacity: 0; transform: scale(.6); animation: lp-won 9s ease 1.6s infinite both; }
+@keyframes lp-won {
+  0%, 60% { opacity: 0; transform: scale(.6); }
+  64%, 86% { opacity: 1; transform: scale(1); }
+  92%, 100% { opacity: 0; transform: scale(.9); }
+}
+.lp-q, .lp-typing, .lp-a, .lp-toast { animation-duration: 9s; animation-iteration-count: infinite; animation-fill-mode: both; animation-delay: 1.6s; }
+.lp-q { animation-name: lp-q; }
+.lp-typing { animation-name: lp-typing; }
+.lp-a { animation-name: lp-a; }
+.lp-toast { animation-name: lp-toast; }
+@keyframes lp-q { 0%, 4% { opacity: 0; transform: translateY(6px); } 9%, 92% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+@keyframes lp-typing { 0%, 10% { opacity: 0; } 13%, 26% { opacity: 1; } 29%, 100% { opacity: 0; } }
+@keyframes lp-a { 0%, 28% { opacity: 0; transform: translateY(6px); } 33%, 92% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+@keyframes lp-toast { 0%, 64% { opacity: 0; transform: translateY(12px); } 69%, 88% { opacity: 1; transform: none; } 94%, 100% { opacity: 0; transform: translateY(6px); } }
+.lp-dot { animation: lp-dot 1s ease-in-out infinite; }
+.lp-dot:nth-child(2) { animation-delay: .15s; }
+.lp-dot:nth-child(3) { animation-delay: .3s; }
+@keyframes lp-dot { 0%, 100% { transform: translateY(0); opacity: .5; } 50% { transform: translateY(-3px); opacity: 1; } }
+
+/* Staggered reveal for card grids (children arrive one after another) */
+.reveal.lp-stagger { opacity: 1; transform: none; }
+.lp-stagger > * { opacity: 0; transform: translateY(18px); transition: opacity .6s ease-out, transform .6s cubic-bezier(.16, 1, .3, 1); }
+.lp-stagger.is-visible > * { opacity: 1; transform: none; }
+.lp-stagger.is-visible > *:nth-child(2) { transition-delay: .07s; }
+.lp-stagger.is-visible > *:nth-child(3) { transition-delay: .14s; }
+.lp-stagger.is-visible > *:nth-child(4) { transition-delay: .21s; }
+.lp-stagger.is-visible > *:nth-child(5) { transition-delay: .28s; }
+.lp-stagger.is-visible > *:nth-child(6) { transition-delay: .35s; }
+.lp-stagger.is-visible > *:nth-child(n+7) { transition-delay: .42s; }
+/* A child that is itself a .reveal must not stay hidden inside a stagger grid. */
+.lp-stagger > .reveal { opacity: 0; }
+.lp-stagger.is-visible > .reveal { opacity: 1; transform: none; }
+
+/* Cursor spotlight on cards (pointer devices only, set by useLandingMotion) */
+.lp-spot { position: relative; isolation: isolate; }
+.lp-spot::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; z-index: -1; pointer-events: none;
+  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, -200px), rgba(1, 118, 211, .09), transparent 60%);
+  opacity: 0; transition: opacity .3s ease;
+}
+.lp-spot:hover::before { opacity: 1; }
+
+/* Animated border on the highlighted plan */
+.lp-ring { position: relative; }
+.lp-ring::after {
+  content: ''; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: conic-gradient(from var(--lp-angle, 0deg), transparent 0 70%, rgba(255, 255, 255, .9) 80%, transparent 90%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: lp-spin 5s linear infinite;
+}
+@property --lp-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+@keyframes lp-spin { to { --lp-angle: 360deg; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-beam, .lp-ring::after { display: none; }
+  .lp-shine, .lp-preview, .lp-travel, .lp-won, .lp-q, .lp-typing, .lp-a, .lp-toast, .lp-dot { animation: none !important; }
+  .lp-shine { background-position: 0 0; }
+  .lp-q, .lp-a, .lp-toast { opacity: 1; transform: none; }
+  .lp-won { opacity: 0; }
+  .lp-typing { opacity: 0; }
+  .lp-travel { transform: translateX(calc(100% + var(--lp-gap))); }
+  .lp-stagger > * { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .lp-header, .lp-spot::before { transition: none; }
+}
+.lp-ring-primary::after { background: conic-gradient(from var(--lp-angle, 0deg), transparent 0 70%, rgba(1, 118, 211, .95) 80%, transparent 90%); inset: -2px; padding: 2px; }

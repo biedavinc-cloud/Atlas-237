@@ -19,6 +19,7 @@ interface VideoBackgroundProps {
  *   remains visible underneath, so there is never a blank box.
  * - Respects `prefers-reduced-motion`: no autoplaying motion for people who
  *   asked their OS not to show it.
+ * - Small screens, Save-Data and 2G/3G connections show the poster only.
  * - muted + playsInline + loop is what makes autoplay actually allowed by
  *   browsers (Safari/iOS in particular refuses autoplay otherwise).
  *
@@ -30,6 +31,15 @@ interface VideoBackgroundProps {
 export function VideoBackground({ sources, poster, overlayClassName, className }: VideoBackgroundProps) {
   const [failed, setFailed] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  // Phones, Save-Data and slow connections get the poster only: these clips
+  // are multi-megabyte and would cost mobile visitors data and battery.
+  const [lightMode] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+    return window.matchMedia('(max-width: 767px)').matches
+      || Boolean(conn?.saveData)
+      || ['slow-2g', '2g', '3g'].includes(conn?.effectiveType || '');
+  });
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -39,7 +49,7 @@ export function VideoBackground({ sources, poster, overlayClassName, className }
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  const showVideo = !failed && !reducedMotion && sources.length > 0;
+  const showVideo = !failed && !reducedMotion && !lightMode && sources.length > 0;
 
   return (
     <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className || ''}`} aria-hidden="true">

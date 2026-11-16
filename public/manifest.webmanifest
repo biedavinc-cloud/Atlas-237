@@ -1,0 +1,32 @@
+{
+  "id": "/app",
+  "name": "Atlas CRM",
+  "short_name": "Atlas",
+  "description": "CRM avec IA intégrée : contacts, pipeline, devis, factures, support et automatisations. Développé par Liafrik Tech, Dubaï – Yaoundé.",
+  "lang": "fr",
+  "dir": "auto",
+  "start_url": "/app?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#0176d3",
+  "categories": ["business", "productivity", "finance"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    { "src": "/screenshots/desktop-dashboard.png", "sizes": "1280x800", "type": "image/png", "form_factor": "wide", "label": "Centre de commande Atlas" },
+    { "src": "/screenshots/desktop-pipeline.png", "sizes": "1280x800", "type": "image/png", "form_factor": "wide", "label": "Pipeline des ventes" },
+    { "src": "/screenshots/mobile-dashboard.png", "sizes": "780x1688", "type": "image/png", "form_factor": "narrow", "label": "Atlas sur mobile" }
+  ],
+  "shortcuts": [
+    { "name": "Nouveau contact", "short_name": "Contact", "url": "/app/contacts?new=1", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Pipeline", "url": "/app/pipelines", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Nouvelle facture", "short_name": "Facture", "url": "/app/invoices?new=1", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Demander à Atlas", "short_name": "Ask Atlas", "url": "/app/ask-atlas", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

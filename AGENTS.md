@@ -1156,3 +1156,53 @@ or inline `lang === 'fr' ? '...' : '...'` ternaries. Key files verified:
   App.tsx `demoTarget()`), plus pricing / data isolation / "real reviews
   later". The integrations section lists only the apps from APP_USAGE,
   grouped by where they are used — no "hundreds of apps" logo wall.
+
+## Multi-tenant isolation (non-negotiable)
+- Atlas is multi-tenant with strict isolation: every business row carries
+  `org_id`, RLS restricts reads/writes to the caller's org
+  (`user_org_id()`), and RESTRICTIVE plan/billing policies sit on top.
+  Server-side code using the service role (edge functions, public-api,
+  cron) must always pin queries to an explicit org_id. The service worker
+  never caches cross-origin (Supabase) responses. Keep all of this true
+  for anything new.
+
+## PWA (Nov 2026)
+- `public/manifest.webmanifest` (id `/app`, start `/app?source=pwa`,
+  standalone, shortcuts, screenshots in `public/screenshots/`), icons in
+  `public/icons/` (generated from `public/branding/atlas-logo.png`,
+  maskable variant with 20 % padding), `public/offline.html` (standalone,
+  FR/EN, reloads when back online).
+- `public/sw.js`: only same-origin GET requests are handled; Supabase, PSPs
+  and anything cross-origin are never intercepted, nothing with an
+  Authorization header is cached. Navigations are network-first (fallback:
+  cached shell for `/`, `/en` and the demo, otherwise `/offline.html`);
+  `/assets/`, `/fonts/`, `/icons/`, `/branding/`, `/brand-logos/`,
+  `/screenshots/` are cache-first (trimmed to 150 entries).
+  `__BUILD_ID__` is replaced per build by the `atlas-sw-build-id` plugin
+  in `vite.config.ts`, so each deploy gets fresh caches.
+- `src/lib/pwa.ts` registers the worker in production builds only and
+  exposes `useInstallPrompt()` / `useUpdateReady()`.
+  `src/components/PwaPrompts.tsx`: `PwaUpdateToast` (global, "new version
+  ready → Update") and `InstallAppButton` (account menu + final CTA on the
+  landing; renders nothing when the browser can't install).
+- `public/_headers`: `/sw.js` no-cache, manifest content type,
+  `worker-src 'self'; manifest-src 'self'` in the CSP.
+
+## Landing page motion (Nov 2026)
+- `src/components/landing/HeroPreview.tsx`: animated Atlas window under the
+  hero (deal travelling through the pipeline, Ask Atlas answer, Resend
+  toast), CSS-only, labelled "animated preview of the demo, fictional
+  data". `src/lib/landingMotion.ts` (`useLandingMotion`): scroll progress
+  bar, compact header, count-up of real facts (`data-count`, triggered on
+  scroll so it never stays at 0), cursor spotlight on `.lp-spot` cards for
+  fine pointers only. CSS lives at the end of `src/index.css` (`lp-*`):
+  hero grid + light beams (hidden < md), headline shine, staggered
+  reveals (`.reveal.lp-stagger`), animated ring on the popular plan.
+  Everything is transform/opacity and frozen under prefers-reduced-motion.
+- `VideoBackground` shows the poster only on screens < 768 px, Save-Data
+  and 2G/3G connections (the clips are multi-megabyte).
+- Copy fixes: "16+ industry solutions" (8 listed) → "A CRM that fits your
+  industry"; "join the teams…" → the tenant-isolation promise; FAQ entries
+  on data isolation and installing the app.
+- StatCard: icon hidden and value smaller below `sm` so large FCFA amounts
+  no longer get truncated on phones.

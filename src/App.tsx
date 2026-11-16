@@ -1,3 +1,4 @@
+import { PwaUpdateToast } from '@/components/PwaPrompts';
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { lazy, Suspense, useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
@@ -158,6 +159,7 @@ function AuthRoutes({ lang }: { lang?: Language }) {
 export default function App() {
   return (
     <AuthProvider>
+      <PwaUpdateToast />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingRoutes />} />

@@ -9,6 +9,7 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { t, type Language } from '@/lib/i18n';
 import { NAV_SECTIONS, SUPER_ADMIN_ITEMS, type NavItem } from '@/lib/navigation';
 import { CommandPalette } from '@/components/CommandPalette';
+import { InstallAppButton } from '@/components/PwaPrompts';
 import { DemoBanner } from '@/components/DemoBanner';
 import { IS_DEMO } from '@/lib/demo/mode';
 
@@ -289,6 +290,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <MenuLink icon={<User size={15} />} label={t('shell.profile', language)} onClick={() => navigate('/app/settings?tab=profile')} />
                   <MenuLink icon={<Settings size={15} />} label={t('nav.settings', language)} onClick={() => navigate('/app/settings')} />
                   <MenuLink icon={<CreditCard size={15} />} label={t('nav.billing', language)} onClick={() => navigate('/app/billing')} />
+                  <InstallAppButton variant="menu" />
                   <div className="my-1 border-t border-ink-100" />
                   <p className="flex items-center gap-2 px-3 pt-1.5 pb-1 text-xs font-semibold text-ink-400"><Globe size={12} /> {t('shell.language', language)}</p>
                   <div className="grid grid-cols-1">

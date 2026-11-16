@@ -67,24 +67,24 @@ export function StatCard({ label, value, icon, trend, color = 'primary', hint, t
   const body = (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
-        <p className="text-[13px] font-semibold text-ink-500 truncate">{label}</p>
-        <p className="text-[26px] leading-8 font-bold text-ink-900 mt-1 tabular truncate">{value}</p>
+        <p className="line-clamp-2 text-[13px] font-semibold text-ink-500 sm:truncate">{label}</p>
+        <p className="mt-1 break-words text-base font-bold leading-6 text-ink-900 tabular min-[400px]:text-lg sm:text-[26px] sm:leading-8">{value}</p>
         {trend && (
           <p className={`text-xs font-semibold mt-1 ${trend.positive ? 'text-success-600' : 'text-error-600'}`}>
             {trend.positive ? '+' : ''}{trend.value}
           </p>
         )}
-        {hint && !trend && <p className="text-xs text-ink-400 mt-1 truncate">{hint}</p>}
+        {hint && !trend && <p className="mt-1 line-clamp-2 text-xs text-ink-400 sm:truncate">{hint}</p>}
       </div>
-      <div className={`flex h-9 w-9 flex-none items-center justify-center rounded-lg ${STAT_COLORS[color]}`}>
+      <div className={`hidden h-9 w-9 flex-none items-center justify-center rounded-lg sm:flex ${STAT_COLORS[color]}`}>
         {icon}
       </div>
     </div>
   );
   if (to) {
-    return <Link to={to} className="card-hover block p-5">{body}</Link>;
+    return <Link to={to} className="card-hover block p-4 sm:p-5">{body}</Link>;
   }
-  return <div className="card p-5">{body}</div>;
+  return <div className="card p-4 sm:p-5">{body}</div>;
 }
 
 interface BadgeProps {
