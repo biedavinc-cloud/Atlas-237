@@ -1,4 +1,5 @@
-import { Download, RefreshCw } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Download, RefreshCw, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useInstallPrompt, useUpdateReady } from '@/lib/pwa';
 
@@ -7,14 +8,31 @@ export function PwaUpdateToast() {
   const { language } = useAuth();
   const fr = language !== 'en';
   const { updateReady, applyUpdate } = useUpdateReady();
-  if (!updateReady) return null;
-  return (
-    <div role="status" className="fixed inset-x-3 bottom-3 z-[60] mx-auto flex max-w-md items-center gap-3 rounded-xl bg-navy-900 px-4 py-3 text-sm text-white shadow-pop animate-scale-in sm:inset-x-auto sm:end-4 sm:bottom-4">
-      <RefreshCw size={16} className="flex-none text-primary-200" />
-      <span className="flex-1">{fr ? 'Une nouvelle version d’Atlas est prête.' : 'A new version of Atlas is ready.'}</span>
-      <button onClick={applyUpdate} className="rounded-lg bg-white px-3 py-1.5 font-semibold text-navy-900 transition hover:bg-primary-50">
-        {fr ? 'Mettre à jour' : 'Update'}
+  const [hidden, setHidden] = useState(false);
+  const [compact, setCompact] = useState(false);
+  // A small pill that shrinks to a round button after a few seconds, so it
+  // never covers the page; the user can also dismiss it until the next load.
+  useEffect(() => {
+    if (!updateReady) return;
+    const t = window.setTimeout(() => setCompact(true), 6000);
+    return () => window.clearTimeout(t);
+  }, [updateReady]);
+  if (!updateReady || hidden) return null;
+  const label = fr ? 'Nouvelle version : mettre à jour' : 'New version: update';
+  if (compact) {
+    return (
+      <button onClick={applyUpdate} title={label} aria-label={label}
+        className="fixed bottom-3 end-3 z-[60] flex h-10 w-10 items-center justify-center rounded-full bg-navy-900 text-white shadow-pop transition hover:bg-navy-800 sm:bottom-4 sm:end-4">
+        <RefreshCw size={16} />
+        <span className="absolute end-1 top-1 h-2 w-2 rounded-full bg-success-400" aria-hidden="true" />
       </button>
+    );
+  }
+  return (
+    <div role="status" className="fixed bottom-3 end-3 z-[60] flex items-center gap-1 rounded-full bg-navy-900 py-1 pe-1 ps-3 text-xs text-white shadow-pop animate-scale-in sm:bottom-4 sm:end-4">
+      <RefreshCw size={13} className="flex-none text-primary-200" />
+      <button onClick={applyUpdate} className="rounded-full px-2 py-1 font-semibold hover:bg-white/10">{fr ? 'Mettre à jour' : 'Update'}</button>
+      <button onClick={() => setHidden(true)} aria-label={fr ? 'Plus tard' : 'Later'} className="rounded-full p-1 text-white/70 hover:bg-white/10 hover:text-white"><X size={13} /></button>
     </div>
   );
 }
